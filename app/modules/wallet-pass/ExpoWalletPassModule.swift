@@ -4,8 +4,9 @@ import PassKit
 import UIKit
 
 /** Downloads a signed pass and presents Apple's add-to-Wallet sheet in Pocketful. */
-internal final class ExpoWalletPassModule: Module, PKAddPassesViewControllerDelegate {
+internal final class ExpoWalletPassModule: Module {
   private weak var presentedController: PKAddPassesViewController?
+  private let presentationDelegate = WalletPassPresentationDelegate()
 
   func definition() -> ModuleDefinition {
     Name("ExpoWalletPass")
@@ -67,7 +68,12 @@ internal final class ExpoWalletPassModule: Module, PKAddPassesViewControllerDele
           }
 
           self.presentedController = controller
-          controller.delegate = self
+          self.presentationDelegate.onFinish = { [weak self] controller in
+            controller.dismiss(animated: true) {
+              self?.presentedController = nil
+            }
+          }
+          controller.delegate = self.presentationDelegate
           presenter.present(controller, animated: true) {
             promise.resolve(nil)
           }
@@ -77,9 +83,13 @@ internal final class ExpoWalletPassModule: Module, PKAddPassesViewControllerDele
     .runOnQueue(DispatchQueue.main)
   }
 
+}
+
+/** Bridges PassKit's Objective-C delegate protocol without changing Expo's BaseModule inheritance. */
+private final class WalletPassPresentationDelegate: NSObject, PKAddPassesViewControllerDelegate {
+  var onFinish: ((PKAddPassesViewController) -> Void)?
+
   func addPassesViewControllerDidFinish(_ controller: PKAddPassesViewController) {
-    controller.dismiss(animated: true) { [weak self] in
-      self?.presentedController = nil
-    }
+    onFinish?(controller)
   }
 }
