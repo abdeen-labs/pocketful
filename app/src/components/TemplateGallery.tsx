@@ -119,6 +119,15 @@ function TemplateCard({
           </Text>
         </View>
         <Text style={styles.tagline} numberOfLines={2}>{template.tagline}</Text>
+        {template.features?.length ? (
+          <View style={styles.featureRow}>
+            {template.features.slice(0, 3).map((feature) => (
+              <View key={feature} style={styles.featurePill}>
+                <Text style={styles.featureText}>{feature}</Text>
+              </View>
+            ))}
+          </View>
+        ) : null}
         <View style={styles.metaRow}>
           <Text style={styles.metaText}>{STYLE_LABELS[template.style]}</Text>
           <View style={styles.metaDot} />
@@ -229,6 +238,9 @@ const styles = StyleSheet.create({
   applyText: { color: colors.accent, fontSize: 8, fontWeight: '900', letterSpacing: 0.65 },
   appliedText: { color: colors.success },
   tagline: { color: colors.textSoft, fontSize: 11, lineHeight: 15 },
+  featureRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 5, marginTop: 2 },
+  featurePill: { paddingHorizontal: 7, paddingVertical: 4, borderRadius: radii.pill, backgroundColor: colors.accentMuted },
+  featureText: { color: colors.accent, fontSize: 8.5, fontWeight: '700' },
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 2 },
   metaText: { color: colors.dim, fontSize: 9.5, fontWeight: '600' },
   metaDot: { width: 3, height: 3, borderRadius: 1.5, backgroundColor: colors.borderStrong },
