@@ -40,6 +40,7 @@ import {
 } from '@/components/ui';
 import { createPass } from '@/lib/api';
 import { pickImageForSlot, type ProcessedImage } from '@/lib/images';
+import { loadBundledTemplateImages } from '@/lib/templateArtwork';
 import { buildTemplateBarcodes, buildTemplateFields, buildTemplateRelevantDates, type PassTemplate } from '@/lib/templates';
 import { presentWalletPass } from '@/lib/walletPass';
 import {
@@ -264,7 +265,15 @@ export default function PassDesigner() {
     });
   };
 
-  const applyTemplate = (template: PassTemplate) => {
+  const applyTemplate = async (template: PassTemplate) => {
+    let bundledImages: Partial<Record<string, ProcessedImage>>;
+    try {
+      bundledImages = await loadBundledTemplateImages(template.id);
+    } catch (error) {
+      Alert.alert('Template artwork error', error instanceof Error ? error.message : String(error));
+      return;
+    }
+
     const guidedKeys = new Set(COMMON_SEMANTICS[template.style].map((field) => field.key));
     const guidedSemantics: Record<string, string> = {};
     const advancedSemantics: JsonObject = {};
@@ -306,20 +315,23 @@ export default function PassDesigner() {
       Object.entries(template.boardingPassOptions ?? {}).filter(([, value]) => typeof value === 'string')
     ) as Record<string, string>);
     setUpcomingPassJson('');
+    if (Object.keys(bundledImages).length) {
+      setImages((current) => ({ ...current, ...bundledImages }));
+    }
   };
 
   const handleTemplate = (template: PassTemplate) => {
     const hasContent = Boolean(description.trim()) || fields.length > 0 || barcodes.some((barcode) => barcode.message.trim());
     if (!hasContent) {
-      applyTemplate(template);
+      void applyTemplate(template);
       return;
     }
     Alert.alert(
       `Start from “${template.name}”?`,
-      'This replaces the pass format, identity, colors, fields, barcode, relevant dates, semantic data, and style-specific actions. Artwork, NFC credentials, and server settings stay as they are.',
+      'This replaces the pass format, identity, colors, fields, barcode, relevant dates, semantic data, style-specific actions, and any bundled template artwork. Other artwork, NFC credentials, and server settings stay as they are.',
       [
         { text: 'Cancel', style: 'cancel' },
-        { text: 'Apply template', onPress: () => applyTemplate(template) },
+        { text: 'Apply template', onPress: () => { void applyTemplate(template); } },
       ]
     );
   };
