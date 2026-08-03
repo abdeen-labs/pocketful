@@ -47,7 +47,7 @@ export function loadConfig(): Config {
   if (missing.length > 0) {
     throw new Error(
       `Missing required environment variables: ${missing.join(", ")}.\n` +
-        `See the "Certificates" section of the README for how to produce them.`
+        `See the "Certificates" section of INSTRUCTIONS.md for how to produce them.`
     );
   }
 
