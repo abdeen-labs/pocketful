@@ -53,7 +53,12 @@
     ],
     "experiments": {
       "typedRoutes": true,
-      "reactCompiler": true
+      "reactCompiler": true,
+      "inlineModules": {
+        "watchedDirectories": [
+          "modules/wallet-pass"
+        ]
+      }
     }
   }
 }

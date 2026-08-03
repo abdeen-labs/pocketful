@@ -1,4 +1,3 @@
-import * as Linking from 'expo-linking';
 import React, { useMemo, useState } from 'react';
 import {
   Alert,
@@ -42,6 +41,7 @@ import {
 import { createPass } from '@/lib/api';
 import { pickImageForSlot, type ProcessedImage } from '@/lib/images';
 import { buildTemplateBarcodes, buildTemplateFields, type PassTemplate } from '@/lib/templates';
+import { presentWalletPass } from '@/lib/walletPass';
 import {
   localizedSlotsForStyle,
   PERSONALIZATION_LOGO_SLOT,
@@ -306,7 +306,7 @@ export default function PassDesigner() {
     setSubmitting(true);
     try {
       const created = await createPass(serverUrl.trim(), spec, apiToken.trim() || undefined);
-      await Linking.openURL(created.url);
+      await presentWalletPass(created.url);
     } catch (error) {
       Alert.alert('Could not create pass', error instanceof Error ? error.message : String(error));
     } finally {
