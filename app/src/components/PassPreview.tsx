@@ -47,7 +47,7 @@ export function PassPreview({
   const primary = fields.filter((field) => field.category === 'primary' && field.value).slice(0, 2);
   const detail = fields.filter((field) => ['header', 'secondary', 'auxiliary'].includes(field.category) && field.value).slice(0, 4);
   const logo = images.logo;
-  const strip = images.strip ?? images.background;
+  const strip = images.artwork ?? images.strip ?? images.background;
 
   return (
     <View style={styles.shell}>

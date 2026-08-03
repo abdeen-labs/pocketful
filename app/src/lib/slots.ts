@@ -11,9 +11,39 @@ export interface ImageSlot {
   hint: string;
 }
 
-function standardSlots(style: PassStyle): ImageSlot[] {
+function standardSlots(style: PassStyle, posterEvent = false): ImageSlot[] {
   const stripHeight = style === 'eventTicket' ? 98 : 144;
   const hasStrip = style === 'storeCard' || style === 'coupon' || style === 'eventTicket';
+  const posterEventSlots: ImageSlot[] = style === 'eventTicket' && posterEvent ? [
+    {
+      name: 'primaryLogo',
+      label: 'Poster primary logo',
+      width: 126,
+      height: 30,
+      required: false,
+      recommended: true,
+      hint: 'iOS 18+ poster-event identity · up to 126×30 pt',
+    },
+    {
+      name: 'secondaryLogo',
+      label: 'Poster secondary logo',
+      width: 135,
+      height: 12,
+      required: false,
+      recommended: false,
+      hint: 'Ticket issuer or venue logo · up to 135×12 pt',
+    },
+    {
+      name: 'artwork',
+      label: 'Poster artwork',
+      width: 358,
+      height: 448,
+      required: false,
+      recommended: true,
+      hint: 'Full-art iOS 18+ poster background · 358×448 pt',
+    },
+  ] : [];
+
   return [
     {
       name: 'icon',
@@ -33,6 +63,7 @@ function standardSlots(style: PassStyle): ImageSlot[] {
       recommended: true,
       hint: 'Top-left artwork · 160×50 pt',
     },
+    ...posterEventSlots,
     {
       name: 'strip',
       label: 'Strip',
@@ -72,13 +103,13 @@ function standardSlots(style: PassStyle): ImageSlot[] {
   ];
 }
 
-export function slotsForStyle(style: PassStyle): ImageSlot[] {
-  return standardSlots(style);
+export function slotsForStyle(style: PassStyle, posterEvent = false): ImageSlot[] {
+  return standardSlots(style, posterEvent);
 }
 
-export function localizedSlotsForStyle(style: PassStyle, languages: string[]): ImageSlot[] {
+export function localizedSlotsForStyle(style: PassStyle, languages: string[], posterEvent = false): ImageSlot[] {
   return languages.flatMap((language) =>
-    standardSlots(style).map((slot) => ({
+    standardSlots(style, posterEvent).map((slot) => ({
       ...slot,
       name: `${language}.lproj/${slot.name}`,
       label: `${slot.label} · ${language}`,

@@ -40,7 +40,7 @@ import {
 } from '@/components/ui';
 import { createPass } from '@/lib/api';
 import { pickImageForSlot, type ProcessedImage } from '@/lib/images';
-import { buildTemplateBarcodes, buildTemplateFields, type PassTemplate } from '@/lib/templates';
+import { buildTemplateBarcodes, buildTemplateFields, buildTemplateRelevantDates, type PassTemplate } from '@/lib/templates';
 import { presentWalletPass } from '@/lib/walletPass';
 import {
   localizedSlotsForStyle,
@@ -234,12 +234,13 @@ export default function PassDesigner() {
   const [apiToken, setApiToken] = useState(process.env.EXPO_PUBLIC_PASS_API_TOKEN ?? '');
   const [submitting, setSubmitting] = useState(false);
 
-  const standardSlots = useMemo(() => slotsForStyle(style), [style]);
+  const posterEvent = style === 'eventTicket' && preferredStyleSchemes.includes('posterEventTicket');
+  const standardSlots = useMemo(() => slotsForStyle(style, posterEvent), [style, posterEvent]);
   const localizationLanguages = useMemo(
     () => localizations.map((entry) => entry.language.trim()).filter((language) => LANGUAGE.test(language)),
     [localizations]
   );
-  const localizedSlots = useMemo(() => localizedSlotsForStyle(style, localizationLanguages), [style, localizationLanguages]);
+  const localizedSlots = useMemo(() => localizedSlotsForStyle(style, localizationLanguages, posterEvent), [style, localizationLanguages, posterEvent]);
   const recommendedSlots = standardSlots.filter((slot) => slot.recommended || slot.required);
   const optionalSlots = standardSlots.filter((slot) => !slot.recommended && !slot.required);
 
@@ -264,6 +265,19 @@ export default function PassDesigner() {
   };
 
   const applyTemplate = (template: PassTemplate) => {
+    const guidedKeys = new Set(COMMON_SEMANTICS[template.style].map((field) => field.key));
+    const guidedSemantics: Record<string, string> = {};
+    const advancedSemantics: JsonObject = {};
+    for (const [key, value] of Object.entries(template.semantics ?? {})) {
+      if (guidedKeys.has(key) && typeof value === 'string') guidedSemantics[key] = value;
+      else advancedSemantics[key] = value;
+    }
+
+    const eventOptions = template.eventTicketOptions;
+    const eventActionValues = Object.fromEntries(
+      Object.entries(eventOptions ?? {}).filter(([, value]) => typeof value === 'string')
+    ) as Record<string, string>;
+
     setLastAppliedTemplateId(template.id);
     setTemplatesCollapsed(true);
     setStyle(template.style);
@@ -277,10 +291,21 @@ export default function PassDesigner() {
     setFooterColor(template.colors.footer ?? '');
     setFields(buildTemplateFields(template));
     setBarcodes(buildTemplateBarcodes(template));
+    setRelevantDates(buildTemplateRelevantDates(template));
+    setLegacyRelevantDate('');
     setTransitType(template.transitType ?? 'PKTransitTypeGeneric');
     setPreferredStyleSchemes(template.preferredStyleSchemes ?? []);
-    setSemanticValues(template.semantics ?? {});
-    setEventLogoText(template.eventLogoText ?? '');
+    setSemanticValues(guidedSemantics);
+    setSemanticsJson(Object.keys(advancedSemantics).length ? JSON.stringify(advancedSemantics, null, 2) : '');
+    setEventOptions(eventActionValues);
+    setEventAutomaticColors(eventOptions?.useAutomaticColors ?? false);
+    setSuppressHeaderDarkening(eventOptions?.suppressHeaderDarkening ?? false);
+    setAuxiliaryStoreIdentifiers(eventOptions?.auxiliaryStoreIdentifiers?.join(', ') ?? '');
+    setEventLogoText(eventOptions?.eventLogoText ?? template.eventLogoText ?? '');
+    setBoardingOptions(Object.fromEntries(
+      Object.entries(template.boardingPassOptions ?? {}).filter(([, value]) => typeof value === 'string')
+    ) as Record<string, string>);
+    setUpcomingPassJson('');
   };
 
   const handleTemplate = (template: PassTemplate) => {
@@ -291,7 +316,7 @@ export default function PassDesigner() {
     }
     Alert.alert(
       `Start from “${template.name}”?`,
-      'This replaces the pass format, identity, colors, fields, barcode, and guided semantics. Artwork and other settings stay as they are.',
+      'This replaces the pass format, identity, colors, fields, barcode, relevant dates, semantic data, and style-specific actions. Artwork, NFC credentials, and server settings stay as they are.',
       [
         { text: 'Cancel', style: 'cancel' },
         { text: 'Apply template', onPress: () => applyTemplate(template) },
