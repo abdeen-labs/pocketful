@@ -15,6 +15,9 @@ export function buildPass(
     auxiliaryFields: fields.auxiliary ?? [],
     backFields: fields.back ?? [],
   };
+  if (spec.style === "eventTicket") {
+    styleBody.additionalInfoFields = fields.additionalInfo ?? [];
+  }
   if (spec.style === "boardingPass") {
     styleBody.transitType = spec.transitType ?? "PKTransitTypeGeneric";
   }
@@ -24,20 +27,27 @@ export function buildPass(
     passTypeIdentifier: config.passTypeIdentifier,
     teamIdentifier: config.teamIdentifier,
     organizationName: spec.organizationName || config.organizationName,
-    serialNumber: randomUUID(),
+    serialNumber: spec.serialNumber || randomUUID(),
     description: spec.description,
+    ...(spec.options ?? {}),
+    ...(spec.style === "eventTicket" ? spec.eventTicketOptions ?? {} : {}),
+    ...(spec.style === "boardingPass" ? spec.boardingPassOptions ?? {} : {}),
+    ...(spec.upcomingPassInformation
+      ? { upcomingPassInformation: spec.upcomingPassInformation }
+      : {}),
     [spec.style]: styleBody,
   };
 
   if (spec.logoText) passJson.logoText = spec.logoText;
-  if (spec.colors?.backgroundColor) {
-    passJson.backgroundColor = toRgbString(spec.colors.backgroundColor);
-  }
-  if (spec.colors?.foregroundColor) {
-    passJson.foregroundColor = toRgbString(spec.colors.foregroundColor);
-  }
-  if (spec.colors?.labelColor) {
-    passJson.labelColor = toRgbString(spec.colors.labelColor);
+  for (const key of [
+    "backgroundColor",
+    "foregroundColor",
+    "labelColor",
+    "stripColor",
+    "footerBackgroundColor",
+  ] as const) {
+    const value = spec.colors?.[key];
+    if (value) passJson[key] = toRgbString(value);
   }
 
   const files: Record<string, Buffer> = {
@@ -45,6 +55,11 @@ export function buildPass(
   };
   for (const [name, buffer] of Object.entries(images)) {
     files[`${name}.png`] = buffer;
+  }
+  if (spec.personalization) {
+    files["personalization.json"] = Buffer.from(
+      JSON.stringify(spec.personalization)
+    );
   }
 
   const pass = new PKPass(files, {
@@ -54,13 +69,20 @@ export function buildPass(
     signerKeyPassphrase: config.certs.signerKeyPassphrase,
   });
 
-  if (spec.barcode) {
-    pass.setBarcodes({
-      format: spec.barcode.format,
-      message: spec.barcode.message,
-      messageEncoding: "iso-8859-1",
-      ...(spec.barcode.altText ? { altText: spec.barcode.altText } : {}),
-    });
+  if (spec.preferredStyleSchemes?.length) {
+    pass.preferredStyleSchemes = spec.preferredStyleSchemes;
+  }
+  // Upcoming pass entries are imported from pass.json above so the installed
+  // passkit-generator version remains the source of truth for their iOS 26 schema.
+  if (spec.expirationDate) pass.setExpirationDate(new Date(spec.expirationDate));
+  if (spec.relevantDate) pass.setRelevantDate(new Date(spec.relevantDate));
+  if (spec.relevantDates?.length) pass.setRelevantDates(spec.relevantDates);
+  if (spec.locations?.length) pass.setLocations(...spec.locations);
+  if (spec.beacons?.length) pass.setBeacons(...spec.beacons);
+  if (spec.barcodes?.length) pass.setBarcodes(...spec.barcodes);
+  if (spec.nfc) pass.setNFC(spec.nfc);
+  for (const localization of spec.localizations ?? []) {
+    pass.localize(localization.language, localization.translations);
   }
 
   return pass.getAsBuffer();

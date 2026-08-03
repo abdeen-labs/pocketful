@@ -11,8 +11,9 @@ server/   Node + Express — signs .pkpass files with passkit-generator, deploye
 
 **How it works**
 
-1. You design a pass in the app: style, colors, fields, barcode, and images picked
-   from your photo library (converted on-device to the exact PNG sizes Wallet wants).
+1. You design a pass in the app: style, modern layouts, colors, rich fields,
+   barcodes, relevance, semantics, NFC, localization, personalization, actions,
+   and artwork picked from your photo library (converted on-device to Wallet PNG sizes).
 2. The app `POST`s the pass spec as JSON to the server, which builds and signs a
    `.pkpass` **in memory** and stores it under a short-lived random id (15 min).
 3. The app opens the returned `GET` URL. Safari sees
@@ -137,6 +138,14 @@ cert variable is missing or isn't valid base64-of-PEM — check the deploy logs.
 - `GET /api/passes/:id` — the signed bytes, `Content-Type: application/vnd.apple.pkpass`.
   404 after expiry.
 
+The pass spec mirrors the pass-building surface of the installed
+`passkit-generator` version: formatted/date/number fields, multiple barcode
+fallbacks, locations, beacons, old and new relevant dates, expiration, NFC,
+pass and field semantics, app and web-service behavior, localized strings and
+media, personalization, poster event and enhanced boarding actions, and iOS 26
+upcoming-pass information. Signing identity and certificates intentionally stay
+server-owned rather than being accepted from the app.
+
 ### Run the server locally (optional)
 
 ```bash
@@ -181,9 +190,10 @@ npx expo run:ios --device
    open the workspace, and hit Run — but keep `npx expo start` running in a
    terminal so the debug build can load JS from Metro.
 
-4. In the app: pick a style, colors, fields, a barcode, choose an icon image
-   (required — Wallet rejects passes without one), hit **Create pass & add to
-   Wallet**. Safari opens for a moment, then Wallet's add sheet appears.
+4. In the app, work through the Design, Content, Smart, and Advanced studios,
+   choose an icon image (required — Wallet rejects passes without one), then hit
+   **Create pass & add to Wallet**. Safari opens for a moment, then Wallet's add
+   sheet appears.
 
 ---
 
