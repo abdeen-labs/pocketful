@@ -16,23 +16,63 @@ export function Section({
   title,
   description,
   badge,
+  collapsible = false,
+  collapsed,
+  defaultCollapsed = false,
+  onCollapsedChange,
   children,
 }: {
   title: string;
   description?: string;
   badge?: string;
+  collapsible?: boolean;
+  collapsed?: boolean;
+  defaultCollapsed?: boolean;
+  onCollapsedChange?: (collapsed: boolean) => void;
   children: React.ReactNode;
 }) {
+  const [internalCollapsed, setInternalCollapsed] = useState(defaultCollapsed);
+  const isCollapsed = collapsed ?? internalCollapsed;
+  const toggleCollapsed = () => {
+    if (!collapsible) return;
+    const next = !isCollapsed;
+    setInternalCollapsed(next);
+    onCollapsedChange?.(next);
+  };
+
+  const heading = (
+    <>
+      <View style={styles.sectionHeadingCopy}>
+        <Text style={styles.sectionTitle}>{title}</Text>
+        {description ? <Text style={styles.sectionDescription}>{description}</Text> : null}
+      </View>
+      <View style={styles.sectionHeadingActions}>
+        {badge ? <Badge text={badge} /> : null}
+        {collapsible ? (
+          <View style={styles.sectionCollapseButton}>
+            <Text style={styles.sectionCollapseIcon}>{isCollapsed ? '+' : '−'}</Text>
+          </View>
+        ) : null}
+      </View>
+    </>
+  );
+
   return (
     <View style={styles.section}>
-      <View style={styles.sectionHeading}>
-        <View style={styles.sectionHeadingCopy}>
-          <Text style={styles.sectionTitle}>{title}</Text>
-          {description ? <Text style={styles.sectionDescription}>{description}</Text> : null}
-        </View>
-        {badge ? <Badge text={badge} /> : null}
-      </View>
-      <View style={styles.sectionBody}>{children}</View>
+      {collapsible ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityState={{ expanded: !isCollapsed }}
+          accessibilityLabel={`${isCollapsed ? 'Expand' : 'Collapse'} ${title}`}
+          onPress={toggleCollapsed}
+          style={({ pressed }) => [styles.sectionHeading, styles.sectionHeadingPressable, pressed && styles.pressed]}
+        >
+          {heading}
+        </Pressable>
+      ) : (
+        <View style={styles.sectionHeading}>{heading}</View>
+      )}
+      {!isCollapsed ? <View style={styles.sectionBody}>{children}</View> : null}
     </View>
   );
 }
@@ -251,7 +291,11 @@ export function Button({
 const styles = StyleSheet.create({
   section: { marginBottom: 28, gap: 12 },
   sectionHeading: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, paddingHorizontal: 2 },
+  sectionHeadingPressable: { marginHorizontal: -8, paddingHorizontal: 10, paddingVertical: 8, borderRadius: radii.medium },
   sectionHeadingCopy: { flex: 1, gap: 3 },
+  sectionHeadingActions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  sectionCollapseButton: { width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.surface, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.borderStrong },
+  sectionCollapseIcon: { color: colors.textSoft, fontSize: 20, lineHeight: 22, fontWeight: '400' },
   sectionTitle: { color: colors.text, fontSize: 19, fontWeight: '700', letterSpacing: -0.25 },
   sectionDescription: { color: colors.dim, fontSize: 13, lineHeight: 18 },
   sectionBody: {
