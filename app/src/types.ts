@@ -98,6 +98,12 @@ export interface BoardingPassOptions {
 export interface PassSpec {
   style: PassStyle;
   description: string;
+  /**
+   * When true, the server keeps the spec, stamps webServiceURL and a
+   * per-pass authenticationToken into the pass, and serves OTA updates
+   * for it via the Apple Wallet web service protocol.
+   */
+  updatable?: boolean;
   serialNumber?: string;
   organizationName?: string;
   logoText?: string;

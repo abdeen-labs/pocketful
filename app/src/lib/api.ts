@@ -4,6 +4,9 @@ export interface CreatePassResponse {
   id: string;
   url: string;
   expiresAt: string;
+  /** Present when the pass was created with `updatable: true`. */
+  serialNumber?: string;
+  updatable?: boolean;
 }
 
 export async function createPass(
