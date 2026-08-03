@@ -302,3 +302,8 @@ server.registerTool(
 
 await server.connect(new StdioServerTransport());
 console.error(`pocketful-mcp connected — server: ${SERVER_URL}`);
+if (!API_TOKEN) {
+  console.error(
+    "warning: POCKETFUL_API_TOKEN is not set — the signing server requires it and will reject every request"
+  );
+}

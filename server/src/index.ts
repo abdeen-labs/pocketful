@@ -32,7 +32,6 @@ app.set("trust proxy", true);
 app.use(express.json({ limit: "40mb" }));
 
 function requireApiToken(req: express.Request): void {
-  if (!config.apiToken) return;
   const auth = req.get("authorization");
   if (auth !== `Bearer ${config.apiToken}`) {
     throw new ApiError(401, "Missing or invalid API token");

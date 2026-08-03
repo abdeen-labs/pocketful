@@ -117,7 +117,7 @@ Railway variable in Part 2.
    | `SIGNER_KEY_BASE64` | base64 of `signerKey.pem` |
    | `SIGNER_KEY_PASSPHRASE` | the key passphrase from step 1.3 |
    | `ORGANIZATION_NAME` | optional — default org name on passes |
-   | `API_TOKEN` | optional — if set, the pass management API requires `Authorization: Bearer <token>` (strongly recommended once OTA updates are enabled) |
+   | `API_TOKEN` | the bearer token required by the pass management API — generate a long random one, e.g. `openssl rand -hex 32` |
    | `PASS_TTL_SECONDS` | optional — how long a created pass stays downloadable (default 900) |
    | `PUBLIC_BASE_URL` | optional — public origin stamped into updatable passes as `webServiceURL`, e.g. `https://pass.abdeen.dev`; defaults to the request's own host |
    | `DATA_DIR` | optional — where the SQLite database for updatable passes lives (default `./data`); point it at a mounted volume |
@@ -305,8 +305,8 @@ pushes the change straight to Wallet.
   **G4** and that all three base64 vars decode to PEM files (`-----BEGIN …`).
 - **`images.icon is not a PNG`** — the picked photo failed conversion; try another
   image. The app converts everything to PNG on-device before upload.
-- **Server 401** — you set `API_TOKEN` on Railway but not in the app's Server
-  section (or `EXPO_PUBLIC_PASS_API_TOKEN` in `app/.env`).
+- **Server 401** — the app's Server section (or `EXPO_PUBLIC_PASS_API_TOKEN` in
+  `app/.env`) doesn't match the `API_TOKEN` configured on Railway.
 - **Build errors after changing `app.json`** — regenerate native code:
   `cd app && npx expo prebuild --platform ios --clean`, then build again.
 
