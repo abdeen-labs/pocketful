@@ -27,6 +27,7 @@ import {
 import { FieldsEditor, type EditableField } from '@/components/FieldsEditor';
 import { ImagesSection } from '@/components/ImagesSection';
 import { PassPreview } from '@/components/PassPreview';
+import { TemplateGallery } from '@/components/TemplateGallery';
 import {
   Badge,
   Button,
@@ -40,6 +41,7 @@ import {
 } from '@/components/ui';
 import { createPass } from '@/lib/api';
 import { pickImageForSlot, type ProcessedImage } from '@/lib/images';
+import { buildTemplateBarcodes, buildTemplateFields, type PassTemplate } from '@/lib/templates';
 import {
   localizedSlotsForStyle,
   PERSONALIZATION_LOGO_SLOT,
@@ -257,6 +259,40 @@ export default function PassDesigner() {
       delete next[slot.name];
       return next;
     });
+  };
+
+  const applyTemplate = (template: PassTemplate) => {
+    setStyle(template.style);
+    setDescription(template.description);
+    setOrganizationName(template.organizationName);
+    setLogoText(template.logoText);
+    setBgColor(template.colors.background);
+    setFgColor(template.colors.foreground);
+    setLabelColor(template.colors.label);
+    setStripColor(template.colors.strip ?? '');
+    setFooterColor(template.colors.footer ?? '');
+    setFields(buildTemplateFields(template));
+    setBarcodes(buildTemplateBarcodes(template));
+    setTransitType(template.transitType ?? 'PKTransitTypeGeneric');
+    setPreferredStyleSchemes(template.preferredStyleSchemes ?? []);
+    setSemanticValues(template.semantics ?? {});
+    setEventLogoText(template.eventLogoText ?? '');
+  };
+
+  const handleTemplate = (template: PassTemplate) => {
+    const hasContent = Boolean(description.trim()) || fields.length > 0 || barcodes.some((barcode) => barcode.message.trim());
+    if (!hasContent) {
+      applyTemplate(template);
+      return;
+    }
+    Alert.alert(
+      `Start from “${template.name}”?`,
+      'This replaces the pass format, identity, colors, fields, barcode, and guided semantics. Artwork and other settings stay as they are.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Apply template', onPress: () => applyTemplate(template) },
+      ]
+    );
   };
 
   const handleSubmit = async () => {
@@ -480,6 +516,10 @@ export default function PassDesigner() {
 
         {tab === 'design' ? (
           <>
+            <Section title="Templates" description="Start from a fully designed pass, then make every detail yours." badge="One tap">
+              <TemplateGallery onApply={handleTemplate} />
+            </Section>
+
             <Section title="Pass format" description="Choose Wallet's visual template and modern layout preference." badge="Core">
               <ChipRow options={STYLE_OPTIONS} value={style} onChange={(nextStyle) => {
                 setStyle(nextStyle);

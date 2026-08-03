@@ -120,8 +120,8 @@ const styles = StyleSheet.create({
   statusDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: colors.success },
   statusText: { color: colors.textSoft, fontSize: 11, fontWeight: '600' },
   pass: { minHeight: 225, borderRadius: 24, overflow: 'hidden', shadowColor: colors.black, shadowOpacity: 0.4, shadowRadius: 20, shadowOffset: { width: 0, height: 10 }, elevation: 8 },
-  artwork: { ...StyleSheet.absoluteFillObject, opacity: 0.36 },
-  scrim: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.08)' },
+  artwork: { ...StyleSheet.absoluteFill, opacity: 0.36 },
+  scrim: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(0,0,0,0.08)' },
   passContent: { flex: 1, minHeight: 225, padding: 18, gap: 18 },
   topRow: { flexDirection: 'row', alignItems: 'center', gap: 9, minHeight: 30 },
   logoImage: { width: 54, height: 28 },
@@ -143,6 +143,6 @@ const styles = StyleSheet.create({
   notch: { position: 'absolute', width: 22, height: 22, borderRadius: 11, backgroundColor: colors.bg, top: '58%' },
   notchLeft: { left: -11 },
   notchRight: { right: -11 },
-  voided: { ...StyleSheet.absoluteFillObject, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(70,0,10,0.42)' },
+  voided: { ...StyleSheet.absoluteFill, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(70,0,10,0.42)' },
   voidedText: { color: colors.white, fontSize: 42, fontWeight: '900', letterSpacing: 5, transform: [{ rotate: '-12deg' }] },
 });
