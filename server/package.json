@@ -7,7 +7,6 @@
   "engines": {
     "node": "22.x"
   },
-  "packageManager": "npm@10",
   "scripts": {
     "build": "tsc",
     "start": "node dist/index.js",
