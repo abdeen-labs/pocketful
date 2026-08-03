@@ -2,7 +2,7 @@ import { Image } from 'expo-image';
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
-import { Button } from '@/components/ui';
+import { Badge, Button } from '@/components/ui';
 import type { ProcessedImage } from '@/lib/images';
 import type { ImageSlot } from '@/lib/slots';
 import { colors } from '@/theme';
@@ -27,10 +27,10 @@ export function ImagesSection({
         return (
           <View key={slot.name} style={styles.slot}>
             <View style={styles.slotHeader}>
-              <Text style={styles.slotName}>
-                {slot.name}
-                {slot.required ? <Text style={styles.required}> · required</Text> : null}
-              </Text>
+              <View style={styles.slotTitleRow}>
+                <Text style={styles.slotName}>{slot.label}</Text>
+                {slot.required ? <Badge text="Required" /> : slot.recommended ? <Badge text="Recommended" /> : null}
+              </View>
               <Text style={styles.slotHint}>{slot.hint}</Text>
             </View>
             {picked ? (
@@ -46,7 +46,7 @@ export function ImagesSection({
             <View style={styles.slotButtons}>
               <View style={styles.slotButton}>
                 <Button
-                  title={picked ? 'Replace' : 'Choose photo'}
+                  title={picked ? 'Replace artwork' : 'Choose artwork'}
                   kind="secondary"
                   loading={busySlot === slot.name}
                   onPress={() => onPick(slot)}
@@ -75,14 +75,16 @@ const styles = StyleSheet.create({
   slotHeader: {
     gap: 2,
   },
+  slotTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
   slotName: {
     color: colors.text,
     fontSize: 14,
     fontWeight: '600',
-  },
-  required: {
-    color: colors.accent,
-    fontWeight: '400',
   },
   slotHint: {
     color: colors.dim,

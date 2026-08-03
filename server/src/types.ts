@@ -1,6 +1,12 @@
 // Pass spec sent by the app. Mirrored in app/src/types.ts — keep in sync by hand,
 // there is deliberately no shared package (Railway builds server/ standalone).
 
+export type JsonPrimitive = string | number | boolean | null;
+export type JsonValue = JsonPrimitive | JsonObject | JsonValue[];
+export interface JsonObject {
+  [key: string]: JsonValue;
+}
+
 export type PassStyle =
   | "generic"
   | "storeCard"
@@ -26,32 +32,187 @@ export type FieldCategory =
   | "primary"
   | "secondary"
   | "auxiliary"
-  | "back";
+  | "back"
+  | "additionalInfo";
+
+export type FieldValue = string | number;
+export type TextAlignment =
+  | "PKTextAlignmentLeft"
+  | "PKTextAlignmentCenter"
+  | "PKTextAlignmentRight"
+  | "PKTextAlignmentNatural";
+export type DateStyle =
+  | "PKDateStyleNone"
+  | "PKDateStyleShort"
+  | "PKDateStyleMedium"
+  | "PKDateStyleLong"
+  | "PKDateStyleFull";
+export type NumberStyle =
+  | "PKNumberStyleDecimal"
+  | "PKNumberStylePercent"
+  | "PKNumberStyleScientific"
+  | "PKNumberStyleSpellOut";
+export type DataDetectorType =
+  | "PKDataDetectorTypePhoneNumber"
+  | "PKDataDetectorTypeLink"
+  | "PKDataDetectorTypeAddress"
+  | "PKDataDetectorTypeCalendarEvent";
 
 export interface PassField {
   key: string;
   label?: string;
-  value: string;
+  value: FieldValue;
+  attributedValue?: FieldValue;
+  changeMessage?: string;
+  dataDetectorTypes?: DataDetectorType[];
+  textAlignment?: TextAlignment;
+  semantics?: JsonObject;
+  dateStyle?: DateStyle;
+  ignoresTimeZone?: boolean;
+  isRelative?: boolean;
+  timeStyle?: DateStyle;
+  currencyCode?: string;
+  numberStyle?: NumberStyle;
+  /** Only valid for event-ticket auxiliary fields. */
+  row?: 0 | 1;
+}
+
+export interface BarcodeSpec {
+  format: BarcodeFormat;
+  message: string;
+  altText?: string;
+  messageEncoding?: string;
+}
+
+export interface LocationSpec {
+  latitude: number;
+  longitude: number;
+  altitude?: number;
+  relevantText?: string;
+}
+
+export interface BeaconSpec {
+  proximityUUID: string;
+  major?: number;
+  minor?: number;
+  relevantText?: string;
+}
+
+export type RelevantDateSpec =
+  | { date: string }
+  | { startDate: string; endDate: string };
+
+export interface NFCSpec {
+  message: string;
+  encryptionPublicKey: string;
+  requiresAuthentication?: boolean;
+}
+
+export type PersonalizationField =
+  | "PKPassPersonalizationFieldName"
+  | "PKPassPersonalizationFieldPostalCode"
+  | "PKPassPersonalizationFieldEmailAddress"
+  | "PKPassPersonalizationFieldPhoneNumber";
+
+export interface PersonalizationSpec {
+  description: string;
+  requiredPersonalizationFields: PersonalizationField[];
+  termsAndConditions?: string;
+}
+
+export interface LocalizationSpec {
+  language: string;
+  translations: Record<string, string>;
+}
+
+export type PreferredStyleScheme =
+  | "posterEventTicket"
+  | "eventTicket"
+  | "boardingPass"
+  | "semanticBoardingPass";
+
+export interface PassOptions {
+  appLaunchURL?: string;
+  voided?: boolean;
+  userInfo?: JsonObject;
+  sharingProhibited?: boolean;
+  groupingIdentifier?: string;
+  suppressStripShine?: boolean;
+  maxDistance?: number;
+  semantics?: JsonObject;
+  webServiceURL?: string;
+  associatedStoreIdentifiers?: number[];
+  authenticationToken?: string;
+}
+
+export interface EventTicketOptions {
+  bagPolicyURL?: string;
+  orderFoodURL?: string;
+  parkingInformationURL?: string;
+  directionsInformationURL?: string;
+  purchaseParkingURL?: string;
+  merchandiseURL?: string;
+  transitInformationURL?: string;
+  accessibilityURL?: string;
+  addOnURL?: string;
+  contactVenueEmail?: string;
+  contactVenuePhoneNumber?: string;
+  contactVenueWebsite?: string;
+  transferURL?: string;
+  sellURL?: string;
+  suppressHeaderDarkening?: boolean;
+  useAutomaticColors?: boolean;
+  auxiliaryStoreIdentifiers?: number[];
+  eventLogoText?: string;
+}
+
+export interface BoardingPassOptions {
+  changeSeatURL?: string;
+  entertainmentURL?: string;
+  purchaseAdditionalBaggageURL?: string;
+  purchaseLoungeAccessURL?: string;
+  purchaseWifiURL?: string;
+  upgradeURL?: string;
+  managementURL?: string;
+  registerServiceAnimalURL?: string;
+  reportLostBagURL?: string;
+  requestWheelchairURL?: string;
+  transitProviderEmail?: string;
+  transitProviderPhoneNumber?: string;
+  transitProviderWebsiteURL?: string;
 }
 
 export interface PassSpec {
   style: PassStyle;
   description: string;
+  serialNumber?: string;
   organizationName?: string;
   logoText?: string;
   colors?: {
     backgroundColor?: string;
     foregroundColor?: string;
     labelColor?: string;
+    stripColor?: string;
+    footerBackgroundColor?: string;
   };
+  options?: PassOptions;
+  eventTicketOptions?: EventTicketOptions;
+  boardingPassOptions?: BoardingPassOptions;
   fields?: Partial<Record<FieldCategory, PassField[]>>;
-  barcode?: {
-    format: BarcodeFormat;
-    message: string;
-    altText?: string;
-  };
-  /** boardingPass only; defaults to PKTransitTypeGeneric */
+  barcodes?: BarcodeSpec[];
   transitType?: TransitType;
-  /** image name (e.g. "icon", "icon@2x", "logo") -> base64-encoded PNG */
+  preferredStyleSchemes?: PreferredStyleScheme[];
+  expirationDate?: string;
+  /** Deprecated by Apple, retained because passkit-generator still exposes it. */
+  relevantDate?: string;
+  relevantDates?: RelevantDateSpec[];
+  locations?: LocationSpec[];
+  beacons?: BeaconSpec[];
+  nfc?: NFCSpec;
+  localizations?: LocalizationSpec[];
+  personalization?: PersonalizationSpec;
+  /** iOS 26 poster-event entries; validated by passkit-generator. */
+  upcomingPassInformation?: JsonObject[];
+  /** image path without .png -> base64 PNG. Paths may include an xx.lproj folder. */
   images: Record<string, string>;
 }

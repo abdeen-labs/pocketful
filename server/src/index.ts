@@ -9,7 +9,8 @@ const config = loadConfig();
 const app = express();
 // Railway terminates TLS at its proxy; trust it so req.protocol is https.
 app.set("trust proxy", true);
-app.use(express.json({ limit: "25mb" }));
+// 24 MB of decoded PNG data expands to roughly 32 MB when base64 encoded.
+app.use(express.json({ limit: "40mb" }));
 
 app.get("/healthz", (_req, res) => {
   res.json({ ok: true });
