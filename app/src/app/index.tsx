@@ -212,6 +212,7 @@ export default function PassDesigner() {
   const [groupingIdentifier, setGroupingIdentifier] = useState('');
   const [suppressStripShine, setSuppressStripShine] = useState(false);
   const [maxDistance, setMaxDistance] = useState('');
+  const [updatable, setUpdatable] = useState(false);
   const [webServiceURL, setWebServiceURL] = useState('');
   const [authenticationToken, setAuthenticationToken] = useState('');
   const [associatedStoreIdentifiers, setAssociatedStoreIdentifiers] = useState('');
@@ -360,6 +361,12 @@ export default function PassDesigner() {
     try {
       const created = await createPass(serverUrl.trim(), spec, apiToken.trim() || undefined);
       await presentWalletPass(created.url);
+      if (created.serialNumber) {
+        Alert.alert(
+          'Updatable pass created',
+          `Serial number:\n${created.serialNumber}\n\nUse it with PUT /api/passes/<serial> (or the MCP update_pass tool) to push changes to Wallet.`
+        );
+      }
     } catch (error) {
       Alert.alert('Could not create pass', error instanceof Error ? error.message : String(error));
     } finally {
@@ -458,8 +465,8 @@ export default function PassDesigner() {
       ...(maxDistance.trim() ? { maxDistance: parseRequiredNumber(maxDistance, 'Maximum relevance distance') } : {}),
       ...(Object.keys(mergedSemantics).length ? { semantics: mergedSemantics } : {}),
       ...(userInfoJson.trim() ? { userInfo: parseJsonObject(userInfoJson, 'User info') } : {}),
-      ...(webServiceURL.trim() ? { webServiceURL: webServiceURL.trim() } : {}),
-      ...(authenticationToken.trim() ? { authenticationToken: authenticationToken.trim() } : {}),
+      ...(!updatable && webServiceURL.trim() ? { webServiceURL: webServiceURL.trim() } : {}),
+      ...(!updatable && authenticationToken.trim() ? { authenticationToken: authenticationToken.trim() } : {}),
       ...(associatedStoreIdentifiers.trim() ? { associatedStoreIdentifiers: parseNumberList(associatedStoreIdentifiers, 'Associated App Store identifiers') } : {}),
     };
     if (Boolean(options.webServiceURL) !== Boolean(options.authenticationToken)) throw new Error('Web service URL and authentication token must be supplied together.');
@@ -505,6 +512,7 @@ export default function PassDesigner() {
     return {
       style,
       description: description.trim(),
+      ...(updatable ? { updatable: true } : {}),
       ...(serialNumber.trim() ? { serialNumber: serialNumber.trim() } : {}),
       ...(organizationName.trim() ? { organizationName: organizationName.trim() } : {}),
       ...(logoText.trim() ? { logoText: logoText.trim() } : {}),
@@ -717,9 +725,14 @@ export default function PassDesigner() {
               <ToggleRow label="Mark pass as voided" description="Wallet renders a prominent voided state." value={voided} onChange={setVoided} />
               <ToggleRow label="Prohibit sharing" value={sharingProhibited} onChange={setSharingProhibited} />
               <ToggleRow label="Suppress strip shine" value={suppressStripShine} onChange={setSuppressStripShine} />
-              <Disclosure title="Web service updates" description="Both values are required together for remote pass registration and updates">
-                <Input label="Web service URL" value={webServiceURL} onChangeText={setWebServiceURL} placeholder="https://passes.example/v1" keyboardType="url" />
-                <Input label="Authentication token" value={authenticationToken} onChangeText={setAuthenticationToken} placeholder="At least 16 characters recommended" secureTextEntry />
+              <Disclosure title="Web service updates" description="Let the signing server push changes to this pass after it is in Wallet">
+                <ToggleRow label="Updatable (OTA)" description="The server keeps this pass, manages its update credentials, and can push new versions to Wallet." value={updatable} onChange={setUpdatable} />
+                {!updatable ? (
+                  <>
+                    <Input label="Web service URL" value={webServiceURL} onChangeText={setWebServiceURL} placeholder="https://passes.example/v1" keyboardType="url" />
+                    <Input label="Authentication token" value={authenticationToken} onChangeText={setAuthenticationToken} placeholder="At least 16 characters recommended" secureTextEntry />
+                  </>
+                ) : null}
               </Disclosure>
               <Disclosure title="Custom user info" description="App-defined JSON stored inside pass.json">
                 <Input label="User info · JSON" value={userInfoJson} onChangeText={setUserInfoJson} multiline placeholder={'{\n  "accountId": "abc-123",\n  "tier": "gold"\n}'} />

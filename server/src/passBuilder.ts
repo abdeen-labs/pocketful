@@ -3,10 +3,21 @@ import { PKPass } from "passkit-generator";
 import type { Config } from "./config";
 import { toRgbString, type ValidatedSpec } from "./validate";
 
+/**
+ * Identity of a server-managed updatable pass. Wins over anything in the
+ * spec so devices always call back to this server with the stored token.
+ */
+export interface UpdatableIdentity {
+  serialNumber: string;
+  webServiceURL: string;
+  authenticationToken: string;
+}
+
 /** Build and sign a .pkpass entirely in memory. */
 export function buildPass(
   { spec, fields, images }: ValidatedSpec,
-  config: Config
+  config: Config,
+  identity?: UpdatableIdentity
 ): Buffer {
   const styleBody: Record<string, unknown> = {
     headerFields: fields.header ?? [],
@@ -37,6 +48,12 @@ export function buildPass(
       : {}),
     [spec.style]: styleBody,
   };
+
+  if (identity) {
+    passJson.serialNumber = identity.serialNumber;
+    passJson.webServiceURL = identity.webServiceURL;
+    passJson.authenticationToken = identity.authenticationToken;
+  }
 
   if (spec.logoText) passJson.logoText = spec.logoText;
   for (const key of [

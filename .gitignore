@@ -33,6 +33,9 @@ yarn-error.*
 *.pem
 *.cer
 
+# updatable-pass database (server/data locally, a mounted volume on Railway)
+server/data/
+
 # local env files
 .env
 .env.*

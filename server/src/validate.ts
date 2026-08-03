@@ -352,6 +352,7 @@ export function validateSpec(body: unknown): ValidatedSpec {
   if (!STYLES.includes(spec.style)) throw new ApiError(400, `style must be one of ${STYLES.join(", ")}`);
   if (typeof spec.description !== "string" || !spec.description.trim()) throw new ApiError(400, "description is required");
   if (spec.description.length > 200) throw new ApiError(400, "description must be 200 characters or fewer");
+  if (spec.updatable !== undefined && typeof spec.updatable !== "boolean") throw new ApiError(400, "updatable must be a boolean");
   for (const key of ["serialNumber", "organizationName", "logoText"] as const) assertOptionalString(spec[key], key, 200);
 
   if (spec.colors !== undefined) {

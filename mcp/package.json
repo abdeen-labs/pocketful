@@ -1,0 +1,14 @@
+{
+  "name": "pocketful-mcp",
+  "version": "1.0.0",
+  "private": true,
+  "description": "MCP server that lets AI agents create and update Apple Wallet passes through a Pocketful signing server",
+  "type": "module",
+  "scripts": {
+    "start": "bun src/index.ts"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.30.0",
+    "zod": "^4.4.3"
+  }
+}
