@@ -18,11 +18,8 @@ export interface ProcessedImage {
  * Returns null if the user cancels the picker.
  */
 export async function pickImageForSlot(slot: ImageSlot): Promise<ProcessedImage | null> {
-  const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-  if (!permission.granted) {
-    throw new Error('Photo library access is required to pick pass artwork.');
-  }
-
+  // No permission request needed: launchImageLibraryAsync uses the system
+  // photo picker, which runs out-of-process and only returns what's selected.
   const result = await ImagePicker.launchImageLibraryAsync({
     mediaTypes: ['images'],
     quality: 1,
