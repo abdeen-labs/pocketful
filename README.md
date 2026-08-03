@@ -59,8 +59,8 @@ Once the signing environment is configured, run the server:
 
 ```bash
 cd server
-npm install
-npm run dev
+bun install
+bun run dev
 ```
 
 Then build the app for your iPhone:
@@ -80,9 +80,9 @@ The app defaults to `https://pass.abdeen.dev`. Set `EXPO_PUBLIC_PASS_SERVER_URL`
 | App | `bun run start` | Start the Expo development server |
 | App | `bun run ios` | Generate/build the native iOS app |
 | App | `bun run lint` | Run Expo's lint checks |
-| Server | `npm run dev` | Run the API with TypeScript watch mode |
-| Server | `npm run build` | Compile the API to `server/dist` |
-| Server | `npm start` | Run the compiled API |
+| Server | `bun run dev` | Run the API with TypeScript watch mode |
+| Server | `bun run build` | Compile the API to `server/dist` |
+| Server | `bun run start` | Run the compiled API |
 
 The pass specification types in [`app/src/types.ts`](app/src/types.ts) and [`server/src/types.ts`](server/src/types.ts) are mirrored manually and should be updated together.
 
