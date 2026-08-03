@@ -32,8 +32,18 @@ function conn(): Database.Database {
 }
 
 export function initDb(dataDir: string): void {
-  mkdirSync(dataDir, { recursive: true });
-  db = new Database(path.join(dataDir, "pocketful.sqlite"));
+  const file = path.join(dataDir, "pocketful.sqlite");
+  try {
+    mkdirSync(dataDir, { recursive: true });
+    db = new Database(file);
+  } catch (err) {
+    throw new Error(
+      `Cannot open the pass database at ${file} — check that DATA_DIR ` +
+        `matches the mounted volume path and is writable: ${
+          err instanceof Error ? err.message : String(err)
+        }`
+    );
+  }
   db.pragma("journal_mode = WAL");
   db.exec(`
     CREATE TABLE IF NOT EXISTS passes (
