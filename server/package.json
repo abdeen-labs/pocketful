@@ -5,8 +5,9 @@
   "description": "Signs and serves Apple Wallet passes built by the Pocketful app",
   "main": "dist/index.js",
   "engines": {
-    "node": ">=20"
+    "node": "22.x"
   },
+  "packageManager": "npm@10",
   "scripts": {
     "build": "tsc",
     "start": "node dist/index.js",
