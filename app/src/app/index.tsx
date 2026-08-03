@@ -172,6 +172,8 @@ const LANGUAGE = /^[a-zA-Z]{2,3}(?:-[a-zA-Z0-9]{2,8})?$/;
 export default function PassDesigner() {
   const insets = useSafeAreaInsets();
   const [tab, setTab] = useState<EditorTab>('design');
+  const [templatesCollapsed, setTemplatesCollapsed] = useState(false);
+  const [lastAppliedTemplateId, setLastAppliedTemplateId] = useState<string | null>(null);
   const [style, setStyle] = useState<PassStyle>('storeCard');
   const [description, setDescription] = useState('');
   const [organizationName, setOrganizationName] = useState('');
@@ -262,6 +264,8 @@ export default function PassDesigner() {
   };
 
   const applyTemplate = (template: PassTemplate) => {
+    setLastAppliedTemplateId(template.id);
+    setTemplatesCollapsed(true);
     setStyle(template.style);
     setDescription(template.description);
     setOrganizationName(template.organizationName);
@@ -516,8 +520,15 @@ export default function PassDesigner() {
 
         {tab === 'design' ? (
           <>
-            <Section title="Templates" description="Start from a fully designed pass, then make every detail yours." badge="One tap">
-              <TemplateGallery onApply={handleTemplate} />
+            <Section
+              title="Templates"
+              description={lastAppliedTemplateId ? 'A polished starting point is applied. Expand to switch it.' : 'Pick a polished starting point, then make every detail yours.'}
+              badge={lastAppliedTemplateId ? 'Applied' : 'Curated'}
+              collapsible
+              collapsed={templatesCollapsed}
+              onCollapsedChange={setTemplatesCollapsed}
+            >
+              <TemplateGallery onApply={handleTemplate} lastAppliedId={lastAppliedTemplateId} />
             </Section>
 
             <Section title="Pass format" description="Choose Wallet's visual template and modern layout preference." badge="Core">
