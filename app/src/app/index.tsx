@@ -76,7 +76,7 @@ export default function PassDesigner() {
   const [busySlot, setBusySlot] = useState<string | null>(null);
 
   const [serverUrl, setServerUrl] = useState(
-    process.env.EXPO_PUBLIC_PASS_SERVER_URL ?? ''
+    process.env.EXPO_PUBLIC_PASS_SERVER_URL ?? 'https://pass.abdeen.dev'
   );
   const [apiToken, setApiToken] = useState(
     process.env.EXPO_PUBLIC_PASS_API_TOKEN ?? ''
@@ -308,7 +308,7 @@ export default function PassDesigner() {
             label="Pass server URL"
             value={serverUrl}
             onChangeText={setServerUrl}
-            placeholder="https://your-app.up.railway.app"
+            placeholder="https://pass.abdeen.dev"
             keyboardType="url"
           />
           <Input
