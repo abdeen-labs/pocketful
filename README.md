@@ -95,7 +95,7 @@ The pass specification types in [`app/src/types.ts`](app/src/types.ts) and [`ser
 - `GET /api/passes`, `GET /api/passes/:serial/spec`, `POST /api/passes/:serial/download`, and `DELETE /api/passes/:serial` manage updatable passes.
 - `POST|DELETE /v1/devices/…`, `GET /v1/devices/…`, `GET /v1/passes/…`, and `POST /v1/log` implement [Apple's Wallet web service protocol](https://developer.apple.com/documentation/walletpasses/adding-a-web-service-to-update-passes) — iOS calls these on its own; you never do.
 
-One-shot passes are held only in memory and expire after 15 minutes by default. Updatable passes persist in SQLite (`DATA_DIR`, a mounted volume on Railway). Deployments can optionally protect the management API with a bearer token. See [`INSTRUCTIONS.md`](INSTRUCTIONS.md) for the environment variables and troubleshooting notes.
+One-shot passes are held only in memory and expire after 15 minutes by default. Updatable passes persist in SQLite (`DATA_DIR`, a mounted volume on Railway). The management API always requires an `API_TOKEN` bearer token. See [`INSTRUCTIONS.md`](INSTRUCTIONS.md) for the environment variables and troubleshooting notes.
 
 ## Privacy
 

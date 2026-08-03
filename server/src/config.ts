@@ -3,8 +3,8 @@ export interface Config {
   passTypeIdentifier: string;
   teamIdentifier: string;
   organizationName: string;
-  /** If set, POST /api/passes requires `Authorization: Bearer <token>` */
-  apiToken?: string;
+  /** The pass management API requires `Authorization: Bearer <token>`. */
+  apiToken: string;
   passTtlSeconds: number;
   /** Public origin stamped into updatable passes as webServiceURL, e.g. https://pass.abdeen.dev */
   publicBaseUrl?: string;
@@ -51,7 +51,7 @@ export function loadConfig(): Config {
     passTypeIdentifier: required("PASS_TYPE_IDENTIFIER"),
     teamIdentifier: required("TEAM_IDENTIFIER"),
     organizationName: process.env.ORGANIZATION_NAME || "Pocketful",
-    apiToken: process.env.API_TOKEN || undefined,
+    apiToken: required("API_TOKEN"),
     passTtlSeconds: Number(process.env.PASS_TTL_SECONDS) || 900,
     publicBaseUrl: process.env.PUBLIC_BASE_URL?.replace(/\/+$/, "") || undefined,
     dataDir: process.env.DATA_DIR || `${process.cwd()}/data`,
