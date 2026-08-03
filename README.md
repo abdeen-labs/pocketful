@@ -16,9 +16,9 @@ server/   Node + Express — signs .pkpass files with passkit-generator, deploye
    and artwork picked from your photo library (converted on-device to Wallet PNG sizes).
 2. The app `POST`s the pass spec as JSON to the server, which builds and signs a
    `.pkpass` **in memory** and stores it under a short-lived random id (15 min).
-3. The app opens the returned `GET` URL. Safari sees
-   `Content-Type: application/vnd.apple.pkpass` and hands it to Wallet, which shows
-   the add-pass sheet. (Two steps because iOS can't open a POST response from a link.)
+3. The app downloads the returned `GET` URL and presents Wallet's native add-pass
+   sheet in-app with PassKit. (Two steps because the server must first sign and store
+   the pass before iOS can load it.)
 
 Signing happens server-side because [passkit-generator](https://github.com/alexandercerutti/passkit-generator)
 is Node-only — it can never run inside the app.
@@ -192,15 +192,14 @@ npx expo run:ios --device
 
 4. In the app, work through the Design, Content, Smart, and Advanced studios,
    choose an icon image (required — Wallet rejects passes without one), then hit
-   **Create pass & add to Wallet**. Safari opens for a moment, then Wallet's add
-   sheet appears.
+   **Create pass & add to Wallet**. Wallet's add sheet appears directly in Pocketful.
 
 ---
 
 ## Troubleshooting
 
-- **Safari opens but shows the URL as text / downloads nothing** — the pass id
-  expired (default 15 min) or the server URL is wrong. Create the pass again.
+- **Wallet cannot read the signed pass** — the pass id may have expired (default
+  15 min) or the server URL may be wrong. Create the pass again.
 - **Wallet says "Pass cannot be installed"** — almost always a certificate
   mismatch: the signing cert must belong to the exact `PASS_TYPE_IDENTIFIER` and
   `TEAM_IDENTIFIER` the server is configured with. Also confirm you used WWDR
