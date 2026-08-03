@@ -33,7 +33,9 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "Pocketful uses your photo library for pass artwork (icon, logo, and strip images)."
+          "photosPermission": false,
+          "cameraPermission": false,
+          "microphonePermission": false
         }
       ],
       [
