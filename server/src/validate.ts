@@ -57,9 +57,10 @@ const PERSONALIZATION_FIELDS: PersonalizationField[] = [
 ];
 
 // Wallet's standard PNG assets, optionally inside a localization directory.
-const IMAGE_NAME = /^(?:(?:[a-zA-Z]{2,3}(?:-[a-zA-Z0-9]{2,8})?)\.lproj\/)?(?:icon|logo|strip|thumbnail|background|footer|personalizationLogo)(?:@[23]x)?$/;
+const IMAGE_NAME = /^(?:(?:[a-zA-Z]{2,3}(?:-[a-zA-Z0-9]{2,8})?)\.lproj\/)?(?:icon|logo|primaryLogo|secondaryLogo|artwork|strip|thumbnail|background|footer|personalizationLogo)(?:@[23]x)?$/;
 const PNG_MAGIC = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
-const MAX_IMAGE_BYTES = 2 * 1024 * 1024;
+const MAX_IMAGE_MEGABYTES = 4;
+const MAX_IMAGE_BYTES = MAX_IMAGE_MEGABYTES * 1024 * 1024;
 const MAX_TOTAL_IMAGE_BYTES = 24 * 1024 * 1024;
 
 const HEX_COLOR = /^#?([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
@@ -154,7 +155,9 @@ function validateImages(images: unknown): Record<string, Buffer> {
     if (buffer.length < PNG_MAGIC.length || !buffer.subarray(0, 8).equals(PNG_MAGIC)) {
       throw new ApiError(400, `images.${name} is not a PNG`);
     }
-    if (buffer.length > MAX_IMAGE_BYTES) throw new ApiError(400, `images.${name} exceeds 2 MB`);
+    if (buffer.length > MAX_IMAGE_BYTES) {
+      throw new ApiError(400, `images.${name} exceeds ${MAX_IMAGE_MEGABYTES} MB`);
+    }
     total += buffer.length;
     out[name] = buffer;
   }
