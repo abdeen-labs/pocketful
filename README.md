@@ -116,12 +116,14 @@ Railway variable in Part 2.
    | `API_TOKEN` | optional — if set, `POST /api/passes` requires `Authorization: Bearer <token>` |
    | `PASS_TTL_SECONDS` | optional — how long a created pass stays downloadable (default 900) |
 
-5. Under **Settings → Networking**, click **Generate Domain**. That
-   `https://….up.railway.app` URL is your pass server URL.
+5. Under **Settings → Networking**, add the custom domain `pass.abdeen.dev` and
+   create the CNAME record Railway shows at your DNS provider. (Or click
+   **Generate Domain** for a quick `….up.railway.app` URL first — the server
+   works on any domain; the app defaults to `https://pass.abdeen.dev`.)
 6. Verify:
 
 ```bash
-curl https://YOUR-DOMAIN.up.railway.app/healthz
+curl https://pass.abdeen.dev/healthz
 ```
 
 Expected: `{"ok":true}`. The server fails fast at boot with a clear message if a
@@ -156,14 +158,10 @@ No EAS — the app is compiled on your Mac with Xcode.
 cd app && bun install
 ```
 
-   Create `app/.env` (see `app/.env.example`):
-
-   ```
-   EXPO_PUBLIC_PASS_SERVER_URL=https://YOUR-DOMAIN.up.railway.app
-   ```
-
-   (The URL is also editable inside the app, in the Server section of the form —
-   the env var is just the default.)
+   The app defaults to `https://pass.abdeen.dev`, so no `.env` is needed. To
+   point it somewhere else, create `app/.env` (see `app/.env.example`) with
+   `EXPO_PUBLIC_PASS_SERVER_URL`, or edit the URL in the Server section of the
+   form at runtime.
 
 2. If you use a different Apple team/bundle id, change `ios.bundleIdentifier` in
    `app/app.json` (currently `dev.abdeen.pocketful`).
