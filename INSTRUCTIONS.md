@@ -104,8 +104,8 @@ Railway variable in Part 2.
 1. Push this repo to GitHub.
 2. In [Railway](https://railway.app): **New Project → Deploy from GitHub repo**,
    pick this repo.
-3. In the service settings, set **Root Directory** to `server`. Railway detects a
-   Node app (`npm run build` then `npm start`).
+3. In the service settings, set **Root Directory** to `server`. Railway builds
+   the service from `server/Dockerfile` automatically.
 4. Under **Variables**, set:
 
    | Variable | Value |
@@ -166,7 +166,7 @@ server-owned rather than being accepted from the app.
 ### Run the server locally (optional)
 
 ```bash
-cd server && npm install && npm run dev
+cd server && bun install && bun run dev
 ```
 
 with the same variables in the environment. A quick way to test without real certs
@@ -317,8 +317,8 @@ pushes the change straight to Wallet.
 - The server keeps one-shot signed passes only in memory. A redeploy or restart
   drops pending ids; that's fine, just create the pass again. Updatable passes
   persist in SQLite under `DATA_DIR` — on Railway, keep that on a volume.
-- `server/` uses npm (its `package-lock.json` is what makes Railway treat it as a
-  Node app); `app/` uses bun.
+- Everything uses bun locally. Railway builds `server/` from its `Dockerfile`,
+  so the deploy no longer depends on lockfile-based builder detection.
 
 ---
 
