@@ -2,7 +2,7 @@ import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { Button, ChipRow, Divider, Input } from '@/components/ui';
-import { colors, radii } from '@/theme';
+import { colors, fonts, radii } from '@/theme';
 import type { BarcodeFormat } from '@/types';
 
 let nextEditorId = 1;
@@ -189,15 +189,15 @@ function Empty({ text }: { text: string }) {
 
 const styles = StyleSheet.create({
   wrap: { gap: 14 },
-  card: { gap: 13, padding: 14, borderWidth: 1, borderColor: colors.border, borderRadius: radii.medium, backgroundColor: colors.cardElevated },
+  card: { gap: 13, padding: 14, borderWidth: 1, borderColor: colors.border, borderRadius: radii.plate, backgroundColor: colors.cardElevated },
   cardHeader: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  number: { width: 27, height: 27, borderRadius: 14, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.accentMuted },
-  numberText: { color: colors.accent, fontSize: 12, fontWeight: '800' },
-  cardTitle: { flex: 1, color: colors.text, fontSize: 14, fontWeight: '700' },
+  number: { width: 27, height: 27, borderRadius: 14, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.band, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border },
+  numberText: { color: colors.textSoft, fontFamily: fonts.monoSemiBold, fontSize: 12 },
+  cardTitle: { flex: 1, color: colors.text, fontFamily: fonts.textSemiBold, fontSize: 14 },
   twoColumn: { flexDirection: 'row', gap: 10 },
   column: { flex: 1 },
-  empty: { color: colors.dim, fontSize: 12, lineHeight: 17, textAlign: 'center', padding: 14 },
+  empty: { color: colors.dim, fontFamily: fonts.text, fontSize: 12, lineHeight: 17, textAlign: 'center', padding: 14 },
   translation: { gap: 10, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border, paddingTop: 12 },
   translationHeading: { flexDirection: 'row', alignItems: 'center' },
-  translationTitle: { flex: 1, color: colors.textSoft, fontSize: 12, fontWeight: '700' },
+  translationTitle: { flex: 1, color: colors.textSoft, fontFamily: fonts.textSemiBold, fontSize: 12 },
 });

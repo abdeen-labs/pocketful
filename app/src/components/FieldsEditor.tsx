@@ -2,7 +2,7 @@ import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { Button, ChipRow, Disclosure, Input, MultiChipRow, ToggleRow } from '@/components/ui';
-import { colors, radii } from '@/theme';
+import { colors, fonts, radii, tracking } from '@/theme';
 import type {
   DataDetectorType,
   DateStyle,
@@ -200,17 +200,17 @@ export function FieldsEditor({
 
 const styles = StyleSheet.create({
   wrap: { gap: 14 },
-  empty: { alignItems: 'center', padding: 20, gap: 5, borderRadius: radii.medium, backgroundColor: colors.surface },
-  emptyTitle: { color: colors.textSoft, fontSize: 15, fontWeight: '700' },
-  emptyText: { color: colors.dim, fontSize: 12, lineHeight: 17, textAlign: 'center' },
-  field: { gap: 13, borderWidth: 1, borderColor: colors.border, borderRadius: radii.medium, padding: 14, backgroundColor: colors.cardElevated },
+  empty: { alignItems: 'center', padding: 20, gap: 5, borderRadius: radii.plate, backgroundColor: colors.surface },
+  emptyTitle: { color: colors.textSoft, fontFamily: fonts.textSemiBold, fontSize: 15 },
+  emptyText: { color: colors.dim, fontFamily: fonts.text, fontSize: 12, lineHeight: 17, textAlign: 'center' },
+  field: { gap: 13, borderWidth: 1, borderColor: colors.border, borderRadius: radii.plate, padding: 14, backgroundColor: colors.cardElevated },
   fieldHeader: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  numberBubble: { width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.accentMuted },
-  numberText: { color: colors.accent, fontSize: 12, fontWeight: '800' },
+  numberBubble: { width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.band, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border },
+  numberText: { color: colors.textSoft, fontFamily: fonts.monoSemiBold, fontSize: 12 },
   fieldHeaderCopy: { flex: 1, gap: 1 },
-  fieldTitle: { color: colors.text, fontSize: 14, fontWeight: '700' },
-  fieldMeta: { color: colors.dim, fontSize: 11, textTransform: 'capitalize' },
+  fieldTitle: { color: colors.text, fontFamily: fonts.textSemiBold, fontSize: 14 },
+  fieldMeta: { color: colors.dim, fontFamily: fonts.mono, fontSize: 11, textTransform: 'capitalize' },
   twoColumn: { flexDirection: 'row', gap: 10 },
   column: { flex: 1 },
-  miniLabel: { color: colors.textSoft, fontSize: 12, fontWeight: '600' },
+  miniLabel: { color: colors.textSoft, fontFamily: fonts.monoMedium, fontSize: 11, letterSpacing: tracking.micro, textTransform: 'uppercase' },
 });

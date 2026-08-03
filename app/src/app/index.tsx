@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import {
   Alert,
+  Image,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -49,7 +50,7 @@ import {
   slotsForStyle,
   type ImageSlot,
 } from '@/lib/slots';
-import { colors, radii } from '@/theme';
+import { colors, fonts, radii, tracking } from '@/theme';
 import type {
   BoardingPassOptions,
   EventTicketOptions,
@@ -181,9 +182,9 @@ export default function PassDesigner() {
   const [logoText, setLogoText] = useState('');
   const [serialNumber, setSerialNumber] = useState('');
 
-  const [bgColor, setBgColor] = useState('#253451');
+  const [bgColor, setBgColor] = useState('#131822');
   const [fgColor, setFgColor] = useState('#ffffff');
-  const [labelColor, setLabelColor] = useState('#bdc9df');
+  const [labelColor, setLabelColor] = useState('#a9b2c0');
   const [stripColor, setStripColor] = useState('');
   const [footerColor, setFooterColor] = useState('');
   const [fields, setFields] = useState<EditableField[]>([]);
@@ -377,7 +378,7 @@ export default function PassDesigner() {
       ['Strip', stripColor, false],
       ['Footer', footerColor, false],
     ] as const) {
-      if ((required || value.trim()) && !HEX_COLOR.test(value.trim())) throw new Error(`${name} color must be a hex value like #253451.`);
+      if ((required || value.trim()) && !HEX_COLOR.test(value.trim())) throw new Error(`${name} color must be a hex value like #131822.`);
     }
 
     const specFields: Partial<Record<FieldCategory, PassField[]>> = {};
@@ -542,11 +543,13 @@ export default function PassDesigner() {
         keyboardShouldPersistTaps="handled"
       >
         <View style={styles.hero}>
-          <View style={styles.heroOrbOne} />
-          <View style={styles.heroOrbTwo} />
           <View style={styles.heroCopy}>
-            <View style={styles.heroBadge}><Text style={styles.heroBadgeText}>PASSKIT STUDIO</Text></View>
-            <Text style={styles.heroTitle}>Build every detail.</Text>
+            <View style={styles.heroLockup}>
+              <Image source={require('../../assets/images/seal-key.png')} style={styles.heroSeal} />
+              <View style={styles.heroLockupDivider} />
+              <Text style={styles.heroWordmark}>ABDEEN LABS</Text>
+            </View>
+            <Text style={styles.heroTitle}>Pocketful</Text>
             <Text style={styles.heroSubtitle}>A complete, visual editor for signed Apple Wallet passes.</Text>
           </View>
         </View>
@@ -626,12 +629,12 @@ export default function PassDesigner() {
               <View style={styles.swatches}>
                 {[bgColor, fgColor, labelColor].map((color, index) => <View key={index} style={[styles.swatch, { backgroundColor: HEX_COLOR.test(color) ? color : colors.border }]} />)}
               </View>
-              <Input label="Background" value={bgColor} onChangeText={setBgColor} placeholder="#253451" />
+              <Input label="Background" value={bgColor} onChangeText={setBgColor} placeholder="#131822" />
               <Input label="Foreground text" value={fgColor} onChangeText={setFgColor} placeholder="#ffffff" />
-              <Input label="Labels" value={labelColor} onChangeText={setLabelColor} placeholder="#bdc9df" />
+              <Input label="Labels" value={labelColor} onChangeText={setLabelColor} placeholder="#a9b2c0" />
               <Disclosure title="Specialized colors" description="Optional strip-field and poster-event footer colors">
                 <Input label="Strip text color" value={stripColor} onChangeText={setStripColor} placeholder="Optional #ffffff" />
-                <Input label="Event footer background" value={footerColor} onChangeText={setFooterColor} placeholder="Optional #101827" />
+                <Input label="Event footer background" value={footerColor} onChangeText={setFooterColor} placeholder="Optional #0c1017" />
               </Disclosure>
             </Section>
 
@@ -673,7 +676,7 @@ export default function PassDesigner() {
               ))}
               <Disclosure title="Complete semantic tags object" description="Access every passkit-generator semantic tag, including nested seats, locations, names, currency, dates, security programs, and Wi-Fi">
                 <Input label="Pass semantics · JSON" value={semanticsJson} onChangeText={setSemanticsJson} multiline placeholder={'{\n  "eventType": "PKEventTypeSports",\n  "seats": [{ "seatSection": "104", "seatRow": "B", "seatNumber": "12" }]\n}'} helper="Guided fields above override matching keys in this object." />
-                <Notice title="Full schema access">Use any key supported by passkit-generator's Semantics schema. Nested semantic tag types are accepted here without reducing them to text fields.</Notice>
+                <Notice title="Full schema access">Use any key supported by passkit-generator&apos;s Semantics schema. Nested semantic tag types are accepted here without reducing them to text fields.</Notice>
               </Disclosure>
             </Section>
 
@@ -750,7 +753,7 @@ export default function PassDesigner() {
               </Section>
             ) : null}
 
-            <Section title="Localization" description="Generate pass.strings for every language and unlock localized artwork folders." badge={`${localizations.length} languages`}>
+            <Section title="Localization" description="Generate pass.strings for every language and enable localized artwork folders." badge={`${localizations.length} languages`}>
               <LocalizationsEditor value={localizations} onChange={setLocalizations} />
             </Section>
 
@@ -908,22 +911,22 @@ function hasBeaconContent(beacon: EditableBeacon): boolean {
 const styles = StyleSheet.create({
   flex: { flex: 1 },
   content: { padding: 16, paddingTop: 12 },
-  hero: { minHeight: 148, borderRadius: 24, marginBottom: 24, overflow: 'hidden', backgroundColor: colors.card, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border },
-  heroOrbOne: { position: 'absolute', width: 180, height: 180, borderRadius: 90, backgroundColor: '#244b91', right: -38, top: -72, opacity: 0.9 },
-  heroOrbTwo: { position: 'absolute', width: 128, height: 128, borderRadius: 64, backgroundColor: '#62458f', right: 50, bottom: -86, opacity: 0.7 },
-  heroCopy: { flex: 1, justifyContent: 'center', padding: 22, maxWidth: '82%', gap: 7 },
-  heroBadge: { alignSelf: 'flex-start', paddingHorizontal: 9, paddingVertical: 5, borderRadius: radii.pill, backgroundColor: 'rgba(120,167,255,0.16)' },
-  heroBadgeText: { color: colors.accent, fontSize: 9, fontWeight: '800', letterSpacing: 1.2 },
-  heroTitle: { color: colors.text, fontSize: 28, lineHeight: 31, fontWeight: '800', letterSpacing: -0.8 },
-  heroSubtitle: { color: colors.textSoft, fontSize: 13, lineHeight: 18 },
-  tabBar: { marginBottom: 28, padding: 12, gap: 11, borderRadius: radii.large, backgroundColor: colors.card, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border },
+  hero: { minHeight: 148, borderRadius: radii.shell, marginBottom: 24, overflow: 'hidden', backgroundColor: colors.card, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border },
+  heroCopy: { flex: 1, justifyContent: 'center', padding: 22, gap: 9 },
+  heroLockup: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  heroSeal: { width: 24, height: 24 },
+  heroLockupDivider: { width: StyleSheet.hairlineWidth, height: 16, backgroundColor: colors.border },
+  heroWordmark: { color: colors.textSoft, fontFamily: fonts.monoMedium, fontSize: 11, letterSpacing: 2.42 },
+  heroTitle: { color: colors.text, fontFamily: fonts.displayHeavy, fontSize: 28, lineHeight: 30, letterSpacing: 28 * tracking.display, textTransform: 'uppercase' },
+  heroSubtitle: { color: colors.textSoft, fontFamily: fonts.text, fontSize: 13, lineHeight: 18 },
+  tabBar: { marginBottom: 28, padding: 12, gap: 11, borderRadius: radii.plate, backgroundColor: colors.card, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border },
   summaryRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
-  miniLabel: { color: colors.textSoft, fontSize: 12, fontWeight: '600' },
-  swatches: { height: 42, flexDirection: 'row', overflow: 'hidden', borderRadius: radii.small, borderWidth: 1, borderColor: colors.border },
+  miniLabel: { color: colors.textSoft, fontFamily: fonts.monoMedium, fontSize: 11, letterSpacing: tracking.micro, textTransform: 'uppercase' },
+  swatches: { height: 42, flexDirection: 'row', overflow: 'hidden', borderRadius: radii.control, borderWidth: 1, borderColor: colors.border },
   swatch: { flex: 1 },
-  submitCard: { gap: 16, padding: 18, borderRadius: radii.large, backgroundColor: colors.cardElevated, borderWidth: 1, borderColor: colors.accentMuted },
+  submitCard: { gap: 16, padding: 18, borderRadius: radii.plate, backgroundColor: colors.cardElevated, borderWidth: 1, borderColor: colors.borderStrong },
   submitCopy: { gap: 3 },
-  submitTitle: { color: colors.text, fontSize: 18, fontWeight: '700' },
-  submitSubtitle: { color: colors.dim, fontSize: 12, lineHeight: 17 },
+  submitTitle: { color: colors.text, fontFamily: fonts.textSemiBold, fontSize: 17 },
+  submitSubtitle: { color: colors.dim, fontFamily: fonts.text, fontSize: 12, lineHeight: 17 },
   footer: { height: 52 },
 });

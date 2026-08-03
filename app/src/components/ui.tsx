@@ -10,7 +10,7 @@ import {
   type TextInputProps,
 } from 'react-native';
 
-import { colors, radii } from '@/theme';
+import { colors, fonts, radii, tracking } from '@/theme';
 
 export function Section({
   title,
@@ -205,8 +205,8 @@ export function ToggleRow({
       <Switch
         value={value}
         onValueChange={onChange}
-        trackColor={{ false: colors.borderStrong, true: colors.accentMuted }}
-        thumbColor={value ? colors.accent : colors.textSoft}
+        trackColor={{ false: colors.cardElevated, true: colors.accent }}
+        thumbColor={colors.white}
       />
     </Pressable>
   );
@@ -223,7 +223,9 @@ export function Notice({
 }) {
   return (
     <View style={[styles.notice, tone === 'warning' && styles.noticeWarning]}>
-      {title ? <Text style={styles.noticeTitle}>{title}</Text> : null}
+      {title ? (
+        <Text style={[styles.noticeTitle, tone === 'warning' && styles.noticeTitleWarning]}>{title}</Text>
+      ) : null}
       <Text style={styles.noticeText}>{children}</Text>
     </View>
   );
@@ -269,10 +271,11 @@ export function Button({
         kind === 'ghost' && styles.buttonGhost,
         (disabled || loading) && styles.buttonDisabled,
         pressed && styles.pressed,
+        pressed && kind === 'primary' && styles.buttonPrimaryPressed,
       ]}
     >
       {loading ? (
-        <ActivityIndicator color={kind === 'primary' ? colors.accentText : colors.text} />
+        <ActivityIndicator color={kind === 'primary' ? colors.white : colors.text} />
       ) : (
         <Text
           style={[
@@ -291,67 +294,70 @@ export function Button({
 const styles = StyleSheet.create({
   section: { marginBottom: 28, gap: 12 },
   sectionHeading: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, paddingHorizontal: 2 },
-  sectionHeadingPressable: { marginHorizontal: -8, paddingHorizontal: 10, paddingVertical: 8, borderRadius: radii.medium },
-  sectionHeadingCopy: { flex: 1, gap: 3 },
+  sectionHeadingPressable: { marginHorizontal: -8, paddingHorizontal: 10, paddingVertical: 8, borderRadius: radii.plate },
+  sectionHeadingCopy: { flex: 1, gap: 4 },
   sectionHeadingActions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  sectionCollapseButton: { width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.surface, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.borderStrong },
-  sectionCollapseIcon: { color: colors.textSoft, fontSize: 20, lineHeight: 22, fontWeight: '400' },
-  sectionTitle: { color: colors.text, fontSize: 19, fontWeight: '700', letterSpacing: -0.25 },
-  sectionDescription: { color: colors.dim, fontSize: 13, lineHeight: 18 },
+  sectionCollapseButton: { width: 28, height: 28, borderRadius: radii.control, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.surface, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.borderStrong },
+  sectionCollapseIcon: { color: colors.textSoft, fontSize: 20, lineHeight: 22 },
+  sectionTitle: { color: colors.text, fontFamily: fonts.monoSemiBold, fontSize: 13, letterSpacing: tracking.micro, textTransform: 'uppercase' },
+  sectionDescription: { color: colors.dim, fontFamily: fonts.text, fontSize: 13, lineHeight: 18 },
   sectionBody: {
     backgroundColor: colors.card,
-    borderRadius: radii.large,
+    borderRadius: radii.plate,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.border,
     padding: 16,
     gap: 14,
   },
-  disclosure: { borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border, borderRadius: radii.medium, overflow: 'hidden' },
+  disclosure: { borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border, borderRadius: radii.plate, overflow: 'hidden' },
   disclosureHeader: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14, backgroundColor: colors.surface },
   disclosureCopy: { flex: 1, gap: 2 },
-  disclosureTitle: { color: colors.textSoft, fontSize: 14, fontWeight: '600' },
-  disclosureDescription: { color: colors.dim, fontSize: 12, lineHeight: 16 },
-  disclosureChevron: { color: colors.accent, fontSize: 22, fontWeight: '400' },
+  disclosureTitle: { color: colors.textSoft, fontFamily: fonts.monoMedium, fontSize: 13 },
+  disclosureDescription: { color: colors.dim, fontFamily: fonts.text, fontSize: 12, lineHeight: 16 },
+  disclosureChevron: { color: colors.link, fontFamily: fonts.mono, fontSize: 22 },
   disclosureBody: { padding: 14, gap: 13, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border },
   inputWrap: { gap: 7 },
-  inputLabel: { color: colors.textSoft, fontSize: 13, fontWeight: '500' },
+  inputLabel: { color: colors.textSoft, fontFamily: fonts.monoMedium, fontSize: 11, letterSpacing: tracking.micro, textTransform: 'uppercase' },
   input: {
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: radii.small,
+    borderRadius: radii.control,
     paddingHorizontal: 13,
     paddingVertical: 11,
     color: colors.text,
-    fontSize: 15,
+    fontFamily: fonts.mono,
+    fontSize: 14,
   },
   inputMultiline: { minHeight: 104, textAlignVertical: 'top' },
-  helper: { color: colors.dim, fontSize: 11, lineHeight: 15 },
+  helper: { color: colors.dim, fontFamily: fonts.text, fontSize: 12, lineHeight: 16 },
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  chip: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: radii.pill, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface },
-  chipSelected: { backgroundColor: colors.accentMuted, borderColor: colors.accent },
-  chipText: { color: colors.dim, fontSize: 13, fontWeight: '600' },
+  chip: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: radii.control, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface },
+  chipSelected: { backgroundColor: colors.band, borderColor: colors.accent },
+  chipText: { color: colors.dim, fontFamily: fonts.monoMedium, fontSize: 13 },
   chipTextSelected: { color: colors.text },
   toggleRow: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 44 },
   toggleCopy: { flex: 1, gap: 2 },
-  toggleLabel: { color: colors.textSoft, fontSize: 14, fontWeight: '600' },
-  toggleDescription: { color: colors.dim, fontSize: 12, lineHeight: 16 },
-  notice: { backgroundColor: colors.accentMuted, borderRadius: radii.small, padding: 12, gap: 3 },
-  noticeWarning: { backgroundColor: '#3a2d1a' },
-  noticeTitle: { color: colors.text, fontSize: 13, fontWeight: '700' },
-  noticeText: { color: colors.textSoft, fontSize: 12, lineHeight: 17 },
-  badge: { paddingHorizontal: 9, paddingVertical: 4, borderRadius: radii.pill, backgroundColor: colors.accentMuted },
-  badgeText: { color: colors.accent, fontSize: 11, fontWeight: '700' },
+  toggleLabel: { color: colors.textSoft, fontFamily: fonts.monoMedium, fontSize: 13 },
+  toggleDescription: { color: colors.dim, fontFamily: fonts.text, fontSize: 12, lineHeight: 16 },
+  notice: { backgroundColor: colors.surface, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border, borderRadius: radii.control, padding: 12, gap: 3 },
+  noticeWarning: { borderLeftWidth: 2, borderLeftColor: colors.warning },
+  noticeTitle: { color: colors.text, fontFamily: fonts.textSemiBold, fontSize: 13 },
+  noticeTitleWarning: { color: colors.warning },
+  noticeText: { color: colors.textSoft, fontFamily: fonts.text, fontSize: 12, lineHeight: 17 },
+  badge: { paddingHorizontal: 9, paddingVertical: 4, borderRadius: radii.control, backgroundColor: colors.band, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border },
+  badgeText: { color: colors.textSoft, fontFamily: fonts.monoMedium, fontSize: 11, letterSpacing: 1, textTransform: 'uppercase' },
   divider: { height: StyleSheet.hairlineWidth, backgroundColor: colors.border },
-  button: { borderRadius: radii.medium, paddingVertical: 14, paddingHorizontal: 17, alignItems: 'center', justifyContent: 'center', minHeight: 48 },
+  button: { borderRadius: radii.control, paddingVertical: 14, paddingHorizontal: 17, alignItems: 'center', justifyContent: 'center', minHeight: 48 },
   buttonCompact: { minHeight: 38, paddingVertical: 8, paddingHorizontal: 12 },
   buttonPrimary: { backgroundColor: colors.accent },
-  buttonSecondary: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.borderStrong },
-  buttonDanger: { backgroundColor: colors.dangerMuted, borderWidth: 1, borderColor: colors.danger },
+  buttonPrimaryPressed: { backgroundColor: colors.press },
+  buttonSecondary: { backgroundColor: 'transparent', borderWidth: 1, borderColor: colors.border },
+  buttonDanger: { backgroundColor: 'transparent', borderWidth: 1, borderColor: colors.accent },
   buttonGhost: { backgroundColor: 'transparent' },
   buttonDisabled: { opacity: 0.45 },
-  pressed: { opacity: 0.72, transform: [{ scale: 0.99 }] },
-  buttonText: { color: colors.text, fontSize: 15, fontWeight: '700' },
-  buttonTextPrimary: { color: colors.accentText },
-  buttonTextDanger: { color: colors.danger },
+  pressed: { transform: [{ translateY: 1 }] },
+  buttonText: { color: colors.textSoft, fontFamily: fonts.monoMedium, fontSize: 13 },
+  buttonTextPrimary: { color: colors.white },
+  buttonTextDanger: { color: colors.link },
 });

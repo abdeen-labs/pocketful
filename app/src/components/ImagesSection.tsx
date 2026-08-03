@@ -5,7 +5,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { Badge, Button } from '@/components/ui';
 import type { ProcessedImage } from '@/lib/images';
 import type { ImageSlot } from '@/lib/slots';
-import { colors } from '@/theme';
+import { colors, fonts, radii } from '@/theme';
 
 export function ImagesSection({
   slots,
@@ -83,17 +83,18 @@ const styles = StyleSheet.create({
   },
   slotName: {
     color: colors.text,
+    fontFamily: fonts.textSemiBold,
     fontSize: 14,
-    fontWeight: '600',
   },
   slotHint: {
     color: colors.dim,
+    fontFamily: fonts.text,
     fontSize: 12,
   },
   preview: {
     width: '100%',
     maxHeight: 160,
-    borderRadius: 8,
+    borderRadius: radii.control,
     backgroundColor: colors.bg,
   },
   slotButtons: {

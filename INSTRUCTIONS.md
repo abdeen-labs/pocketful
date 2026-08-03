@@ -1,3 +1,5 @@
+`AXIS//OPEN`
+
 # Pocketful setup guide
 
 Design an Apple Wallet pass on your phone, get it signed by your own server, add it
@@ -219,3 +221,7 @@ npx expo run:ios --device
   pending ids; that's fine, just create the pass again.
 - `server/` uses npm (its `package-lock.json` is what makes Railway treat it as a
   Node app); `app/` uses bun.
+
+---
+
+`AXIS//OPEN`
