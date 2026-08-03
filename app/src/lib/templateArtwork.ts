@@ -30,6 +30,14 @@ const BUNDLED_TEMPLATES: Record<string, BundledTemplate> = {
         'primaryLogo@3x': require('../../assets/templates/midnight-live/primary-logo-3x.png'),
       },
     },
+    logo: {
+      preview: require('../../assets/templates/midnight-live/primary-logo-3x.png'),
+      files: {
+        logo: require('../../assets/templates/midnight-live/primary-logo-1x.png'),
+        'logo@2x': require('../../assets/templates/midnight-live/primary-logo-2x.png'),
+        'logo@3x': require('../../assets/templates/midnight-live/primary-logo-3x.png'),
+      },
+    },
     secondaryLogo: {
       preview: require('../../assets/templates/midnight-live/secondary-logo-3x.png'),
       files: {
@@ -44,6 +52,14 @@ const BUNDLED_TEMPLATES: Record<string, BundledTemplate> = {
         artwork: require('../../assets/templates/midnight-live/artwork-1x.png'),
         'artwork@2x': require('../../assets/templates/midnight-live/artwork-2x.png'),
         'artwork@3x': require('../../assets/templates/midnight-live/artwork-3x.png'),
+      },
+    },
+    background: {
+      preview: require('../../assets/templates/midnight-live/background-3x.png'),
+      files: {
+        background: require('../../assets/templates/midnight-live/background-1x.png'),
+        'background@2x': require('../../assets/templates/midnight-live/background-2x.png'),
+        'background@3x': require('../../assets/templates/midnight-live/background-3x.png'),
       },
     },
   },
@@ -64,6 +80,14 @@ const BUNDLED_TEMPLATES: Record<string, BundledTemplate> = {
         'primaryLogo@3x': require('../../assets/templates/harbor-fc/primary-logo-3x.png'),
       },
     },
+    logo: {
+      preview: require('../../assets/templates/harbor-fc/primary-logo-3x.png'),
+      files: {
+        logo: require('../../assets/templates/harbor-fc/primary-logo-1x.png'),
+        'logo@2x': require('../../assets/templates/harbor-fc/primary-logo-2x.png'),
+        'logo@3x': require('../../assets/templates/harbor-fc/primary-logo-3x.png'),
+      },
+    },
     secondaryLogo: {
       preview: require('../../assets/templates/harbor-fc/secondary-logo-3x.png'),
       files: {
@@ -78,6 +102,14 @@ const BUNDLED_TEMPLATES: Record<string, BundledTemplate> = {
         artwork: require('../../assets/templates/harbor-fc/artwork-1x.png'),
         'artwork@2x': require('../../assets/templates/harbor-fc/artwork-2x.png'),
         'artwork@3x': require('../../assets/templates/harbor-fc/artwork-3x.png'),
+      },
+    },
+    background: {
+      preview: require('../../assets/templates/harbor-fc/background-3x.png'),
+      files: {
+        background: require('../../assets/templates/harbor-fc/background-1x.png'),
+        'background@2x': require('../../assets/templates/harbor-fc/background-2x.png'),
+        'background@3x': require('../../assets/templates/harbor-fc/background-3x.png'),
       },
     },
   },

@@ -23,9 +23,11 @@ const BARCODE_LABELS: Record<BarcodeFormat, string> = {
 export function TemplateGallery({
   onApply,
   lastAppliedId,
+  applyingId,
 }: {
   onApply: (template: PassTemplate) => void;
   lastAppliedId?: string | null;
+  applyingId?: string | null;
 }) {
   return (
     <View style={styles.gallery}>
@@ -47,6 +49,8 @@ export function TemplateGallery({
             key={template.id}
             template={template}
             lastApplied={template.id === lastAppliedId}
+            applying={template.id === applyingId}
+            disabled={Boolean(applyingId)}
             onPress={() => onApply(template)}
           />
         ))}
@@ -59,10 +63,14 @@ export function TemplateGallery({
 function TemplateCard({
   template,
   lastApplied,
+  applying,
+  disabled,
   onPress,
 }: {
   template: PassTemplate;
   lastApplied: boolean;
+  applying: boolean;
+  disabled: boolean;
   onPress: () => void;
 }) {
   const { background, foreground, label } = template.colors;
@@ -75,8 +83,10 @@ function TemplateCard({
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={`Use ${template.name} template`}
+      accessibilityState={{ disabled, busy: applying }}
+      disabled={disabled}
       onPress={onPress}
-      style={({ pressed }) => [styles.card, lastApplied && styles.cardApplied, pressed && styles.pressed]}
+      style={({ pressed }) => [styles.card, lastApplied && styles.cardApplied, disabled && styles.cardDisabled, pressed && styles.pressed]}
     >
       <View style={[styles.pass, { backgroundColor: background }]}>
         <View style={[styles.glowLarge, { backgroundColor: label }]} />
@@ -115,7 +125,7 @@ function TemplateCard({
         <View style={styles.captionTitleRow}>
           <Text style={styles.name} numberOfLines={1}>{template.name}</Text>
           <Text style={[styles.applyText, lastApplied && styles.appliedText]}>
-            {lastApplied ? 'LAST USED ✓' : 'USE TEMPLATE →'}
+            {applying ? 'LOADING ARTWORK…' : lastApplied ? 'LAST USED ✓' : 'USE TEMPLATE →'}
           </Text>
         </View>
         <Text style={styles.tagline} numberOfLines={2}>{template.tagline}</Text>
@@ -203,6 +213,7 @@ const styles = StyleSheet.create({
   scroll: { marginHorizontal: -16 },
   row: { paddingHorizontal: 16, gap: CARD_GAP },
   card: { width: CARD_WIDTH, padding: 9, gap: 11, borderRadius: radii.large, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border },
+  cardDisabled: { opacity: 0.62 },
   cardApplied: { borderColor: colors.accent, backgroundColor: colors.cardElevated },
   pressed: { opacity: 0.82, transform: [{ scale: 0.985 }] },
   pass: { height: 154, borderRadius: 18, padding: 14, overflow: 'hidden', justifyContent: 'space-between', shadowColor: colors.black, shadowOpacity: 0.28, shadowRadius: 12, shadowOffset: { width: 0, height: 7 } },
