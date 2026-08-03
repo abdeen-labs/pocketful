@@ -1,13 +1,13 @@
-import ExpoModulesCore
+internal import ExpoModulesCore
 import Foundation
 import PassKit
 import UIKit
 
 /** Downloads a signed pass and presents Apple's add-to-Wallet sheet in Pocketful. */
-public final class ExpoWalletPassModule: Module, PKAddPassesViewControllerDelegate {
+internal final class ExpoWalletPassModule: Module, PKAddPassesViewControllerDelegate {
   private weak var presentedController: PKAddPassesViewController?
 
-  public func definition() -> ModuleDefinition {
+  func definition() -> ModuleDefinition {
     Name("ExpoWalletPass")
 
     AsyncFunction("present") { (url: URL, promise: Promise) in
@@ -77,7 +77,7 @@ public final class ExpoWalletPassModule: Module, PKAddPassesViewControllerDelega
     .runOnQueue(DispatchQueue.main)
   }
 
-  public func addPassesViewControllerDidFinish(_ controller: PKAddPassesViewController) {
+  func addPassesViewControllerDidFinish(_ controller: PKAddPassesViewController) {
     controller.dismiss(animated: true) { [weak self] in
       self?.presentedController = nil
     }
