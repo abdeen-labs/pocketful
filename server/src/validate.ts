@@ -253,6 +253,93 @@ function validateAdvanced(spec: PassSpec): void {
   }
 }
 
+function validateModernStyleRequirements(
+  spec: PassSpec,
+  images: Record<string, Buffer>
+): void {
+  const semantics = isRecord(spec.options) && isRecord(spec.options.semantics)
+    ? spec.options.semantics
+    : {};
+
+  if (spec.preferredStyleSchemes?.includes("posterEventTicket")) {
+    if (spec.style !== "eventTicket") {
+      throw new ApiError(400, "posterEventTicket requires the eventTicket style");
+    }
+    if (!hasImageAsset(images, "artwork")) {
+      throw new ApiError(400, "posterEventTicket requires artwork PNG assets");
+    }
+    assertSemanticKeys(
+      semantics,
+      ["eventName", "venueName", "venueRegionName", "venueRoom"],
+      "posterEventTicket"
+    );
+    if (semantics.eventType === "PKEventTypeSports") {
+      assertSemanticKeys(
+        semantics,
+        ["awayTeamAbbreviation", "homeTeamAbbreviation"],
+        "sports posterEventTicket"
+      );
+    }
+    if (
+      semantics.eventType === "PKEventTypeLivePerformance" &&
+      (!Array.isArray(semantics.performerNames) || semantics.performerNames.length === 0)
+    ) {
+      throw new ApiError(
+        400,
+        "live-performance posterEventTicket requires performerNames semantics"
+      );
+    }
+  }
+
+  if (spec.preferredStyleSchemes?.includes("semanticBoardingPass")) {
+    if (spec.style !== "boardingPass" || spec.transitType !== "PKTransitTypeAir") {
+      throw new ApiError(
+        400,
+        "semanticBoardingPass requires an airline boardingPass"
+      );
+    }
+    assertSemanticKeys(
+      semantics,
+      [
+        "airlineCode",
+        "flightNumber",
+        "departureAirportCode",
+        "departureCityName",
+        "departureLocationTimeZone",
+        "destinationAirportCode",
+        "destinationCityName",
+        "destinationLocationTimeZone",
+        "originalArrivalDate",
+        "originalBoardingDate",
+        "originalDepartureDate",
+        "passengerName",
+      ],
+      "semanticBoardingPass"
+    );
+  }
+}
+
+function hasImageAsset(images: Record<string, Buffer>, name: string): boolean {
+  return Boolean(images[name] || images[`${name}@2x`] || images[`${name}@3x`]);
+}
+
+function assertSemanticKeys(
+  semantics: Record<string, unknown>,
+  keys: string[],
+  label: string
+): void {
+  const missing = keys.filter((key) => {
+    const value = semantics[key];
+    return value === undefined || value === null || value === "";
+  });
+  if (missing.length) {
+    throw new ApiError(
+      400,
+      `${label} is missing required semantics: ${missing.join(", ")}`
+    );
+  }
+}
+
 export interface ValidatedSpec {
   spec: PassSpec;
   fields: Partial<Record<FieldCategory, PassField[]>>;
@@ -285,6 +372,7 @@ export function validateSpec(body: unknown): ValidatedSpec {
     throw new ApiError(400, "additionalInfo fields require the eventTicket style");
   }
   const images = validateImages(spec.images);
+  validateModernStyleRequirements(spec, images);
   if (
     spec.personalization &&
     !images["personalizationLogo@2x"] &&

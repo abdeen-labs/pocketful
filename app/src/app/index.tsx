@@ -233,6 +233,7 @@ export default function PassDesigner() {
 
   const [serverUrl, setServerUrl] = useState(process.env.EXPO_PUBLIC_PASS_SERVER_URL ?? 'https://pass.abdeen.dev');
   const [apiToken, setApiToken] = useState(process.env.EXPO_PUBLIC_PASS_API_TOKEN ?? '');
+  const [applyingTemplateId, setApplyingTemplateId] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   const posterEvent = style === 'eventTicket' && preferredStyleSchemes.includes('posterEventTicket');
@@ -266,11 +267,15 @@ export default function PassDesigner() {
   };
 
   const applyTemplate = async (template: PassTemplate) => {
+    if (applyingTemplateId) return;
+    setApplyingTemplateId(template.id);
+
     let bundledImages: Partial<Record<string, ProcessedImage>>;
     try {
       bundledImages = await loadBundledTemplateImages(template.id);
     } catch (error) {
       Alert.alert('Template artwork error', error instanceof Error ? error.message : String(error));
+      setApplyingTemplateId(null);
       return;
     }
 
@@ -318,6 +323,7 @@ export default function PassDesigner() {
     if (Object.keys(bundledImages).length) {
       setImages((current) => ({ ...current, ...bundledImages }));
     }
+    setApplyingTemplateId(null);
   };
 
   const handleTemplate = (template: PassTemplate) => {
@@ -337,6 +343,11 @@ export default function PassDesigner() {
   };
 
   const handleSubmit = async () => {
+    if (applyingTemplateId) {
+      Alert.alert('Artwork is still loading', 'Wait for the selected template artwork to finish loading, then create the pass.');
+      return;
+    }
+
     let spec: PassSpec;
     try {
       spec = createSpec();
@@ -470,6 +481,14 @@ export default function PassDesigner() {
       if (picked) Object.assign(specImages, picked.files);
     }
 
+    assertModernStyleRequirements({
+      style,
+      transitType,
+      preferredStyleSchemes,
+      semantics: mergedSemantics,
+      images: specImages,
+    });
+
     if (expirationDate.trim()) assertDate(expirationDate, 'Expiration date');
     if (legacyRelevantDate.trim()) assertDate(legacyRelevantDate, 'Legacy relevant date');
     if (personalizationEnabled && !nfcEnabled) throw new Error('Personalization requires NFC to be enabled.');
@@ -565,7 +584,11 @@ export default function PassDesigner() {
               collapsed={templatesCollapsed}
               onCollapsedChange={setTemplatesCollapsed}
             >
-              <TemplateGallery onApply={handleTemplate} lastAppliedId={lastAppliedTemplateId} />
+              <TemplateGallery
+                onApply={handleTemplate}
+                lastAppliedId={lastAppliedTemplateId}
+                applyingId={applyingTemplateId}
+              />
             </Section>
 
             <Section title="Pass format" description="Choose Wallet's visual template and modern layout preference." badge="Core">
@@ -755,9 +778,18 @@ export default function PassDesigner() {
         <View style={styles.submitCard}>
           <View style={styles.submitCopy}>
             <Text style={styles.submitTitle}>Ready for Wallet?</Text>
-            <Text style={styles.submitSubtitle}>The server will validate, sign, and return the finished pass.</Text>
+            <Text style={styles.submitSubtitle}>
+              {applyingTemplateId
+                ? 'Loading the template artwork before generation…'
+                : 'The server will validate, sign, and return the finished pass.'}
+            </Text>
           </View>
-          <Button title="Create pass & add to Wallet" onPress={handleSubmit} loading={submitting} />
+          <Button
+            title="Create pass & add to Wallet"
+            onPress={handleSubmit}
+            loading={submitting}
+            disabled={Boolean(applyingTemplateId)}
+          />
         </View>
         <View style={styles.footer} />
       </ScrollView>
@@ -801,6 +833,68 @@ function parseJsonArray(value: string, label: string): JsonObject[] {
 
 function cleanStringRecord(value: Record<string, string>): Record<string, string> {
   return Object.fromEntries(Object.entries(value).filter(([, entry]) => entry.trim()).map(([key, entry]) => [key, entry.trim()]));
+}
+
+function assertModernStyleRequirements({
+  style,
+  transitType,
+  preferredStyleSchemes,
+  semantics,
+  images,
+}: {
+  style: PassStyle;
+  transitType: TransitType;
+  preferredStyleSchemes: PreferredStyleScheme[];
+  semantics: JsonObject;
+  images: Record<string, string>;
+}): void {
+  if (preferredStyleSchemes.includes('posterEventTicket')) {
+    if (style !== 'eventTicket') throw new Error('Poster layout requires the event-ticket format.');
+    if (!hasImageAsset(images, 'artwork')) {
+      throw new Error('Poster event tickets require poster artwork in Design → Artwork.');
+    }
+    assertSemanticKeys(semantics, ['eventName', 'venueName', 'venueRegionName', 'venueRoom'], 'Poster event ticket');
+    if (semantics.eventType === 'PKEventTypeSports') {
+      assertSemanticKeys(semantics, ['awayTeamAbbreviation', 'homeTeamAbbreviation'], 'Sports poster ticket');
+    }
+    if (semantics.eventType === 'PKEventTypeLivePerformance') {
+      if (!Array.isArray(semantics.performerNames) || semantics.performerNames.length === 0) {
+        throw new Error('Live-performance poster tickets require at least one performer name in pass semantics.');
+      }
+    }
+  }
+
+  if (preferredStyleSchemes.includes('semanticBoardingPass')) {
+    if (style !== 'boardingPass' || transitType !== 'PKTransitTypeAir') {
+      throw new Error('Enhanced boarding passes require an airline boarding-pass format.');
+    }
+    assertSemanticKeys(semantics, [
+      'airlineCode',
+      'flightNumber',
+      'departureAirportCode',
+      'departureCityName',
+      'departureLocationTimeZone',
+      'destinationAirportCode',
+      'destinationCityName',
+      'destinationLocationTimeZone',
+      'originalArrivalDate',
+      'originalBoardingDate',
+      'originalDepartureDate',
+      'passengerName',
+    ], 'Enhanced boarding pass');
+  }
+}
+
+function hasImageAsset(images: Record<string, string>, name: string): boolean {
+  return Boolean(images[name] || images[`${name}@2x`] || images[`${name}@3x`]);
+}
+
+function assertSemanticKeys(semantics: JsonObject, keys: string[], label: string): void {
+  const missing = keys.filter((key) => {
+    const value = semantics[key];
+    return value === undefined || value === null || value === '';
+  });
+  if (missing.length) throw new Error(`${label} is missing required semantics: ${missing.join(', ')}.`);
 }
 
 function hasLocationContent(location: EditableLocation): boolean {

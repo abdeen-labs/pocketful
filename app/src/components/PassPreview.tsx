@@ -46,8 +46,9 @@ export function PassPreview({
   const labels = HEX_COLOR.test(labelColor) ? labelColor : '#bdc9df';
   const primary = fields.filter((field) => field.category === 'primary' && field.value).slice(0, 2);
   const detail = fields.filter((field) => ['header', 'secondary', 'auxiliary'].includes(field.category) && field.value).slice(0, 4);
-  const logo = images.logo;
-  const strip = images.artwork ?? images.strip ?? images.background;
+  const posterArtwork = style === 'eventTicket' ? images.artwork : undefined;
+  const logo = posterArtwork ? images.primaryLogo ?? images.logo : images.logo;
+  const strip = posterArtwork ?? images.strip ?? images.background;
 
   return (
     <View style={styles.shell}>
@@ -59,7 +60,14 @@ export function PassPreview({
         <View style={styles.statusPill}><View style={styles.statusDot} /><Text style={styles.statusText}>Draft</Text></View>
       </View>
       <View style={[styles.pass, { backgroundColor: background }]}>
-        {strip ? <Image source={{ uri: strip.previewUri }} style={styles.artwork} contentFit="cover" transition={180} /> : null}
+        {strip ? (
+          <Image
+            source={{ uri: strip.previewUri }}
+            style={[styles.artwork, posterArtwork && styles.posterArtwork]}
+            contentFit="cover"
+            transition={180}
+          />
+        ) : null}
         <View style={styles.scrim} />
         <View style={styles.passContent}>
           <View style={styles.topRow}>
@@ -121,6 +129,7 @@ const styles = StyleSheet.create({
   statusText: { color: colors.textSoft, fontSize: 11, fontWeight: '600' },
   pass: { minHeight: 225, borderRadius: 24, overflow: 'hidden', shadowColor: colors.black, shadowOpacity: 0.4, shadowRadius: 20, shadowOffset: { width: 0, height: 10 }, elevation: 8 },
   artwork: { ...StyleSheet.absoluteFill, opacity: 0.36 },
+  posterArtwork: { opacity: 0.72 },
   scrim: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(0,0,0,0.08)' },
   passContent: { flex: 1, minHeight: 225, padding: 18, gap: 18 },
   topRow: { flexDirection: 'row', alignItems: 'center', gap: 9, minHeight: 30 },
