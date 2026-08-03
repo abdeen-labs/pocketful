@@ -27,12 +27,11 @@ FROM node:22-trixie-slim AS runtime
 ENV NODE_ENV=production
 ENV DATA_DIR=/data
 WORKDIR /app
-COPY --from=build /app/node_modules ./node_modules
-COPY --from=build /app/dist ./dist
-COPY --from=build /app/package.json ./package.json
-# Root on purpose: Railway mounts volumes owned by root, which masks any
-# build-time chown of /data and gives a non-root user SQLITE_CANTOPEN.
-RUN mkdir -p /data
+COPY --from=build --chown=node:node /app/node_modules ./node_modules
+COPY --from=build --chown=node:node /app/dist ./dist
+COPY --from=build --chown=node:node /app/package.json ./package.json
+RUN mkdir -p /data && chown node:node /data
+USER node
 EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
   CMD node -e "fetch('http://127.0.0.1:'+(process.env.PORT||3000)+'/healthz').then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
