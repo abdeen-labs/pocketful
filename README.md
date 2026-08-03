@@ -1,3 +1,15 @@
+<div align="center">
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/lockup-dark.svg">
+  <source media="(prefers-color-scheme: light)" srcset="docs/assets/lockup-light.svg">
+  <img src="docs/assets/lockup-dark.svg" alt="Abdeen Labs" width="205" height="40">
+</picture>
+
+`AXIS//OPEN`
+
+</div>
+
 # Pocketful
 
 <p align="center">
@@ -5,6 +17,8 @@
 </p>
 
 Pocketful is a self-hosted Apple Wallet pass designer for iPhone. Build a pass visually, sign it with your own server, and open Apple's native add-to-Wallet sheet without relying on EAS or any other Expo cloud service.
+
+Pocketful is an Abdeen Labs internal tool. The source is public.
 
 ## What you can build
 
@@ -29,6 +43,7 @@ Signing stays on the server because [`passkit-generator`](https://github.com/ale
 | --- | --- |
 | [`app/`](app/) | Expo, React Native, and TypeScript pass designer with a local Swift PassKit module |
 | [`server/`](server/) | Node.js, Express, and TypeScript API that validates, signs, and temporarily serves passes |
+| [`docs/`](docs/) | Abdeen Labs brand assets used by this README |
 | [`INSTRUCTIONS.md`](INSTRUCTIONS.md) | Complete certificate, deployment, and iPhone build guide |
 
 ## Getting started
@@ -75,3 +90,19 @@ The pass specification types in [`app/src/types.ts`](app/src/types.ts) and [`ser
 - `GET /api/passes/:id` returns the signed `.pkpass` until it expires.
 
 Passes are held only in memory and expire after 15 minutes by default. Deployments can optionally protect pass creation with a bearer token and change the retention window. See [`INSTRUCTIONS.md`](INSTRUCTIONS.md) for the environment variables and troubleshooting notes.
+
+## Privacy
+
+No account is required. Designs and artwork stay on your device while you edit. Creating a pass sends the specification to one place — the signing server you configure — where it is signed in memory and dropped after the download window. Signing certificates stay on the server and never enter the app.
+
+<div align="center">
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/seal-roundel-chalk.svg">
+  <source media="(prefers-color-scheme: light)" srcset="docs/assets/seal-roundel-carbon.svg">
+  <img src="docs/assets/seal-roundel-chalk.svg" alt="Abdeen Labs roundel seal" width="72" height="72">
+</picture>
+
+`AXIS//OPEN`
+
+</div>

@@ -4,7 +4,7 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import type { EditableField } from '@/components/FieldsEditor';
 import type { ProcessedImage } from '@/lib/images';
-import { colors, radii } from '@/theme';
+import { colors, fonts, radii, tracking } from '@/theme';
 import type { PassStyle } from '@/types';
 
 const HEX_COLOR = /^#([0-9a-fA-F]{6}|[0-9a-fA-F]{3})$/;
@@ -41,9 +41,9 @@ export function PassPreview({
   barcodeCount: number;
   voided: boolean;
 }) {
-  const background = HEX_COLOR.test(backgroundColor) ? backgroundColor : '#253451';
+  const background = HEX_COLOR.test(backgroundColor) ? backgroundColor : '#131822';
   const foreground = HEX_COLOR.test(foregroundColor) ? foregroundColor : '#ffffff';
-  const labels = HEX_COLOR.test(labelColor) ? labelColor : '#bdc9df';
+  const labels = HEX_COLOR.test(labelColor) ? labelColor : '#a9b2c0';
   const primary = fields.filter((field) => field.category === 'primary' && field.value).slice(0, 2);
   const detail = fields.filter((field) => ['header', 'secondary', 'auxiliary'].includes(field.category) && field.value).slice(0, 4);
   const posterArtwork = style === 'eventTicket' ? images.artwork : undefined;
@@ -82,7 +82,7 @@ export function PassPreview({
             )) : (
               <View style={styles.placeholderCopy}>
                 <Text style={[styles.previewLabel, { color: labels }]}>DESCRIPTION</Text>
-                <Text style={[styles.primaryValue, { color: foreground }]} numberOfLines={2}>{description || 'Your pass, beautifully organized.'}</Text>
+                <Text style={[styles.primaryValue, { color: foreground }]} numberOfLines={2}>{description || 'Your pass description appears here.'}</Text>
               </View>
             )}
           </View>
@@ -122,12 +122,12 @@ function PreviewField({ field, labelColor, valueColor, primary = false }: { fiel
 const styles = StyleSheet.create({
   shell: { gap: 12, marginBottom: 22 },
   previewHeading: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 4 },
-  eyebrow: { color: colors.accent, fontSize: 10, fontWeight: '800', letterSpacing: 1.2 },
-  styleLabel: { color: colors.text, fontSize: 17, fontWeight: '700', marginTop: 2 },
-  statusPill: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 10, paddingVertical: 6, borderRadius: radii.pill, backgroundColor: colors.card },
+  eyebrow: { color: colors.dim, fontFamily: fonts.monoMedium, fontSize: 11, letterSpacing: tracking.micro },
+  styleLabel: { color: colors.text, fontFamily: fonts.textSemiBold, fontSize: 17, marginTop: 2 },
+  statusPill: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 10, paddingVertical: 6, borderRadius: radii.control, backgroundColor: colors.card, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border },
   statusDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: colors.success },
-  statusText: { color: colors.textSoft, fontSize: 11, fontWeight: '600' },
-  pass: { minHeight: 225, borderRadius: 24, overflow: 'hidden', shadowColor: colors.black, shadowOpacity: 0.4, shadowRadius: 20, shadowOffset: { width: 0, height: 10 }, elevation: 8 },
+  statusText: { color: colors.textSoft, fontFamily: fonts.monoMedium, fontSize: 11 },
+  pass: { minHeight: 225, borderRadius: 24, overflow: 'hidden', borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border },
   artwork: { ...StyleSheet.absoluteFill, opacity: 0.36 },
   posterArtwork: { opacity: 0.72 },
   scrim: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(0,0,0,0.08)' },
@@ -153,5 +153,5 @@ const styles = StyleSheet.create({
   notchLeft: { left: -11 },
   notchRight: { right: -11 },
   voided: { ...StyleSheet.absoluteFill, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(70,0,10,0.42)' },
-  voidedText: { color: colors.white, fontSize: 42, fontWeight: '900', letterSpacing: 5, transform: [{ rotate: '-12deg' }] },
+  voidedText: { color: colors.white, fontFamily: fonts.displayHeavy, fontSize: 42, letterSpacing: 5, transform: [{ rotate: '-12deg' }] },
 });

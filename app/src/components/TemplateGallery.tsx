@@ -2,7 +2,7 @@ import React from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { TEMPLATES, type PassTemplate, type TemplateField } from '@/lib/templates';
-import { colors, radii } from '@/theme';
+import { colors, fonts, radii, tracking } from '@/theme';
 import type { BarcodeFormat, PassStyle } from '@/types';
 
 const STYLE_LABELS: Record<PassStyle, string> = {
@@ -207,23 +207,23 @@ const CARD_GAP = 12;
 const styles = StyleSheet.create({
   gallery: { gap: 13 },
   galleryIntro: { gap: 3 },
-  galleryEyebrow: { color: colors.accent, fontSize: 9, fontWeight: '800', letterSpacing: 1.1 },
-  galleryHint: { color: colors.dim, fontSize: 11, lineHeight: 16 },
-  galleryCount: { color: colors.dim, fontSize: 10, fontWeight: '600', textAlign: 'center' },
+  galleryEyebrow: { color: colors.dim, fontFamily: fonts.monoMedium, fontSize: 11, letterSpacing: tracking.micro },
+  galleryHint: { color: colors.dim, fontFamily: fonts.text, fontSize: 11, lineHeight: 16 },
+  galleryCount: { color: colors.dim, fontFamily: fonts.monoMedium, fontSize: 10, textAlign: 'center' },
   scroll: { marginHorizontal: -16 },
   row: { paddingHorizontal: 16, gap: CARD_GAP },
-  card: { width: CARD_WIDTH, padding: 9, gap: 11, borderRadius: radii.large, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border },
+  card: { width: CARD_WIDTH, padding: 9, gap: 11, borderRadius: radii.plate, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border },
   cardDisabled: { opacity: 0.62 },
   cardApplied: { borderColor: colors.accent, backgroundColor: colors.cardElevated },
-  pressed: { opacity: 0.82, transform: [{ scale: 0.985 }] },
-  pass: { height: 154, borderRadius: 18, padding: 14, overflow: 'hidden', justifyContent: 'space-between', shadowColor: colors.black, shadowOpacity: 0.28, shadowRadius: 12, shadowOffset: { width: 0, height: 7 } },
+  pressed: { transform: [{ translateY: 1 }] },
+  pass: { height: 154, borderRadius: 18, padding: 14, overflow: 'hidden', justifyContent: 'space-between' },
   glowLarge: { position: 'absolute', width: 142, height: 142, borderRadius: 71, right: -42, top: -74, opacity: 0.2 },
   glowSmall: { position: 'absolute', width: 92, height: 92, borderRadius: 46, left: -38, bottom: -62, opacity: 0.08 },
   passTopRow: { flexDirection: 'row', alignItems: 'center', gap: 7 },
   glyphMark: { width: 27, height: 27, borderRadius: 8, borderWidth: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.08)' },
   glyph: { fontSize: 13 },
   logoText: { flex: 1, fontSize: 12, fontWeight: '800', letterSpacing: -0.15 },
-  stylePill: { borderRadius: radii.pill, paddingHorizontal: 7, paddingVertical: 4, backgroundColor: 'rgba(0,0,0,0.14)' },
+  stylePill: { borderRadius: radii.round, paddingHorizontal: 7, paddingVertical: 4, backgroundColor: 'rgba(0,0,0,0.14)' },
   styleTag: { fontSize: 6.5, fontWeight: '900', letterSpacing: 0.75 },
   primaryRow: { flexDirection: 'row', gap: 12, minHeight: 39 },
   field: { flex: 1, minWidth: 0, gap: 1 },
@@ -245,14 +245,14 @@ const styles = StyleSheet.create({
   notchRight: { right: -8 },
   caption: { gap: 5, paddingHorizontal: 2, paddingBottom: 2 },
   captionTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  name: { flex: 1, color: colors.text, fontSize: 15, fontWeight: '800', letterSpacing: -0.2 },
-  applyText: { color: colors.accent, fontSize: 8, fontWeight: '900', letterSpacing: 0.65 },
+  name: { flex: 1, color: colors.text, fontFamily: fonts.textSemiBold, fontSize: 15, letterSpacing: -0.2 },
+  applyText: { color: colors.link, fontFamily: fonts.monoSemiBold, fontSize: 10, letterSpacing: 0.65 },
   appliedText: { color: colors.success },
-  tagline: { color: colors.textSoft, fontSize: 11, lineHeight: 15 },
+  tagline: { color: colors.textSoft, fontFamily: fonts.text, fontSize: 11, lineHeight: 15 },
   featureRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 5, marginTop: 2 },
-  featurePill: { paddingHorizontal: 7, paddingVertical: 4, borderRadius: radii.pill, backgroundColor: colors.accentMuted },
-  featureText: { color: colors.accent, fontSize: 8.5, fontWeight: '700' },
+  featurePill: { paddingHorizontal: 7, paddingVertical: 4, borderRadius: radii.control, backgroundColor: colors.band, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border },
+  featureText: { color: colors.textSoft, fontFamily: fonts.monoMedium, fontSize: 10 },
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 2 },
-  metaText: { color: colors.dim, fontSize: 9.5, fontWeight: '600' },
+  metaText: { color: colors.dim, fontFamily: fonts.monoMedium, fontSize: 10 },
   metaDot: { width: 3, height: 3, borderRadius: 1.5, backgroundColor: colors.borderStrong },
 });
