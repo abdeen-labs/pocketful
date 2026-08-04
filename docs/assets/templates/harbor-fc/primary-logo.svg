@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 126 30">
+  <g>
+    <path d="M6,4.6 Q13,2.8 20,4.6 L20,13 Q20,19.8 13,23.2 Q6,19.8 6,13 Z"
+          fill="none" stroke="#7dd3fc" stroke-width="1.7"/>
+    <path d="M8.6,12.6 q2.2,-1.8 4.4,0 t4.4,0" fill="none" stroke="#7dd3fc" stroke-width="1.4" stroke-linecap="round"/>
+    <circle cx="13" cy="8.2" r="1.3" fill="#ffffff"/>
+  </g>
+  <text x="27" y="19.6" font-family="Avenir Next Condensed" font-weight="700" font-size="16" letter-spacing="0.8" fill="#ffffff">HARBOR <tspan fill="#7dd3fc">FC</tspan></text>
+  <text x="27" y="27.6" font-family="Avenir Next" font-weight="600" font-size="5" letter-spacing="2.2" fill="#9fd9fb" opacity="0.9">KINGSPORT · EST 1987</text>
+</svg>

@@ -192,7 +192,7 @@ export const TEMPLATES: PassTemplate[] = [
     id: 'midnight-live',
     name: 'Midnight Live',
     tagline: 'A real iOS 18 poster ticket with structured seating, venue context, and Event Guide actions.',
-    features: ['iOS 18 poster', 'Event Guide', 'Live Activity', 'Bundled photo artwork'],
+    features: ['iOS 18 poster', 'Event Guide', 'Live Activity', 'Bundled artwork'],
     glyph: '🎤',
     style: 'eventTicket',
     preferredStyleSchemes: ['posterEventTicket', 'eventTicket'],
@@ -213,7 +213,8 @@ export const TEMPLATES: PassTemplate[] = [
     eventLogoText: 'Midnight Live',
     description: 'Midnight Live concert ticket',
     organizationName: 'Neon Stage Presents',
-    logoText: 'Neon Stage',
+    // The bundled wordmark logo carries the brand — logoText would render beside it twice.
+    logoText: '',
     colors: { background: '#1c1130', foreground: '#f6f1ff', label: '#b79ce4', footer: '#140b24' },
     fields: [
       { category: 'header', key: 'show', label: 'Show', value: SAMPLE_DATES.concertStart, valueType: 'date', dateStyle: 'PKDateStyleShort', timeStyle: 'PKDateStyleShort' },
@@ -228,7 +229,6 @@ export const TEMPLATES: PassTemplate[] = [
       { category: 'back', key: 'entry-details', label: 'Entry details', value: 'Enter through the North Gate, Portal 4. Doors open at 6:30 PM. Re-entry is allowed until 9 PM.' },
       { category: 'back', key: 'venue-policy', label: 'Venue policy', value: 'Small bags up to 12 × 6 × 12 inches are permitted. The Grand Hall is a cashless venue.' },
       { category: 'back', key: 'support-phone', label: 'Venue support', value: '+1 (212) 555-0144', dataDetectorTypes: ['PKDataDetectorTypePhoneNumber'] },
-      { category: 'back', key: 'artwork-credit', label: 'Artwork credit', value: 'Photo by Aleksandr Popov on Unsplash · https://unsplash.com/photos/3InMDrsuYrk', dataDetectorTypes: ['PKDataDetectorTypeLink'] },
     ],
     semantics: {
       eventType: 'PKEventTypeLivePerformance',
@@ -268,7 +268,7 @@ export const TEMPLATES: PassTemplate[] = [
     id: 'harbor-fc',
     name: 'Harbor FC',
     tagline: 'Match-day poster ticket with team identity, color-coded seating, and stadium guidance.',
-    features: ['iOS 18 poster', 'Sports semantics', 'Event Guide', 'Bundled photo artwork'],
+    features: ['iOS 18 poster', 'Sports semantics', 'Event Guide', 'Bundled artwork'],
     glyph: '⚽️',
     style: 'eventTicket',
     preferredStyleSchemes: ['posterEventTicket', 'eventTicket'],
@@ -285,7 +285,7 @@ export const TEMPLATES: PassTemplate[] = [
     eventLogoText: 'Harbor FC',
     description: 'Harbor FC match ticket',
     organizationName: 'Harbor FC',
-    logoText: 'Harbor FC',
+    logoText: '',
     colors: { background: '#082f49', foreground: '#f0f9ff', label: '#7dd3fc', footer: '#062538' },
     fields: [
       { category: 'header', key: 'kickoff', label: 'Kickoff', value: SAMPLE_DATES.matchStart, valueType: 'date', dateStyle: 'PKDateStyleShort', timeStyle: 'PKDateStyleShort' },
@@ -299,7 +299,6 @@ export const TEMPLATES: PassTemplate[] = [
       { category: 'additionalInfo', key: 'supporters', label: 'Supporters section', value: 'Home colors encouraged · Scarves up before kickoff.', row: '1' },
       { category: 'back', key: 'matchday', label: 'Match-day guide', value: 'Blue Gate opens at 5 PM. Food ordering, parking, directions, and team merchandise are available in the Event Guide.' },
       { category: 'back', key: 'policy', label: 'Stadium policy', value: 'Bags must be smaller than 12 × 12 × 6 inches. No outside food or beverages.' },
-      { category: 'back', key: 'artwork-credit', label: 'Artwork credit', value: 'Photo by Vienna Reyes on Unsplash · https://unsplash.com/photos/qCrKTET_09o', dataDetectorTypes: ['PKDataDetectorTypeLink'] },
     ],
     semantics: {
       eventType: 'PKEventTypeSports',
