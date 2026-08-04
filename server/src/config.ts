@@ -6,6 +6,8 @@ export interface Config {
   /** The pass management API requires `Authorization: Bearer <token>`. */
   apiToken: string;
   passTtlSeconds: number;
+  /** Byte ceiling for the in-memory signed-pass store. Oldest entries evict first. */
+  passStoreMaxBytes: number;
   /** Public origin stamped into updatable passes as webServiceURL, e.g. https://pass.abdeen.dev */
   publicBaseUrl?: string;
   /** Where the SQLite database lives. Mount a Railway volume here. */
@@ -53,6 +55,8 @@ export function loadConfig(): Config {
     organizationName: process.env.ORGANIZATION_NAME || "Pocketful",
     apiToken: required("API_TOKEN"),
     passTtlSeconds: Number(process.env.PASS_TTL_SECONDS) || 900,
+    passStoreMaxBytes:
+      Number(process.env.PASS_STORE_MAX_BYTES) || 128 * 1024 * 1024,
     publicBaseUrl: process.env.PUBLIC_BASE_URL?.replace(/\/+$/, "") || undefined,
     dataDir: process.env.DATA_DIR || `${process.cwd()}/data`,
     apns:
