@@ -311,3 +311,154 @@ for (const { name, spec, status, fragment } of REJECTIONS) {
     rejects(spec, status, fragment);
   });
 }
+
+// Plan 006: the option objects are validated against allowlists built from
+// types.ts. The maximal fixtures below populate every allowlisted key —
+// they are supersets of everything app/src/app/index.tsx and all templates
+// in app/src/lib/templates.ts can produce, so these passing proves the
+// allowlists cannot reject a payload the app sends today.
+
+const MAXIMAL_PASS_OPTIONS = {
+  appLaunchURL: "pocketful://open/pass",
+  voided: true,
+  userInfo: { orderId: "A-1042", tier: "gold" },
+  sharingProhibited: true,
+  groupingIdentifier: "group-1",
+  suppressStripShine: true,
+  maxDistance: 500,
+  semantics: { eventName: "Test Event", venueName: "Test Hall" },
+  webServiceURL: "https://passes.example.test",
+  associatedStoreIdentifiers: [123456789],
+  authenticationToken: "0123456789abcdef",
+};
+
+const MAXIMAL_EVENT_OPTIONS = {
+  bagPolicyURL: "https://example.test/bags",
+  orderFoodURL: "https://example.test/food",
+  parkingInformationURL: "https://example.test/parking",
+  directionsInformationURL: "https://maps.apple.com/?q=Test+Hall",
+  purchaseParkingURL: "https://example.test/parking/buy",
+  merchandiseURL: "https://example.test/merch",
+  transitInformationURL: "https://example.test/transit",
+  accessibilityURL: "https://example.test/accessibility",
+  addOnURL: "https://example.test/addons",
+  contactVenueEmail: "venue@example.test",
+  contactVenuePhoneNumber: "+1 212 555 0144",
+  contactVenueWebsite: "https://example.test",
+  transferURL: "https://example.test/transfer",
+  sellURL: "https://example.test/sell",
+  suppressHeaderDarkening: true,
+  useAutomaticColors: true,
+  auxiliaryStoreIdentifiers: [987654321],
+  eventLogoText: "TEST EVENT",
+};
+
+const MAXIMAL_BOARDING_OPTIONS = {
+  changeSeatURL: "https://example.test/seat",
+  entertainmentURL: "https://example.test/entertainment",
+  purchaseAdditionalBaggageURL: "https://example.test/bags",
+  purchaseLoungeAccessURL: "https://example.test/lounge",
+  purchaseWifiURL: "https://example.test/wifi",
+  upgradeURL: "https://example.test/upgrade",
+  managementURL: "https://example.test/manage",
+  registerServiceAnimalURL: "https://example.test/service-animal",
+  reportLostBagURL: "https://example.test/lost-bag",
+  requestWheelchairURL: "https://example.test/wheelchair",
+  transitProviderEmail: "support@example.test",
+  transitProviderPhoneNumber: "+1 800 555 0208",
+  transitProviderWebsiteURL: "https://example.test",
+};
+
+test("accepts every allowlisted options key at once", () => {
+  validateSpec({ ...validSpec(), options: MAXIMAL_PASS_OPTIONS });
+});
+
+test("accepts every allowlisted eventTicketOptions key at once", () => {
+  validateSpec({
+    ...validSpec(),
+    style: "eventTicket",
+    eventTicketOptions: MAXIMAL_EVENT_OPTIONS,
+  });
+});
+
+test("accepts every allowlisted boardingPassOptions key at once", () => {
+  validateSpec({
+    ...validSpec(),
+    style: "boardingPass",
+    boardingPassOptions: MAXIMAL_BOARDING_OPTIONS,
+  });
+});
+
+const OPTION_REJECTIONS: { name: string; spec: unknown; fragment: string }[] = [
+  {
+    name: "an unrecognized options key",
+    spec: { ...validSpec(), options: { frobnicate: true } },
+    fragment: "options.frobnicate is not a recognized key",
+  },
+  {
+    name: "an http URL where https is required",
+    spec: { ...validSpec(), options: { webServiceURL: "http://example.test" } },
+    fragment: "options.webServiceURL must use https",
+  },
+  {
+    name: "a javascript appLaunchURL",
+    spec: { ...validSpec(), options: { appLaunchURL: "javascript:alert(1)" } },
+    fragment: "options.appLaunchURL must not use a script scheme",
+  },
+  {
+    name: "a relative event URL",
+    spec: {
+      ...validSpec(),
+      style: "eventTicket",
+      eventTicketOptions: { merchandiseURL: "/merch" },
+    },
+    fragment: "eventTicketOptions.merchandiseURL must be an absolute URL",
+  },
+  {
+    name: "a negative maxDistance",
+    spec: { ...validSpec(), options: { maxDistance: -5 } },
+    fragment: "options.maxDistance must be a number greater than 0",
+  },
+  {
+    name: "a non-array associatedStoreIdentifiers",
+    spec: { ...validSpec(), options: { associatedStoreIdentifiers: "123" } },
+    fragment: "options.associatedStoreIdentifiers must be an array of positive integers",
+  },
+  {
+    name: "an oversized userInfo",
+    spec: { ...validSpec(), options: { userInfo: { blob: "x".repeat(5_000) } } },
+    fragment: "options.userInfo must serialize to at most 4096 characters",
+  },
+  {
+    name: "a non-boolean voided",
+    spec: { ...validSpec(), options: { voided: "yes" } },
+    fragment: "options.voided must be a boolean",
+  },
+  {
+    name: "a whitespace-carrying venue email",
+    spec: {
+      ...validSpec(),
+      style: "eventTicket",
+      eventTicketOptions: { contactVenueEmail: "not an email" },
+    },
+    fragment: "eventTicketOptions.contactVenueEmail must be an email address",
+  },
+];
+
+for (const { name, spec, fragment } of OPTION_REJECTIONS) {
+  test(`rejects ${name}`, () => {
+    rejects(spec, 400, fragment);
+  });
+}
+
+test("lenient mode accepts a spec the strict path rejects", () => {
+  // The proof that installed passes keep refreshing: a stored spec that a
+  // newer rule would reject must still validate on the rebuild path.
+  const spec = {
+    ...validSpec(),
+    options: { frobnicate: true, webServiceURL: "http://example.test" },
+  };
+  rejects(spec, 400, "not a recognized key");
+  const result = validateSpec(spec, { lenient: true });
+  assert.equal(result.spec.description, "Test pass");
+});
