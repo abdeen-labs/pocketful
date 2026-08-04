@@ -340,13 +340,34 @@ function assertSemanticKeys(
   }
 }
 
+export interface ValidateOptions {
+  /**
+   * Stored specs are revalidated on every device refresh (see updatable.ts).
+   * A rule tightened after a pass was issued must not brick it, so rules added
+   * for new submissions are skipped here and logged instead. Any future rule
+   * addition to this file must go through rejectOrWarn for the same reason.
+   */
+  lenient?: boolean;
+}
+
+function rejectOrWarn(lenient: boolean, message: string): void {
+  if (lenient) {
+    console.warn(`Stored spec would be rejected by a newer rule: ${message}`);
+    return;
+  }
+  throw new ApiError(400, message);
+}
+
 export interface ValidatedSpec {
   spec: PassSpec;
   fields: Partial<Record<FieldCategory, PassField[]>>;
   images: Record<string, Buffer>;
 }
 
-export function validateSpec(body: unknown): ValidatedSpec {
+export function validateSpec(
+  body: unknown,
+  validateOptions: ValidateOptions = {}
+): ValidatedSpec {
   if (!isRecord(body)) throw new ApiError(400, "Request body must be a JSON object");
   const spec = body as unknown as PassSpec;
   if (!STYLES.includes(spec.style)) throw new ApiError(400, `style must be one of ${STYLES.join(", ")}`);
