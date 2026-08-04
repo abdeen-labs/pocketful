@@ -68,13 +68,6 @@ export function initDb(dataDir: string): void {
     CREATE INDEX IF NOT EXISTS idx_registrations_serial
       ON registrations (serial_number);
   `);
-  // Additive migration: existing deployments predate the revision column.
-  const columns = db.prepare(`PRAGMA table_info(passes)`).all() as {
-    name: string;
-  }[];
-  if (!columns.some((column) => column.name === "revision")) {
-    db.exec(`ALTER TABLE passes ADD COLUMN revision INTEGER NOT NULL DEFAULT 0`);
-  }
 }
 
 export function insertPass(

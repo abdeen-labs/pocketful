@@ -97,14 +97,9 @@ export function walletWebServiceRouter(config: Config): Router {
       res.status(304).set({ ETag: etag }).send();
       return;
     }
-    // Fallback for a device sending only If-Modified-Since: compare strictly
-    // (<, not <=) so a same-second update reads as changed. A needless
-    // re-download is harmless; a missed update is not.
-    const ifModifiedSince = Date.parse(req.get("if-modified-since") ?? "");
-    if (!Number.isNaN(ifModifiedSince) && record.updatedAt < ifModifiedSince) {
-      res.status(304).set({ ETag: etag }).send();
-      return;
-    }
+    // If-Modified-Since is deliberately ignored: every served pass carries an
+    // ETag, and HTTP dates only have second precision — a timestamp comparison
+    // here is how same-second updates used to get lost as false 304s.
     let buffer: Buffer;
     try {
       buffer = rebuildStoredPass(record, config);

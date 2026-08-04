@@ -4,7 +4,6 @@ import { mkdtempSync } from "node:fs";
 import type { AddressInfo } from "node:net";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import Database from "better-sqlite3";
 import type { Server } from "node:http";
 import type { Config } from "./config";
 import {
@@ -214,8 +213,9 @@ test("fetching with the current ETag returns 304", async () => {
 });
 
 test("a same-second update is never served as 304 to If-Modified-Since", async () => {
-  // Simulate the losing sequence: the device fetched after update N and holds
-  // the (second-truncated) Last-Modified; update N+1 lands in the same second.
+  // If-Modified-Since must never produce a 304: HTTP dates carry only second
+  // precision, so honoring it is how same-second updates used to get lost.
+  // This pins the header as ignored against any future reintroduction.
   const record = getPassRecord(SERIAL);
   assert.ok(record);
   const heldLastModified = new Date(record.updatedAt).toUTCString();
@@ -247,44 +247,4 @@ test("after unregistering, the next poll returns 204", async () => {
   assert.equal(res.status, 200);
   const next = await poll("device-a");
   assert.equal(next.status, 204);
-});
-
-// Runs last: it re-points the db module's singleton connection at a fresh
-// directory, so every test above must already have finished with the old one.
-test("initDb adds the revision column to a pre-existing database", () => {
-  const dataDir = mkdtempSync(path.join(tmpdir(), "pocketful-migrate-"));
-  const file = path.join(dataDir, "pocketful.sqlite");
-
-  // Create the old schema — no revision column — with one row, as a
-  // deployment that predates this migration would have on its volume.
-  const old = new Database(file);
-  old.exec(`
-    CREATE TABLE passes (
-      serial_number   TEXT PRIMARY KEY,
-      auth_token      TEXT NOT NULL,
-      web_service_url TEXT NOT NULL,
-      spec_json       TEXT NOT NULL,
-      description     TEXT NOT NULL,
-      created_at      INTEGER NOT NULL,
-      updated_at      INTEGER NOT NULL
-    );
-  `);
-  old
-    .prepare(
-      `INSERT INTO passes VALUES ('old-serial', 'tok', 'https://example.test', '{}', 'Old pass', 1, 2)`
-    )
-    .run();
-  old.close();
-
-  initDb(dataDir);
-  const record = getPassRecord("old-serial");
-  assert.ok(record, "pre-existing row survived the migration");
-  assert.equal(record.revision, 0);
-  assert.equal(record.authToken, "tok");
-  assert.equal(record.createdAt, 1);
-  assert.equal(record.updatedAt, 2);
-
-  // Idempotent: a second initDb against the migrated file must not throw.
-  initDb(dataDir);
-  assert.ok(getPassRecord("old-serial"));
 });
