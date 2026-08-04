@@ -18,6 +18,7 @@
     "apns2": "^12.2.0",
     "better-sqlite3": "^13.0.2",
     "express": "^4.21.2",
+    "express-rate-limit": "8.6.1",
     "passkit-generator": "^3.5.7"
   },
   "devDependencies": {

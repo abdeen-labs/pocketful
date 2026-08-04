@@ -1,5 +1,6 @@
 import { randomBytes, randomUUID } from "node:crypto";
 import express from "express";
+import rateLimit from "express-rate-limit";
 import { pushPassUpdate, type PushResult } from "./apns";
 import { loadConfig, type Config } from "./config";
 import {
@@ -34,6 +35,17 @@ export function createApp(config: Config): express.Express {
   function requestOrigin(req: express.Request): string {
     return config.publicBaseUrl ?? `${req.protocol}://${req.get("host")}`;
   }
+
+  // Not on /healthz — the Docker HEALTHCHECK polls it every 30 seconds and
+  // Railway may poll it too.
+  const limiter = rateLimit({
+    windowMs: 60_000,
+    limit: 120,
+    standardHeaders: "draft-7",
+    legacyHeaders: false,
+  });
+  app.use("/v1", limiter);
+  app.use("/api", limiter);
 
   // Authenticate before any body is buffered: /api/passes accepts megabytes.
   app.use("/api", (req, _res, next) => {
