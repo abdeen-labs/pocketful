@@ -14,6 +14,8 @@ export interface PassRecord {
   description: string;
   createdAt: number;
   updatedAt: number;
+  /** Bumped on every update; freshness key with sub-second resolution. */
+  revision: number;
 }
 
 export interface PassSummary {
@@ -53,7 +55,8 @@ export function initDb(dataDir: string): void {
       spec_json       TEXT NOT NULL,
       description     TEXT NOT NULL,
       created_at      INTEGER NOT NULL,
-      updated_at      INTEGER NOT NULL
+      updated_at      INTEGER NOT NULL,
+      revision        INTEGER NOT NULL DEFAULT 0
     );
     CREATE TABLE IF NOT EXISTS registrations (
       device_library_id TEXT NOT NULL,
@@ -65,18 +68,30 @@ export function initDb(dataDir: string): void {
     CREATE INDEX IF NOT EXISTS idx_registrations_serial
       ON registrations (serial_number);
   `);
+  // Additive migration: existing deployments predate the revision column.
+  const columns = db.prepare(`PRAGMA table_info(passes)`).all() as {
+    name: string;
+  }[];
+  if (!columns.some((column) => column.name === "revision")) {
+    db.exec(`ALTER TABLE passes ADD COLUMN revision INTEGER NOT NULL DEFAULT 0`);
+  }
 }
 
 export function insertPass(
-  record: Omit<PassRecord, "createdAt" | "updatedAt">
+  record: Omit<PassRecord, "createdAt" | "updatedAt" | "revision">
 ): PassRecord {
   const now = Date.now();
-  const full: PassRecord = { ...record, createdAt: now, updatedAt: now };
+  const full: PassRecord = {
+    ...record,
+    createdAt: now,
+    updatedAt: now,
+    revision: 0,
+  };
   conn()
     .prepare(
       `INSERT INTO passes
-         (serial_number, auth_token, web_service_url, spec_json, description, created_at, updated_at)
-       VALUES (@serialNumber, @authToken, @webServiceURL, @specJson, @description, @createdAt, @updatedAt)`
+         (serial_number, auth_token, web_service_url, spec_json, description, created_at, updated_at, revision)
+       VALUES (@serialNumber, @authToken, @webServiceURL, @specJson, @description, @createdAt, @updatedAt, @revision)`
     )
     .run(full);
   return full;
@@ -87,28 +102,35 @@ export function getPassRecord(serialNumber: string): PassRecord | undefined {
     .prepare(
       `SELECT serial_number AS serialNumber, auth_token AS authToken,
               web_service_url AS webServiceURL, spec_json AS specJson,
-              description, created_at AS createdAt, updated_at AS updatedAt
+              description, created_at AS createdAt, updated_at AS updatedAt,
+              revision
        FROM passes WHERE serial_number = ?`
     )
     .get(serialNumber);
   return row as PassRecord | undefined;
 }
 
+/** Returns undefined when no row matched — the pass was deleted concurrently. */
 export function updatePassSpec(
   serialNumber: string,
   specJson: string,
   description: string,
   webServiceURL: string
-): number {
+): { updatedAt: number; revision: number } | undefined {
   const updatedAt = Date.now();
-  conn()
+  const info = conn()
     .prepare(
       `UPDATE passes
-       SET spec_json = ?, description = ?, web_service_url = ?, updated_at = ?
+       SET spec_json = ?, description = ?, web_service_url = ?,
+           updated_at = ?, revision = revision + 1
        WHERE serial_number = ?`
     )
     .run(specJson, description, webServiceURL, updatedAt, serialNumber);
-  return updatedAt;
+  if (info.changes === 0) return undefined;
+  const row = conn()
+    .prepare(`SELECT revision FROM passes WHERE serial_number = ?`)
+    .get(serialNumber) as { revision: number } | undefined;
+  return row ? { updatedAt, revision: row.revision } : undefined;
 }
 
 export function deletePassRecord(serialNumber: string): boolean {

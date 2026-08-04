@@ -89,14 +89,20 @@ export function walletWebServiceRouter(config: Config): Router {
 
   router.get("/v1/passes/:passTypeIdentifier/:serialNumber", (req, res) => {
     const record = authenticatedPass(req, config);
-    // Last-Modified only carries second precision, so compare on seconds.
-    const updatedSeconds = Math.floor(record.updatedAt / 1000);
+    // Freshness is keyed on a monotonic revision, not on Last-Modified:
+    // HTTP dates carry only second precision, so two updates inside one second
+    // would otherwise be indistinguishable and the second would never ship.
+    const etag = `"${record.serialNumber}-${record.revision}"`;
+    if (req.get("if-none-match") === etag) {
+      res.status(304).set({ ETag: etag }).send();
+      return;
+    }
+    // Fallback for a device sending only If-Modified-Since: compare strictly
+    // (<, not <=) so a same-second update reads as changed. A needless
+    // re-download is harmless; a missed update is not.
     const ifModifiedSince = Date.parse(req.get("if-modified-since") ?? "");
-    if (
-      !Number.isNaN(ifModifiedSince) &&
-      updatedSeconds * 1000 <= ifModifiedSince
-    ) {
-      res.status(304).send();
+    if (!Number.isNaN(ifModifiedSince) && record.updatedAt < ifModifiedSince) {
+      res.status(304).set({ ETag: etag }).send();
       return;
     }
     let buffer: Buffer;
@@ -112,7 +118,8 @@ export function walletWebServiceRouter(config: Config): Router {
     res
       .set({
         "Content-Type": "application/vnd.apple.pkpass",
-        "Last-Modified": new Date(updatedSeconds * 1000).toUTCString(),
+        ETag: etag,
+        "Last-Modified": new Date(record.updatedAt).toUTCString(),
         "Cache-Control": "no-store",
       })
       .send(buffer);
