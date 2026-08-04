@@ -119,6 +119,7 @@ Railway variable in Part 2.
    | `ORGANIZATION_NAME` | optional — default org name on passes |
    | `API_TOKEN` | the bearer token required by the pass management API — generate a long random one, e.g. `openssl rand -hex 32` |
    | `PASS_TTL_SECONDS` | optional — how long a created pass stays downloadable (default 900) |
+   | `PASS_STORE_MAX_BYTES` | optional — byte ceiling for the in-memory store of downloadable passes; oldest entries evict first (default 134217728, i.e. 128 MB) |
    | `PUBLIC_BASE_URL` | optional — public origin stamped into updatable passes as `webServiceURL`, e.g. `https://pass.abdeen.dev`; defaults to the request's own host |
    | `DATA_DIR` | optional — where the SQLite database for updatable passes lives (default `./data`); point it at a mounted volume |
    | `APNS_KEY_ID` | optional — key ID of an APNs auth key, enables update pushes (Part 4) |
