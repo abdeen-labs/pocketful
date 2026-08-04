@@ -492,42 +492,19 @@ function optionRuleError(
 function validateOptionObject(
   value: unknown,
   path: string,
-  rules: Record<string, OptionRule>,
-  lenient: boolean
+  rules: Record<string, OptionRule>
 ): void {
   if (value === undefined) return;
-  if (!isRecord(value)) {
-    rejectOrWarn(lenient, `${path} must be an object`);
-    return;
-  }
+  if (!isRecord(value)) throw new ApiError(400, `${path} must be an object`);
   for (const [key, entry] of Object.entries(value)) {
     if (entry === undefined) continue;
     const rule = rules[key];
     if (!rule) {
-      rejectOrWarn(lenient, `${path}.${key} is not a recognized key`);
-      continue;
+      throw new ApiError(400, `${path}.${key} is not a recognized key`);
     }
     const error = optionRuleError(entry, `${path}.${key}`, rule);
-    if (error) rejectOrWarn(lenient, error);
+    if (error) throw new ApiError(400, error);
   }
-}
-
-export interface ValidateOptions {
-  /**
-   * Stored specs are revalidated on every device refresh (see updatable.ts).
-   * A rule tightened after a pass was issued must not brick it, so rules added
-   * for new submissions are skipped here and logged instead. Any future rule
-   * addition to this file must go through rejectOrWarn for the same reason.
-   */
-  lenient?: boolean;
-}
-
-function rejectOrWarn(lenient: boolean, message: string): void {
-  if (lenient) {
-    console.warn(`Stored spec would be rejected by a newer rule: ${message}`);
-    return;
-  }
-  throw new ApiError(400, message);
 }
 
 export interface ValidatedSpec {
@@ -536,10 +513,7 @@ export interface ValidatedSpec {
   images: Record<string, Buffer>;
 }
 
-export function validateSpec(
-  body: unknown,
-  validateOptions: ValidateOptions = {}
-): ValidatedSpec {
+export function validateSpec(body: unknown): ValidatedSpec {
   if (!isRecord(body)) throw new ApiError(400, "Request body must be a JSON object");
   const spec = body as unknown as PassSpec;
   if (!STYLES.includes(spec.style)) throw new ApiError(400, `style must be one of ${STYLES.join(", ")}`);
@@ -561,19 +535,16 @@ export function validateSpec(
 
   validateCollections(spec);
   validateAdvanced(spec);
-  const lenient = validateOptions.lenient === true;
-  validateOptionObject(spec.options, "options", PASS_OPTION_RULES, lenient);
+  validateOptionObject(spec.options, "options", PASS_OPTION_RULES);
   validateOptionObject(
     spec.eventTicketOptions,
     "eventTicketOptions",
-    EVENT_TICKET_OPTION_RULES,
-    lenient
+    EVENT_TICKET_OPTION_RULES
   );
   validateOptionObject(
     spec.boardingPassOptions,
     "boardingPassOptions",
-    BOARDING_PASS_OPTION_RULES,
-    lenient
+    BOARDING_PASS_OPTION_RULES
   );
   const fields = validateFields(spec.fields);
   if (fields.additionalInfo?.length && spec.style !== "eventTicket") {
