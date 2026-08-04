@@ -296,6 +296,19 @@ export function createApp(config: Config): express.Express {
         res.status(400).json({ error: "Request body is not valid JSON" });
         return;
       }
+      // body-parser signals rejections (413 too large, 415 bad type) as
+      // http-errors with a 4xx statusCode; pass those through instead of
+      // collapsing them into a 500.
+      if (
+        err instanceof Error &&
+        "statusCode" in err &&
+        typeof err.statusCode === "number" &&
+        err.statusCode >= 400 &&
+        err.statusCode < 500
+      ) {
+        res.status(err.statusCode).json({ error: err.message });
+        return;
+      }
       console.error(err);
       res.status(500).json({ error: "Internal server error" });
     }
