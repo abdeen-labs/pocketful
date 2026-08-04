@@ -7,19 +7,67 @@
   fill="none"
 >
   <title>Pocketful ring mark</title>
-  <desc>The Pocketful ring mark: a gradient ring with an offset dot.</desc>
+  <desc>The Pocketful ring mark with a restrained translucent-glass finish.</desc>
 
   <defs>
-    <linearGradient id="ring" x1="102" y1="102" x2="922" y2="922" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#9BA3FF" />
-      <stop offset="1" stop-color="#786EEB" />
+    <linearGradient id="ringGlass" x1="178" y1="128" x2="858" y2="910" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#E2E6FF" stop-opacity="0.96" />
+      <stop offset="0.24" stop-color="#B2BCFF" stop-opacity="0.93" />
+      <stop offset="0.62" stop-color="#8882F6" stop-opacity="0.91" />
+      <stop offset="1" stop-color="#6D63DE" stop-opacity="0.94" />
     </linearGradient>
+    <linearGradient id="ringRim" x1="190" y1="128" x2="810" y2="890" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFFFFF" stop-opacity="0.82" />
+      <stop offset="0.34" stop-color="#E7EAFF" stop-opacity="0.2" />
+      <stop offset="0.7" stop-color="#C5C9FF" stop-opacity="0.06" />
+      <stop offset="1" stop-color="#5F56CE" stop-opacity="0.62" />
+    </linearGradient>
+    <linearGradient id="ringInnerRim" x1="316" y1="274" x2="700" y2="750" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFFFFF" stop-opacity="0.15" />
+      <stop offset="0.48" stop-color="#F2F3FF" stop-opacity="0.08" />
+      <stop offset="1" stop-color="#4E47B8" stop-opacity="0.62" />
+    </linearGradient>
+    <radialGradient id="dotGlass" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(658 288) rotate(48) scale(170)">
+      <stop stop-color="#FFFFFF" />
+      <stop offset="0.58" stop-color="#F5F7FF" />
+      <stop offset="1" stop-color="#CDD5FF" />
+    </radialGradient>
+    <mask id="ringMask" maskUnits="userSpaceOnUse" x="90" y="90" width="844" height="844">
+      <path
+        fill-rule="evenodd"
+        d="M512 102a410 410 0 1 0 0 820a410 410 0 1 0 0-820ZM512 272a240 240 0 1 1 0 480a240 240 0 1 1 0-480Z"
+        fill="#FFFFFF"
+      />
+    </mask>
+    <filter id="ringShadow" x="44" y="46" width="936" height="976" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="24" stdDeviation="28" flood-color="#050712" flood-opacity="0.4" />
+      <feDropShadow dx="-8" dy="-10" stdDeviation="20" flood-color="#AAB4FF" flood-opacity="0.12" />
+    </filter>
+    <filter id="softBlur" x="-20%" y="-35%" width="140%" height="170%">
+      <feGaussianBlur stdDeviation="24" />
+    </filter>
+    <filter id="dotShadow" x="548" y="180" width="306" height="326" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="18" stdDeviation="22" flood-color="#13152B" flood-opacity="0.48" />
+      <feDropShadow dx="-7" dy="-9" stdDeviation="13" flood-color="#FFFFFF" flood-opacity="0.18" />
+    </filter>
   </defs>
 
-  <path
-    fill-rule="evenodd"
-    d="M512 102a410 410 0 1 0 0 820a410 410 0 1 0 0-820ZM512 272a240 240 0 1 1 0 480a240 240 0 1 1 0-480Z"
-    fill="url(#ring)"
-  />
-  <circle cx="696" cy="328" r="102" fill="#FFFFFF" />
+  <g filter="url(#ringShadow)">
+    <path
+      fill-rule="evenodd"
+      d="M512 102a410 410 0 1 0 0 820a410 410 0 1 0 0-820ZM512 272a240 240 0 1 1 0 480a240 240 0 1 1 0-480Z"
+      fill="url(#ringGlass)"
+    />
+    <g mask="url(#ringMask)">
+      <ellipse cx="382" cy="138" rx="430" ry="172" transform="rotate(-18 382 138)" fill="#FFFFFF" fill-opacity="0.2" filter="url(#softBlur)" />
+    </g>
+    <circle cx="512" cy="512" r="409" stroke="url(#ringRim)" stroke-width="3" />
+    <circle cx="512" cy="512" r="241" stroke="url(#ringInnerRim)" stroke-width="3" />
+  </g>
+
+  <g filter="url(#dotShadow)">
+    <circle cx="696" cy="328" r="102" fill="url(#dotGlass)" />
+    <circle cx="696" cy="328" r="100.5" stroke="#FFFFFF" stroke-opacity="0.72" stroke-width="3" />
+    <ellipse cx="665" cy="293" rx="47" ry="24" transform="rotate(-28 665 293)" fill="#FFFFFF" fill-opacity="0.34" />
+  </g>
 </svg>
