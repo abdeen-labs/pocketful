@@ -96,7 +96,7 @@ function TemplateCard({
           <View style={[styles.glyphMark, { borderColor: label }]}>
             <Text style={styles.glyph}>{template.glyph}</Text>
           </View>
-          <Text style={[styles.logoText, { color: foreground }]} numberOfLines={1}>{template.logoText}</Text>
+          <Text style={[styles.logoText, { color: foreground }]} numberOfLines={1}>{template.logoText || template.organizationName}</Text>
           <View style={styles.stylePill}>
             <Text style={[styles.styleTag, { color: foreground }]}>{STYLE_LABELS[template.style].toUpperCase()}</Text>
           </View>

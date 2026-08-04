@@ -1,0 +1,106 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 358 448">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#331c58"/>
+      <stop offset="0.45" stop-color="#1c1130"/>
+      <stop offset="1" stop-color="#0c0719"/>
+    </linearGradient>
+    <radialGradient id="glowV" cx="0.5" cy="0.47" r="0.55">
+      <stop offset="0" stop-color="#8b5cf6" stop-opacity="0.5"/>
+      <stop offset="0.55" stop-color="#8b5cf6" stop-opacity="0.16"/>
+      <stop offset="1" stop-color="#8b5cf6" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="glowM" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#e879f9" stop-opacity="0.45"/>
+      <stop offset="1" stop-color="#e879f9" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="horizon" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#f0a8ff" stop-opacity="0.55"/>
+      <stop offset="1" stop-color="#f0a8ff" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="beamL" x1="0" y1="1" x2="0.55" y2="0">
+      <stop offset="0" stop-color="#c4b5fd" stop-opacity="0"/>
+      <stop offset="0.35" stop-color="#c4b5fd" stop-opacity="0.1"/>
+      <stop offset="1" stop-color="#c4b5fd" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="beamR" x1="1" y1="1" x2="0.45" y2="0">
+      <stop offset="0" stop-color="#a5f3fc" stop-opacity="0"/>
+      <stop offset="0.35" stop-color="#a5f3fc" stop-opacity="0.08"/>
+      <stop offset="1" stop-color="#a5f3fc" stop-opacity="0"/>
+    </linearGradient>
+    <radialGradient id="vign" cx="0.5" cy="0.45" r="0.75">
+      <stop offset="0.6" stop-color="#05020c" stop-opacity="0"/>
+      <stop offset="1" stop-color="#05020c" stop-opacity="0.55"/>
+    </radialGradient>
+    <filter id="glow8" x="-80%" y="-80%" width="260%" height="260%"><feGaussianBlur stdDeviation="7"/></filter>
+    <filter id="glow3" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="2.4"/></filter>
+    <filter id="soft" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="9"/></filter>
+    <filter id="grain">
+      <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" seed="11" stitchTiles="stitch"/>
+      <feColorMatrix type="matrix" values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0.35 0.35 0.35 0 0"/>
+    </filter>
+  </defs>
+
+  <rect width="358" height="448" fill="url(#bg)"/>
+  <ellipse cx="179" cy="208" rx="235" ry="220" fill="url(#glowV)"/>
+  <ellipse cx="179" cy="240" rx="125" ry="120" fill="url(#glowM)" opacity="0.7"/>
+
+  <!-- stars -->
+  <g fill="#f6f1ff">
+    <circle cx="34" cy="58" r="1.1" opacity="0.7"/>
+    <circle cx="82" cy="34" r="0.8" opacity="0.5"/>
+    <circle cx="132" cy="66" r="0.9" opacity="0.45"/>
+    <circle cx="208" cy="30" r="1.2" opacity="0.75"/>
+    <circle cx="258" cy="72" r="0.8" opacity="0.5"/>
+    <circle cx="306" cy="42" r="1.1" opacity="0.65"/>
+    <circle cx="332" cy="96" r="0.8" opacity="0.45"/>
+    <circle cx="22" cy="132" r="0.9" opacity="0.5"/>
+    <circle cx="62" cy="96" r="0.7" opacity="0.4"/>
+    <circle cx="296" cy="140" r="0.9" opacity="0.5"/>
+    <circle cx="340" cy="190" r="0.8" opacity="0.4"/>
+    <circle cx="18" cy="210" r="0.8" opacity="0.4"/>
+    <circle cx="44" cy="286" r="0.9" opacity="0.45"/>
+    <circle cx="318" cy="270" r="0.9" opacity="0.45"/>
+    <circle cx="150" cy="34" r="0.7" opacity="0.4"/>
+    <circle cx="246" cy="108" r="0.7" opacity="0.4"/>
+  </g>
+  <g stroke="#a5f3fc" stroke-width="1" stroke-linecap="round" opacity="0.8">
+    <path d="M56 178 v6 M53 181 h6"/>
+    <path d="M300 118 v6 M297 121 h6"/>
+    <path d="M104 250 v5 M101.5 252.5 h5" opacity="0.6"/>
+    <path d="M262 214 v5 M259.5 216.5 h5" opacity="0.6"/>
+  </g>
+
+  <!-- light beams -->
+  <polygon points="-28,468 66,468 218,52 158,30" fill="url(#beamL)"/>
+  <polygon points="386,468 296,468 142,58 200,34" fill="url(#beamR)"/>
+
+  <!-- rings -->
+  <g fill="none">
+    <circle cx="179" cy="208" r="152" stroke="#b79ce4" stroke-width="1" opacity="0.12"/>
+    <circle cx="179" cy="208" r="122" stroke="#b79ce4" stroke-width="1.2" opacity="0.18"/>
+    <circle cx="179" cy="208" r="122" stroke="#e879f9" stroke-width="2.4" opacity="0.35" filter="url(#glow3)"/>
+    <circle cx="179" cy="208" r="94" stroke="#cdb6f2" stroke-width="1.2" stroke-dasharray="2 7" opacity="0.35"/>
+  </g>
+
+  <!-- neon diamond -->
+  <g fill="none" stroke-linejoin="miter">
+    <polygon points="179,126 216,208 179,290 142,208" stroke="#e879f9" stroke-width="7" opacity="0.75" filter="url(#glow8)"/>
+    <polygon points="179,126 216,208 179,290 142,208" stroke="#f3e6ff" stroke-width="3" opacity="0.9" filter="url(#glow3)"/>
+    <polygon points="179,126 216,208 179,290 142,208" stroke="#fdfaff" stroke-width="2"/>
+    <line x1="142" y1="208" x2="216" y2="208" stroke="#e879f9" stroke-width="4" opacity="0.7" filter="url(#glow3)"/>
+    <line x1="142" y1="208" x2="216" y2="208" stroke="#fdfaff" stroke-width="1.5"/>
+    <line x1="179" y1="126" x2="179" y2="290" stroke="#fdfaff" stroke-width="0.8" opacity="0.35"/>
+  </g>
+
+  <!-- horizon glow above crowd -->
+  <ellipse cx="179" cy="368" rx="150" ry="20" fill="url(#horizon)" filter="url(#soft)" opacity="0.5"/>
+
+  <!-- crowd silhouettes -->
+  <path d="M0,376 C60,366 92,382 140,373 C200,362 242,380 300,369 C328,364 346,371 358,367 L358,448 L0,448 Z" fill="#1b1035"/>
+  <path d="M0,398 C52,388 112,405 172,395 C232,385 282,403 358,391 L358,448 L0,448 Z" fill="#120a26"/>
+  <path d="M0,421 C70,409 132,427 202,417 C262,409 322,425 358,415 L358,448 L0,448 Z" fill="#0a0518"/>
+
+  <rect width="358" height="448" fill="url(#vign)"/>
+  <rect width="358" height="448" filter="url(#grain)" opacity="0.05"/>
+</svg>
