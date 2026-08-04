@@ -125,13 +125,31 @@ export function walletWebServiceRouter(config: Config): Router {
       .send(buffer);
   });
 
+  // Apple's device log callback. Unauthenticated by protocol design, so treat
+  // every line as hostile: bounded count, bounded length, control characters
+  // stripped so a caller cannot forge log lines.
+  const MAX_LOG_LINES = 50;
+  const MAX_LOG_LINE_CHARS = 500;
+
   router.post("/v1/log", (req, res) => {
     const logs =
       typeof req.body === "object" && req.body !== null
         ? (req.body as { logs?: unknown }).logs
         : undefined;
     if (Array.isArray(logs)) {
-      for (const line of logs) console.log(`[wallet-device] ${String(line)}`);
+      const lines = logs
+        .slice(0, MAX_LOG_LINES)
+        .map((line) =>
+          String(line)
+            // eslint-disable-next-line no-control-regex
+            .replace(/[\u0000-\u001f\u007f]/g, " ")
+            .slice(0, MAX_LOG_LINE_CHARS)
+        );
+      if (lines.length) {
+        // One JSON record, not one console.log per line — a caller cannot
+        // inject a newline to forge a separate log entry.
+        console.log(JSON.stringify({ source: "wallet-device", lines }));
+      }
     }
     res.status(200).send();
   });
