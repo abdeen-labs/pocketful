@@ -61,7 +61,7 @@ const IMAGE_NAME = /^(?:(?:[a-zA-Z]{2,3}(?:-[a-zA-Z0-9]{2,8})?)\.lproj\/)?(?:ico
 const PNG_MAGIC = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
 const MAX_IMAGE_MEGABYTES = 4;
 const MAX_IMAGE_BYTES = MAX_IMAGE_MEGABYTES * 1024 * 1024;
-const MAX_TOTAL_IMAGE_BYTES = 24 * 1024 * 1024;
+export const MAX_TOTAL_IMAGE_BYTES = 24 * 1024 * 1024;
 
 const HEX_COLOR = /^#?([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
 const RGB_COLOR = /^rgb\(\s*(?:\d{1,3})\s*,\s*(?:\d{1,3})\s*,\s*(?:\d{1,3})\s*\)$/;
