@@ -12,7 +12,7 @@ import {
   updatePassSpec,
 } from "./db";
 import { buildPass, passFilename } from "./passBuilder";
-import { getPass, putPass } from "./store";
+import { deletePassesForSerial, getPass, putPass } from "./store";
 import { rebuildStoredPass, secretsMatch } from "./updatable";
 import { ApiError, MAX_TOTAL_IMAGE_BYTES, validateSpec } from "./validate";
 import { walletWebServiceRouter } from "./webService";
@@ -130,7 +130,13 @@ export function createApp(config: Config): express.Express {
     }
 
     const filename = passFilename(spec.description);
-    const { id, expiresAt } = putPass(buffer, filename, config.passTtlSeconds);
+    const { id, expiresAt } = putPass(
+      buffer,
+      filename,
+      config.passTtlSeconds,
+      config.passStoreMaxBytes,
+      serialNumber
+    );
 
     res.status(201).json({
       id,
@@ -218,6 +224,8 @@ export function createApp(config: Config): express.Express {
     if (!deletePassRecord(req.params.serialNumber)) {
       throw new ApiError(404, "No updatable pass with that serial number");
     }
+    // A minted download link must die with the pass, not linger for its TTL.
+    deletePassesForSerial(req.params.serialNumber);
     res.json({ ok: true });
   });
 
@@ -252,7 +260,13 @@ export function createApp(config: Config): express.Express {
       );
     }
     const filename = passFilename(record.description);
-    const { id, expiresAt } = putPass(buffer, filename, config.passTtlSeconds);
+    const { id, expiresAt } = putPass(
+      buffer,
+      filename,
+      config.passTtlSeconds,
+      config.passStoreMaxBytes,
+      record.serialNumber
+    );
     res.status(201).json({
       id,
       url: `${req.protocol}://${req.get("host")}/api/passes/${id}`,

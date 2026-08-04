@@ -33,6 +33,7 @@ function testConfig(dataDir: string): Config {
     organizationName: "Pocketful Tests",
     apiToken: "test-api-token",
     passTtlSeconds: 900,
+    passStoreMaxBytes: 128 * 1024 * 1024,
     dataDir,
     certs: {
       wwdr: Buffer.from("dummy"),
