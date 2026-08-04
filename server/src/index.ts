@@ -331,9 +331,31 @@ export function createApp(config: Config): express.Express {
   return app;
 }
 
+/**
+ * Report which stored specs the strict validator would now reject. The rebuild
+ * path is lenient, so a tightened rule cannot brick an installed pass — but
+ * without this sweep the only way to notice the drift is a pass that quietly
+ * stops matching its spec.
+ */
+export function auditStoredSpecs(): void {
+  for (const summary of listPassSummaries()) {
+    const record = getPassRecord(summary.serialNumber);
+    if (!record) continue;
+    try {
+      validateSpec(JSON.parse(record.specJson));
+    } catch (err) {
+      console.warn(
+        `Stored pass ${summary.serialNumber} no longer passes strict validation:`,
+        err instanceof Error ? err.message : err
+      );
+    }
+  }
+}
+
 if (require.main === module) {
   const config = loadConfig();
   initDb(config.dataDir);
+  auditStoredSpecs();
   if (!config.apns) {
     console.warn(
       "APNs is not configured (APNS_KEY_ID/APNS_KEY_BASE64) — updatable passes " +

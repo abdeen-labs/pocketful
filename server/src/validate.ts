@@ -340,6 +340,178 @@ function assertSemanticKeys(
   }
 }
 
+// The option objects are spread verbatim into the signed pass.json, so every
+// key here is one the operator's certificate will vouch for. Unknown keys are
+// rejected: Wallet silently refuses to install a pass with malformed keys and
+// the server would otherwise have no signal that it produced one.
+type OptionRule =
+  | { kind: "httpsUrl" }
+  // App-launch URLs are usually custom schemes (myapp://...), so they only
+  // need to be absolute and not a script scheme.
+  | { kind: "launchUrl" }
+  | { kind: "email" }
+  | { kind: "phone" }
+  | { kind: "boolean" }
+  | { kind: "string"; max?: number }
+  | { kind: "storeIds" }
+  | { kind: "positiveNumber" }
+  | { kind: "boundedObject"; max: number };
+
+const PASS_OPTION_RULES: Record<string, OptionRule> = {
+  appLaunchURL: { kind: "launchUrl" },
+  voided: { kind: "boolean" },
+  userInfo: { kind: "boundedObject", max: 4_096 },
+  sharingProhibited: { kind: "boolean" },
+  groupingIdentifier: { kind: "string" },
+  suppressStripShine: { kind: "boolean" },
+  maxDistance: { kind: "positiveNumber" },
+  // Semantics stay unvalidated beyond shape and size: Apple's semantic-tag
+  // vocabulary is large and versioned, and validateModernStyleRequirements
+  // already asserts the keys the modern styles need.
+  semantics: { kind: "boundedObject", max: 8_192 },
+  webServiceURL: { kind: "httpsUrl" },
+  associatedStoreIdentifiers: { kind: "storeIds" },
+  authenticationToken: { kind: "string" },
+};
+
+const EVENT_TICKET_OPTION_RULES: Record<string, OptionRule> = {
+  bagPolicyURL: { kind: "httpsUrl" },
+  orderFoodURL: { kind: "httpsUrl" },
+  parkingInformationURL: { kind: "httpsUrl" },
+  directionsInformationURL: { kind: "httpsUrl" },
+  purchaseParkingURL: { kind: "httpsUrl" },
+  merchandiseURL: { kind: "httpsUrl" },
+  transitInformationURL: { kind: "httpsUrl" },
+  accessibilityURL: { kind: "httpsUrl" },
+  addOnURL: { kind: "httpsUrl" },
+  contactVenueEmail: { kind: "email" },
+  contactVenuePhoneNumber: { kind: "phone" },
+  contactVenueWebsite: { kind: "httpsUrl" },
+  transferURL: { kind: "httpsUrl" },
+  sellURL: { kind: "httpsUrl" },
+  suppressHeaderDarkening: { kind: "boolean" },
+  useAutomaticColors: { kind: "boolean" },
+  auxiliaryStoreIdentifiers: { kind: "storeIds" },
+  eventLogoText: { kind: "string", max: 200 },
+};
+
+const BOARDING_PASS_OPTION_RULES: Record<string, OptionRule> = {
+  changeSeatURL: { kind: "httpsUrl" },
+  entertainmentURL: { kind: "httpsUrl" },
+  purchaseAdditionalBaggageURL: { kind: "httpsUrl" },
+  purchaseLoungeAccessURL: { kind: "httpsUrl" },
+  purchaseWifiURL: { kind: "httpsUrl" },
+  upgradeURL: { kind: "httpsUrl" },
+  managementURL: { kind: "httpsUrl" },
+  registerServiceAnimalURL: { kind: "httpsUrl" },
+  reportLostBagURL: { kind: "httpsUrl" },
+  requestWheelchairURL: { kind: "httpsUrl" },
+  transitProviderEmail: { kind: "email" },
+  transitProviderPhoneNumber: { kind: "phone" },
+  transitProviderWebsiteURL: { kind: "httpsUrl" },
+};
+
+const SCRIPT_SCHEMES = new Set(["javascript:", "data:", "vbscript:"]);
+
+function optionRuleError(
+  value: unknown,
+  path: string,
+  rule: OptionRule
+): string | null {
+  switch (rule.kind) {
+    case "httpsUrl": {
+      if (typeof value !== "string") return `${path} must be a string`;
+      let parsed: URL;
+      try {
+        parsed = new URL(value);
+      } catch {
+        return `${path} must be an absolute URL`;
+      }
+      if (parsed.protocol !== "https:") return `${path} must use https`;
+      return null;
+    }
+    case "launchUrl": {
+      if (typeof value !== "string") return `${path} must be a string`;
+      let parsed: URL;
+      try {
+        parsed = new URL(value);
+      } catch {
+        return `${path} must be an absolute URL`;
+      }
+      if (SCRIPT_SCHEMES.has(parsed.protocol)) {
+        return `${path} must not use a script scheme`;
+      }
+      return null;
+    }
+    case "email":
+      if (
+        typeof value !== "string" ||
+        !value.includes("@") ||
+        /\s/.test(value)
+      ) {
+        return `${path} must be an email address`;
+      }
+      return null;
+    case "phone":
+      if (typeof value !== "string" || !value.trim()) {
+        return `${path} must be a non-empty string`;
+      }
+      return null;
+    case "boolean":
+      if (typeof value !== "boolean") return `${path} must be a boolean`;
+      return null;
+    case "string": {
+      const max = rule.max ?? 2_000;
+      if (typeof value !== "string" || value.length > max) {
+        return `${path} must be a string of at most ${max} characters`;
+      }
+      return null;
+    }
+    case "storeIds":
+      if (
+        !Array.isArray(value) ||
+        value.some((entry) => !Number.isInteger(entry) || entry <= 0)
+      ) {
+        return `${path} must be an array of positive integers`;
+      }
+      return null;
+    case "positiveNumber":
+      if (typeof value !== "number" || !Number.isFinite(value) || value <= 0) {
+        return `${path} must be a number greater than 0`;
+      }
+      return null;
+    case "boundedObject":
+      if (!isRecord(value)) return `${path} must be an object`;
+      if (JSON.stringify(value).length > rule.max) {
+        return `${path} must serialize to at most ${rule.max} characters`;
+      }
+      return null;
+  }
+}
+
+function validateOptionObject(
+  value: unknown,
+  path: string,
+  rules: Record<string, OptionRule>,
+  lenient: boolean
+): void {
+  if (value === undefined) return;
+  if (!isRecord(value)) {
+    rejectOrWarn(lenient, `${path} must be an object`);
+    return;
+  }
+  for (const [key, entry] of Object.entries(value)) {
+    if (entry === undefined) continue;
+    const rule = rules[key];
+    if (!rule) {
+      rejectOrWarn(lenient, `${path}.${key} is not a recognized key`);
+      continue;
+    }
+    const error = optionRuleError(entry, `${path}.${key}`, rule);
+    if (error) rejectOrWarn(lenient, error);
+  }
+}
+
 export interface ValidateOptions {
   /**
    * Stored specs are revalidated on every device refresh (see updatable.ts).
@@ -389,6 +561,20 @@ export function validateSpec(
 
   validateCollections(spec);
   validateAdvanced(spec);
+  const lenient = validateOptions.lenient === true;
+  validateOptionObject(spec.options, "options", PASS_OPTION_RULES, lenient);
+  validateOptionObject(
+    spec.eventTicketOptions,
+    "eventTicketOptions",
+    EVENT_TICKET_OPTION_RULES,
+    lenient
+  );
+  validateOptionObject(
+    spec.boardingPassOptions,
+    "boardingPassOptions",
+    BOARDING_PASS_OPTION_RULES,
+    lenient
+  );
   const fields = validateFields(spec.fields);
   if (fields.additionalInfo?.length && spec.style !== "eventTicket") {
     throw new ApiError(400, "additionalInfo fields require the eventTicket style");
