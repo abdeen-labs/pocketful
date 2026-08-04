@@ -192,9 +192,12 @@ export const TEMPLATES: PassTemplate[] = [
     id: 'midnight-live',
     name: 'Midnight Live',
     tagline: 'A real iOS 18 poster ticket with structured seating, venue context, and Event Guide actions.',
-    features: ['iOS 18 poster', 'Event Guide', 'Live Activity', 'Bundled artwork'],
+    features: ['iOS 18 poster', 'Event Guide', 'Bundled artwork'],
     glyph: '🎤',
     style: 'eventTicket',
+    // The poster scheme requires an entry credential (barcode or VAS/NFC) on top of
+    // artwork + semantics — Wallet logs "Pass does not contain VAS or Barcode
+    // information" and falls back to the legacy layout without one.
     preferredStyleSchemes: ['posterEventTicket', 'eventTicket'],
     relevantDates: [{ startDate: SAMPLE_DATES.concertDoors, endDate: SAMPLE_DATES.concertEnd }],
     eventTicketOptions: {
@@ -230,6 +233,7 @@ export const TEMPLATES: PassTemplate[] = [
       { category: 'back', key: 'venue-policy', label: 'Venue policy', value: 'Small bags up to 12 × 6 × 12 inches are permitted. The Grand Hall is a cashless venue.' },
       { category: 'back', key: 'support-phone', label: 'Venue support', value: '+1 (212) 555-0144', dataDetectorTypes: ['PKDataDetectorTypePhoneNumber'] },
     ],
+    barcode: { format: 'PKBarcodeFormatQR', message: 'MIDNIGHT-104-B-12', altText: 'Seat 104-B-12' },
     semantics: {
       eventType: 'PKEventTypeLivePerformance',
       eventName: 'Midnight Live',
@@ -300,6 +304,7 @@ export const TEMPLATES: PassTemplate[] = [
       { category: 'back', key: 'matchday', label: 'Match-day guide', value: 'Blue Gate opens at 5 PM. Food ordering, parking, directions, and team merchandise are available in the Event Guide.' },
       { category: 'back', key: 'policy', label: 'Stadium policy', value: 'Bags must be smaller than 12 × 12 × 6 inches. No outside food or beverages.' },
     ],
+    barcode: { format: 'PKBarcodeFormatQR', message: 'HBR-ATC-118-F-21', altText: 'Section 118 · Row F · Seat 21' },
     semantics: {
       eventType: 'PKEventTypeSports',
       eventName: 'Harbor FC vs. Atlantic City',

@@ -323,7 +323,16 @@ export default function PassDesigner() {
     ) as Record<string, string>);
     setUpcomingPassJson('');
     if (Object.keys(bundledImages).length) {
-      setImages((current) => ({ ...current, ...bundledImages }));
+      setImages((current) => {
+        const next = { ...current, ...bundledImages };
+        // The template's poster artwork is the whole visual identity — legacy strip or
+        // background images left over from earlier editing would leak into the pass.
+        if (bundledImages.artwork) {
+          delete next.strip;
+          delete next.background;
+        }
+        return next;
+      });
     }
     setApplyingTemplateId(null);
   };

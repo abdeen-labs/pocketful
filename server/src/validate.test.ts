@@ -312,6 +312,40 @@ for (const { name, spec, status, fragment } of REJECTIONS) {
   });
 }
 
+// Verified on-device (iOS 27, Console.app `passd`): Wallet refuses the poster
+// scheme without an entry credential — "Pass does not contain VAS or Barcode
+// information." — and silently renders the legacy layout instead.
+function posterSpec(): Record<string, unknown> {
+  return {
+    ...validSpec(),
+    style: "eventTicket",
+    preferredStyleSchemes: ["posterEventTicket", "eventTicket"],
+    images: { icon: icon(), artwork: icon() },
+    barcodes: [{ format: "PKBarcodeFormatQR", message: "SEAT-104-B-12" }],
+    options: {
+      semantics: {
+        eventType: "PKEventTypeLivePerformance",
+        performerNames: ["Nova Vale"],
+        eventName: "Midnight Live",
+        venueName: "The Grand Hall",
+        venueRegionName: "New York",
+        venueRoom: "Main Arena",
+      },
+    },
+  };
+}
+
+test("accepts a poster event ticket with a barcode entry credential", () => {
+  const result = validateSpec(posterSpec());
+  assert.ok(result.images.artwork instanceof Buffer);
+});
+
+test("rejects a poster event ticket with neither barcode nor NFC", () => {
+  const spec = posterSpec();
+  delete spec.barcodes;
+  rejects(spec, 400, "requires a barcode or NFC");
+});
+
 // Plan 006: the option objects are validated against allowlists built from
 // types.ts. The maximal fixtures below populate every allowlisted key —
 // they are supersets of everything app/src/app/index.tsx and all templates

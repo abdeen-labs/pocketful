@@ -129,7 +129,8 @@ const SPEC_GUIDE = `The spec is a Pocketful PassSpec (mirrors server/src/types.t
 - fields: { header?, primary?, secondary?, auxiliary?, back? } arrays of { key, label?, value, changeMessage? ("...%@..." shows a Wallet notification on update), dateStyle?, currencyCode?, numberStyle?, textAlignment? }.
 - barcodes: [{ format: "PKBarcodeFormatQR" | "PKBarcodeFormatPDF417" | "PKBarcodeFormatAztec" | "PKBarcodeFormatCode128", message, altText? }].
 - images maps Wallet asset names (icon, logo, primaryLogo, secondaryLogo, strip, thumbnail, background, footer, artwork — optionally @2x/@3x) to base64 PNG strings; prefer image_files with local paths instead of inlining base64.
-- Also supported: organizationName, logoText, serialNumber, expirationDate/relevantDates (ISO-8601), locations, beacons, nfc, localizations, personalization, semantics, preferredStyleSchemes (posterEventTicket needs eventTicket style + artwork + eventName/venue semantics), transitType (boardingPass), upcomingPassInformation.
+- Also supported: organizationName, logoText, serialNumber, expirationDate/relevantDates (ISO-8601), locations, beacons, nfc, localizations, personalization, preferredStyleSchemes (posterEventTicket needs eventTicket style + artwork PNGs + eventName/venue semantics + a barcode or NFC — Wallet silently falls back to the legacy layout without an entry credential), transitType (boardingPass), upcomingPassInformation.
+- Semantic tags go in options.semantics (NOT the spec root, where they are ignored), e.g. options: { semantics: { eventName, venueName, ... } }. Other options keys: voided, userInfo, groupingIdentifier, suppressStripShine, appLaunchURL, sharingProhibited.
 The server validates strictly and returns specific error messages — fix and retry on 400s.`;
 
 const server = new McpServer({ name: "pocketful", version: "1.0.0" });
