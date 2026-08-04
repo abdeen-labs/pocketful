@@ -1,6 +1,6 @@
 import { randomBytes, randomUUID } from "node:crypto";
 import express from "express";
-import { pushPassUpdate } from "./apns";
+import { pushPassUpdate, type PushResult } from "./apns";
 import { loadConfig, type Config } from "./config";
 import {
   deletePassRecord,
@@ -135,16 +135,37 @@ export function createApp(config: Config): express.Express {
         );
       }
 
-      const updatedAt = updatePassSpec(
+      const result = updatePassSpec(
         record.serialNumber,
         JSON.stringify(req.body),
         validated.spec.description,
         webServiceURL
       );
-      const push = await pushPassUpdate(config, record.serialNumber);
+      if (!result) {
+        throw new ApiError(404, "No updatable pass with that serial number");
+      }
+      let push: PushResult;
+      try {
+        push = await pushPassUpdate(config, record.serialNumber);
+      } catch (err) {
+        // The spec is already committed; a push failure must not read as a
+        // failed update. Surface it in the response instead.
+        console.error(
+          `APNs push failed for ${record.serialNumber}:`,
+          err instanceof Error ? err.message : err
+        );
+        push = {
+          sent: 0,
+          failed: 0,
+          pruned: 0,
+          error:
+            "Push failed — the pass was updated but devices were not notified",
+        };
+      }
       res.json({
         serialNumber: record.serialNumber,
-        updatedAt: new Date(updatedAt).toISOString(),
+        updatedAt: new Date(result.updatedAt).toISOString(),
+        revision: result.revision,
         push,
       });
     } catch (err) {
