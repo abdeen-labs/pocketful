@@ -12,21 +12,21 @@ import {
 } from "./db";
 import { buildPass, passFilename } from "./passBuilder";
 import { getPass, putPass } from "./store";
-import { rebuildStoredPass } from "./updatable";
-import { ApiError, validateSpec } from "./validate";
+import { rebuildStoredPass, secretsMatch } from "./updatable";
+import { ApiError, MAX_TOTAL_IMAGE_BYTES, validateSpec } from "./validate";
 import { walletWebServiceRouter } from "./webService";
 
 /** The full app minus startup: importable by tests without a listener or env. */
 export function createApp(config: Config): express.Express {
   const app = express();
   // Railway terminates TLS at its proxy; trust it so req.protocol is https.
+  // NOTE: `trust proxy: true` means req.ip comes from X-Forwarded-For, which a
+  // client can spoof. Tightening that to a hop count is plan 007.
   app.set("trust proxy", true);
-  // 24 MB of decoded PNG data expands to roughly 32 MB when base64 encoded.
-  app.use(express.json({ limit: "40mb" }));
 
   function requireApiToken(req: express.Request): void {
-    const auth = req.get("authorization");
-    if (auth !== `Bearer ${config.apiToken}`) {
+    const match = /^Bearer\s+(.+)$/i.exec(req.get("authorization") ?? "");
+    if (!match || !secretsMatch(match[1], config.apiToken)) {
       throw new ApiError(401, "Missing or invalid API token");
     }
   }
@@ -35,11 +35,39 @@ export function createApp(config: Config): express.Express {
     return config.publicBaseUrl ?? `${req.protocol}://${req.get("host")}`;
   }
 
+  // Authenticate before any body is buffered: /api/passes accepts megabytes.
+  app.use("/api", (req, _res, next) => {
+    // The signed-pass download link is authenticated by its unguessable id —
+    // exactly one path segment after /passes. The bare list route and the
+    // two-segment /spec route must stay behind the token.
+    if (req.method === "GET" && /^\/passes\/[^/]+$/.test(req.path)) {
+      return next();
+    }
+    requireApiToken(req);
+    next();
+  });
+
+  // Only the two pass-authoring routes carry base64 artwork; everything else
+  // (device registration, log callbacks, health) sends a few hundred bytes.
+  const smallJson = express.json({ limit: "100kb" });
+  // 24 MB of decoded PNG data expands to roughly 32 MB when base64 encoded;
+  // deriving the limit from the validator's cap means the two cannot drift.
+  const passJson = express.json({
+    limit: Math.ceil((MAX_TOTAL_IMAGE_BYTES * 4) / 3) + 1024 * 1024,
+  });
+  app.use((req, res, next) => {
+    if (req.method === "POST" && req.path === "/api/passes") return next();
+    if (req.method === "PUT" && req.path.startsWith("/api/passes/")) {
+      return next();
+    }
+    return smallJson(req, res, next);
+  });
+
   app.get("/healthz", (_req, res) => {
     res.json({ ok: true });
   });
 
-  app.post("/api/passes", (req, res) => {
+  app.post("/api/passes", passJson, (req, res) => {
     requireApiToken(req);
     const validated = validateSpec(req.body);
     const { spec } = validated;
@@ -106,7 +134,7 @@ export function createApp(config: Config): express.Express {
     res.json({ passes: listPassSummaries() });
   });
 
-  app.put("/api/passes/:serialNumber", async (req, res, next) => {
+  app.put("/api/passes/:serialNumber", passJson, async (req, res, next) => {
     try {
       requireApiToken(req);
       const record = getPassRecord(req.params.serialNumber);
