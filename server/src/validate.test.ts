@@ -450,15 +450,3 @@ for (const { name, spec, fragment } of OPTION_REJECTIONS) {
     rejects(spec, 400, fragment);
   });
 }
-
-test("lenient mode accepts a spec the strict path rejects", () => {
-  // The proof that installed passes keep refreshing: a stored spec that a
-  // newer rule would reject must still validate on the rebuild path.
-  const spec = {
-    ...validSpec(),
-    options: { frobnicate: true, webServiceURL: "http://example.test" },
-  };
-  rejects(spec, 400, "not a recognized key");
-  const result = validateSpec(spec, { lenient: true });
-  assert.equal(result.spec.description, "Test pass");
-});

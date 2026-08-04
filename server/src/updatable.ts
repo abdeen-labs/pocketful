@@ -10,9 +10,7 @@ import { validateSpec } from "./validate";
  * next refresh.
  */
 export function rebuildStoredPass(record: PassRecord, config: Config): Buffer {
-  // Lenient: rules added after this pass was issued must not brick it in the
-  // user's Wallet — they warn in the logs instead (see auditStoredSpecs).
-  const validated = validateSpec(JSON.parse(record.specJson), { lenient: true });
+  const validated = validateSpec(JSON.parse(record.specJson));
   return buildPass(validated, config, {
     serialNumber: record.serialNumber,
     webServiceURL: config.publicBaseUrl ?? record.webServiceURL,
