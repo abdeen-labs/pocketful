@@ -11,7 +11,6 @@ OUT="${1:-$SRC/../../../app/assets/templates}"
 sizes() {
   case "$1" in
     artwork) echo "358 448" ;;
-    background) echo "180 220" ;;
     icon) echo "29 29" ;;
     primary-logo) echo "126 30" ;;
     secondary-logo) echo "135 12" ;;
@@ -20,7 +19,7 @@ sizes() {
 
 for template in midnight-live harbor-fc; do
   mkdir -p "$OUT/$template"
-  for slot in artwork background icon primary-logo secondary-logo; do
+  for slot in artwork icon primary-logo secondary-logo; do
     read -r w h <<< "$(sizes "$slot")"
     for scale in 1 2 3; do
       inkscape "$SRC/$template/$slot.svg" \

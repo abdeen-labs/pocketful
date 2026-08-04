@@ -71,8 +71,9 @@ export function PassPreview({
         <View style={styles.scrim} />
         <View style={styles.passContent}>
           <View style={styles.topRow}>
-            {logo ? <Image source={{ uri: logo.previewUri }} style={styles.logoImage} contentFit="contain" /> : <View style={styles.logoMark}><Text style={[styles.logoMarkText, { color: foreground }]}>P</Text></View>}
-            <Text style={[styles.logoText, { color: foreground }]} numberOfLines={1}>{logoText || organizationName || 'Pocketful'}</Text>
+            {logo ? <Image source={{ uri: logo.previewUri }} style={styles.logoImage} contentFit="contain" contentPosition="left center" /> : <View style={styles.logoMark}><Text style={[styles.logoMarkText, { color: foreground }]}>P</Text></View>}
+            {/* Wallet shows logoText beside the logo image only when it is set — no org-name fallback. */}
+            <Text style={[styles.logoText, { color: foreground }]} numberOfLines={1}>{logoText || (logo ? '' : organizationName || 'Pocketful')}</Text>
             <Text style={[styles.passType, { color: labels }]}>{style === 'boardingPass' ? '✈︎' : '◆'}</Text>
           </View>
 
@@ -133,7 +134,7 @@ const styles = StyleSheet.create({
   scrim: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(0,0,0,0.08)' },
   passContent: { flex: 1, minHeight: 225, padding: 18, gap: 18 },
   topRow: { flexDirection: 'row', alignItems: 'center', gap: 9, minHeight: 30 },
-  logoImage: { width: 54, height: 28 },
+  logoImage: { width: 112, height: 28 },
   logoMark: { width: 28, height: 28, borderRadius: 8, borderWidth: 1, borderColor: 'rgba(255,255,255,0.34)', alignItems: 'center', justifyContent: 'center' },
   logoMarkText: { fontSize: 14, fontWeight: '800' },
   logoText: { flex: 1, fontSize: 15, fontWeight: '700' },

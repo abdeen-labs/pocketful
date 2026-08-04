@@ -268,6 +268,15 @@ function validateModernStyleRequirements(
     if (!hasImageAsset(images, "artwork")) {
       throw new ApiError(400, "posterEventTicket requires artwork PNG assets");
     }
+    // Wallet logs `Failed to validate "posterEventTicket" scheme for pass: Pass
+    // does not contain VAS or Barcode information.` and silently renders the
+    // legacy layout when the pass has no entry credential.
+    if (!spec.barcodes?.length && !spec.nfc) {
+      throw new ApiError(
+        400,
+        "posterEventTicket requires a barcode or NFC — Wallet refuses the poster layout without an entry credential"
+      );
+    }
     assertSemanticKeys(
       semantics,
       ["eventName", "venueName", "venueRegionName", "venueRoom"],
