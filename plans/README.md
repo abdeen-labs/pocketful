@@ -22,7 +22,7 @@ so it is not lost and not re-audited.
 | [001](001-verification-baseline.md) | Make the server's checks trustworthy and add a real test suite | P1 | M | LOW | — | DONE (2026-08-04; `@types/better-sqlite3` stays at 9.6.0 — no newer version is published) |
 | [002](002-remove-admin-token-from-app-bundle.md) | Stop shipping the server's admin API token inside the app bundle | P1 | M | MED | — | TODO |
 | [003](003-bound-the-in-memory-pass-store.md) | Put a byte ceiling on the in-memory pass store, purge deleted passes | P1 | S | LOW | 001 (soft) | TODO |
-| [004](004-harden-request-intake.md) | Harden request intake — auth before parsing, bounded bodies and device logs | P1 | S | LOW | 001 (soft) | TODO (plan refreshed 2026-08-04 against post-005 code, `ddbf5eb`) |
+| [004](004-harden-request-intake.md) | Harden request intake — auth before parsing, bounded bodies and device logs | P1 | S | LOW | 001 (soft) | DONE (2026-08-04; branch `advisor/004-intake-hardening`; matrix automated in `intake.test.ts`, 422 stands in for the 201 row; `express-rate-limit` pinned to 8.6.1 — 8.6.2 published on attack day) |
 | [005](005-ota-update-correctness.md) | Fix the two silent failures in over-the-air pass updates | P2 | M | MED | 001 | DONE (2026-08-04; branch `advisor/005-ota-correctness`, not pushed; migration verified by test, not against the live volume) |
 | [006](006-validate-pass-option-objects.md) | Validate the pass option objects instead of spreading request data | P2 | M | HIGH | 001 | TODO |
 

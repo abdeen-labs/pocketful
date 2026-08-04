@@ -1,5 +1,6 @@
 import { randomBytes, randomUUID } from "node:crypto";
 import express from "express";
+import rateLimit from "express-rate-limit";
 import { pushPassUpdate, type PushResult } from "./apns";
 import { loadConfig, type Config } from "./config";
 import {
@@ -12,21 +13,21 @@ import {
 } from "./db";
 import { buildPass, passFilename } from "./passBuilder";
 import { getPass, putPass } from "./store";
-import { rebuildStoredPass } from "./updatable";
-import { ApiError, validateSpec } from "./validate";
+import { rebuildStoredPass, secretsMatch } from "./updatable";
+import { ApiError, MAX_TOTAL_IMAGE_BYTES, validateSpec } from "./validate";
 import { walletWebServiceRouter } from "./webService";
 
 /** The full app minus startup: importable by tests without a listener or env. */
 export function createApp(config: Config): express.Express {
   const app = express();
   // Railway terminates TLS at its proxy; trust it so req.protocol is https.
+  // NOTE: `trust proxy: true` means req.ip comes from X-Forwarded-For, which a
+  // client can spoof. Tightening that to a hop count is plan 007.
   app.set("trust proxy", true);
-  // 24 MB of decoded PNG data expands to roughly 32 MB when base64 encoded.
-  app.use(express.json({ limit: "40mb" }));
 
   function requireApiToken(req: express.Request): void {
-    const auth = req.get("authorization");
-    if (auth !== `Bearer ${config.apiToken}`) {
+    const match = /^Bearer\s+(.+)$/i.exec(req.get("authorization") ?? "");
+    if (!match || !secretsMatch(match[1], config.apiToken)) {
       throw new ApiError(401, "Missing or invalid API token");
     }
   }
@@ -35,11 +36,50 @@ export function createApp(config: Config): express.Express {
     return config.publicBaseUrl ?? `${req.protocol}://${req.get("host")}`;
   }
 
+  // Not on /healthz — the Docker HEALTHCHECK polls it every 30 seconds and
+  // Railway may poll it too.
+  const limiter = rateLimit({
+    windowMs: 60_000,
+    limit: 120,
+    standardHeaders: "draft-7",
+    legacyHeaders: false,
+  });
+  app.use("/v1", limiter);
+  app.use("/api", limiter);
+
+  // Authenticate before any body is buffered: /api/passes accepts megabytes.
+  app.use("/api", (req, _res, next) => {
+    // The signed-pass download link is authenticated by its unguessable id —
+    // exactly one path segment after /passes. The bare list route and the
+    // two-segment /spec route must stay behind the token.
+    if (req.method === "GET" && /^\/passes\/[^/]+$/.test(req.path)) {
+      return next();
+    }
+    requireApiToken(req);
+    next();
+  });
+
+  // Only the two pass-authoring routes carry base64 artwork; everything else
+  // (device registration, log callbacks, health) sends a few hundred bytes.
+  const smallJson = express.json({ limit: "100kb" });
+  // 24 MB of decoded PNG data expands to roughly 32 MB when base64 encoded;
+  // deriving the limit from the validator's cap means the two cannot drift.
+  const passJson = express.json({
+    limit: Math.ceil((MAX_TOTAL_IMAGE_BYTES * 4) / 3) + 1024 * 1024,
+  });
+  app.use((req, res, next) => {
+    if (req.method === "POST" && req.path === "/api/passes") return next();
+    if (req.method === "PUT" && req.path.startsWith("/api/passes/")) {
+      return next();
+    }
+    return smallJson(req, res, next);
+  });
+
   app.get("/healthz", (_req, res) => {
     res.json({ ok: true });
   });
 
-  app.post("/api/passes", (req, res) => {
+  app.post("/api/passes", passJson, (req, res) => {
     requireApiToken(req);
     const validated = validateSpec(req.body);
     const { spec } = validated;
@@ -106,7 +146,7 @@ export function createApp(config: Config): express.Express {
     res.json({ passes: listPassSummaries() });
   });
 
-  app.put("/api/passes/:serialNumber", async (req, res, next) => {
+  app.put("/api/passes/:serialNumber", passJson, async (req, res, next) => {
     try {
       requireApiToken(req);
       const record = getPassRecord(req.params.serialNumber);
@@ -254,6 +294,19 @@ export function createApp(config: Config): express.Express {
       }
       if (err instanceof SyntaxError && "body" in err) {
         res.status(400).json({ error: "Request body is not valid JSON" });
+        return;
+      }
+      // body-parser signals rejections (413 too large, 415 bad type) as
+      // http-errors with a 4xx statusCode; pass those through instead of
+      // collapsing them into a 500.
+      if (
+        err instanceof Error &&
+        "statusCode" in err &&
+        typeof err.statusCode === "number" &&
+        err.statusCode >= 400 &&
+        err.statusCode < 500
+      ) {
+        res.status(err.statusCode).json({ error: err.message });
         return;
       }
       console.error(err);
