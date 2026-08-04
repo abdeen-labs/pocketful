@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  width="1024"
+  height="1024"
+  viewBox="0 0 1024 1024"
+  fill="none"
+>
+  <title>Pocketful dot layer</title>
+  <desc>The offset dot of the Pocketful ring mark.</desc>
+
+  <circle cx="696" cy="328" r="102" fill="#FFFFFF" />
+</svg>
