@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  width="1024"
+  height="1024"
+  viewBox="0 0 1024 1024"
+  fill="none"
+>
+  <title>Pocketful ring layer</title>
+  <desc>The gradient ring of the Pocketful ring mark.</desc>
+
+  <path
+    fill-rule="evenodd"
+    d="M512 102a410 410 0 1 0 0 820a410 410 0 1 0 0-820ZM512 272a240 240 0 1 1 0 480a240 240 0 1 1 0-480Z"
+    fill="#9BA3FF"
+  />
+</svg>

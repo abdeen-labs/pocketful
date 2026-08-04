@@ -6,16 +6,21 @@
   viewBox="0 0 1024 1024"
   fill="none"
 >
-  <title>Pocketful ring mark</title>
-  <desc>The Pocketful ring mark: a gradient ring with an offset dot.</desc>
+  <title>Pocketful app icon</title>
+  <desc>The Pocketful ring mark on a navy background. Master for icon.png and favicon.png.</desc>
 
   <defs>
+    <linearGradient id="bg" x1="512" y1="0" x2="512" y2="1024" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#282A4A" />
+      <stop offset="1" stop-color="#1C1C2E" />
+    </linearGradient>
     <linearGradient id="ring" x1="102" y1="102" x2="922" y2="922" gradientUnits="userSpaceOnUse">
       <stop offset="0" stop-color="#9BA3FF" />
       <stop offset="1" stop-color="#786EEB" />
     </linearGradient>
   </defs>
 
+  <rect width="1024" height="1024" fill="url(#bg)" />
   <path
     fill-rule="evenodd"
     d="M512 102a410 410 0 1 0 0 820a410 410 0 1 0 0-820ZM512 272a240 240 0 1 1 0 480a240 240 0 1 1 0-480Z"

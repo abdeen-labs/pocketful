@@ -1,8 +1,8 @@
 {
   "fill" : {
     "linear-gradient" : [
-      "srgb:0.04314,0.06275,0.14902,1.00000",
-      "srgb:0.42745,0.27059,0.94902,1.00000"
+      "srgb:0.15686,0.16471,0.29020,1.00000",
+      "srgb:0.10980,0.10980,0.18039,1.00000"
     ]
   },
   "groups" : [
@@ -11,8 +11,8 @@
         {
           "fill" : {
             "linear-gradient" : [
-              "srgb:1.00000,0.95686,0.87451,1.00000",
-              "srgb:0.76863,0.70980,0.99216,1.00000"
+              "srgb:1.00000,1.00000,1.00000,1.00000",
+              "srgb:0.88627,0.89804,1.00000,1.00000"
             ],
             "orientation" : {
               "start" : {
@@ -26,8 +26,8 @@
             }
           },
           "hidden" : false,
-          "image-name" : "icon-pocket.svg",
-          "name" : "Pocket · front"
+          "image-name" : "icon-dot.svg",
+          "name" : "Dot · front"
         }
       ],
       "shadow" : {
@@ -44,8 +44,8 @@
         {
           "fill" : {
             "linear-gradient" : [
-              "srgb:0.97255,0.98431,1.00000,1.00000",
-              "srgb:0.62353,0.90588,1.00000,1.00000"
+              "srgb:0.60784,0.63922,1.00000,1.00000",
+              "srgb:0.47059,0.43137,0.92157,1.00000"
             ],
             "orientation" : {
               "start" : {
@@ -59,8 +59,8 @@
             }
           },
           "hidden" : false,
-          "image-name" : "icon-pass.svg",
-          "name" : "Pass · rear"
+          "image-name" : "icon-ring.svg",
+          "name" : "Ring · rear"
         }
       ],
       "shadow" : {
