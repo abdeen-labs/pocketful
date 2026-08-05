@@ -27,10 +27,6 @@ const BARCODE_FORMATS: BarcodeFormat[] = [
   "PKBarcodeFormatPDF417",
   "PKBarcodeFormatAztec",
   "PKBarcodeFormatCode128",
-  "PKBarcodeFormatEAN13",
-  "PKBarcodeFormatCode39",
-  "PKBarcodeFormatCodabar",
-  "PKBarcodeFormatI2of5",
 ];
 const TRANSIT_TYPES: TransitType[] = [
   "PKTransitTypeAir",
@@ -172,26 +168,12 @@ function validateImages(images: unknown): Record<string, Buffer> {
   return out;
 }
 
-// Apple does not document the message shape for PKBarcodeFormatEAN13, but the
-// symbology itself is fixed: 12 data digits plus a check digit. Accept either
-// length and verify the check digit when all 13 are given.
-function isValidEan13Message(message: string): boolean {
-  if (!/^\d{12,13}$/.test(message)) return false;
-  if (message.length === 12) return true;
-  const digits = [...message].map(Number);
-  const sum = digits.slice(0, 12).reduce((total, digit, index) => total + digit * (index % 2 ? 3 : 1), 0);
-  return (10 - (sum % 10)) % 10 === digits[12];
-}
-
 function validateCollections(spec: PassSpec): void {
   if (spec.barcodes !== undefined) {
     if (!Array.isArray(spec.barcodes) || spec.barcodes.length > 4) throw new ApiError(400, "barcodes must contain at most four entries");
     spec.barcodes.forEach((barcode, index) => {
       if (!isRecord(barcode) || !BARCODE_FORMATS.includes(barcode.format as BarcodeFormat)) throw new ApiError(400, `barcodes[${index}].format is invalid`);
       if (typeof barcode.message !== "string" || !barcode.message) throw new ApiError(400, `barcodes[${index}].message is required`);
-      if (barcode.format === "PKBarcodeFormatEAN13" && !isValidEan13Message(barcode.message)) {
-        throw new ApiError(400, `barcodes[${index}].message must be 12 digits, or 13 digits ending in a valid EAN-13 check digit`);
-      }
       assertOptionalString(barcode.altText, `barcodes[${index}].altText`, 1_000);
       assertOptionalString(barcode.messageEncoding, `barcodes[${index}].messageEncoding`, 100);
     });
