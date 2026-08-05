@@ -1,0 +1,984 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="Pocketful documentation: self-host and create Apple Wallet passes from your iPhone."
+    />
+    <meta name="theme-color" content="#06080d" />
+    <title>Pocketful docs</title>
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23131822'/%3E%3Ccircle cx='16' cy='16' r='9' fill='none' stroke='%238b83f6' stroke-width='5'/%3E%3Ccircle cx='21.5' cy='10.5' r='3.4' fill='%23fff'/%3E%3C/svg%3E"
+    />
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #06080d;
+        --surface: #0c1017;
+        --card: #131822;
+        --band: #1a212c;
+        --border: #293344;
+        --border-strong: #323e50;
+        --text: #ffffff;
+        --soft: #e0e5ee;
+        --dim: #8e97a8;
+        --faint: #748092;
+        --accent: #8b83f6;
+        --accent-soft: #b8b4ff;
+        --success: #16b37d;
+        --sans: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI",
+          sans-serif;
+        --mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+      }
+
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+      }
+
+      html {
+        scroll-behavior: smooth;
+        scroll-padding-top: 96px;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--soft);
+        font-family: var(--sans);
+        font-size: 15px;
+        line-height: 1.7;
+      }
+
+      a {
+        color: inherit;
+      }
+
+      a:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 4px;
+        border-radius: 4px;
+      }
+
+      .skip-link {
+        position: fixed;
+        z-index: 20;
+        top: 10px;
+        left: 10px;
+        padding: 8px 12px;
+        border-radius: 6px;
+        background: var(--text);
+        color: var(--bg);
+        font-weight: 650;
+        transform: translateY(-150%);
+      }
+
+      .skip-link:focus {
+        transform: translateY(0);
+      }
+
+      .topbar {
+        position: sticky;
+        z-index: 10;
+        top: 0;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        min-height: 64px;
+        padding: 0 28px;
+        border-bottom: 1px solid var(--border);
+        background: rgb(6 8 13 / 0.92);
+        backdrop-filter: blur(16px);
+      }
+
+      .brand,
+      .top-link {
+        display: inline-flex;
+        align-items: center;
+        min-height: 44px;
+        text-decoration: none;
+      }
+
+      .brand {
+        gap: 11px;
+        color: var(--text);
+        font-weight: 650;
+        letter-spacing: -0.02em;
+      }
+
+      .mark {
+        width: 26px;
+        height: 26px;
+        filter: drop-shadow(0 4px 10px rgb(139 131 246 / 0.22));
+      }
+
+      .brand-divider {
+        color: var(--border-strong);
+        font-weight: 400;
+      }
+
+      .brand-docs {
+        color: var(--dim);
+        font-weight: 500;
+      }
+
+      .top-link {
+        gap: 8px;
+        color: var(--dim);
+        font-size: 13px;
+        font-weight: 600;
+        transition-property: color;
+        transition-duration: 140ms;
+      }
+
+      .top-link:hover {
+        color: var(--text);
+      }
+
+      .top-link svg {
+        width: 16px;
+        height: 16px;
+      }
+
+      .shell {
+        display: grid;
+        grid-template-columns: 184px minmax(0, 700px);
+        gap: clamp(48px, 8vw, 112px);
+        width: min(1120px, calc(100% - 56px));
+        margin: 0 auto;
+        padding: 72px 0 120px;
+      }
+
+      .sidebar {
+        position: sticky;
+        top: 96px;
+        align-self: start;
+      }
+
+      .nav-group + .nav-group {
+        margin-top: 28px;
+      }
+
+      .nav-label,
+      .eyebrow,
+      .method,
+      .footer-mark {
+        font-family: var(--mono);
+        font-size: 10px;
+        font-weight: 650;
+        letter-spacing: 0.11em;
+        text-transform: uppercase;
+      }
+
+      .nav-label {
+        margin: 0 0 8px;
+        color: var(--faint);
+      }
+
+      .sidebar a {
+        display: flex;
+        align-items: center;
+        min-height: 36px;
+        color: var(--dim);
+        font-size: 13px;
+        text-decoration: none;
+        transition-property: color;
+        transition-duration: 140ms;
+      }
+
+      .sidebar a:hover {
+        color: var(--text);
+      }
+
+      main {
+        min-width: 0;
+      }
+
+      .hero {
+        padding: 20px 0 76px;
+      }
+
+      .eyebrow {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        margin: 0 0 20px;
+        color: var(--accent-soft);
+      }
+
+      .eyebrow::before {
+        width: 6px;
+        height: 6px;
+        border-radius: 999px;
+        background: var(--success);
+        box-shadow: 0 0 0 4px rgb(22 179 125 / 0.12);
+        content: "";
+      }
+
+      h1,
+      h2,
+      h3 {
+        color: var(--text);
+        line-height: 1.15;
+        text-wrap: balance;
+      }
+
+      h1 {
+        max-width: 640px;
+        margin: 0;
+        font-size: clamp(44px, 7vw, 68px);
+        letter-spacing: -0.065em;
+      }
+
+      .lede {
+        max-width: 610px;
+        margin: 24px 0 0;
+        color: var(--dim);
+        font-size: 18px;
+        line-height: 1.65;
+        text-wrap: pretty;
+      }
+
+      .hero-links {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 32px;
+      }
+
+      .button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 44px;
+        padding: 0 16px;
+        border: 1px solid var(--border);
+        border-radius: 7px;
+        color: var(--soft);
+        font-size: 13px;
+        font-weight: 650;
+        text-decoration: none;
+        transition-property: color, background-color, border-color, transform;
+        transition-duration: 140ms;
+      }
+
+      .button.primary {
+        border-color: #9a94f7;
+        background: var(--accent);
+        color: #080913;
+        box-shadow: 0 1px 0 rgb(255 255 255 / 0.24) inset,
+          0 8px 28px rgb(139 131 246 / 0.16);
+      }
+
+      .button:hover {
+        border-color: var(--border-strong);
+        background: var(--band);
+        color: var(--text);
+      }
+
+      .button.primary:hover {
+        border-color: #aaa5ff;
+        background: #9c95ff;
+        color: #080913;
+      }
+
+      .button:active {
+        transform: scale(0.96);
+      }
+
+      .button svg {
+        width: 14px;
+        height: 14px;
+        margin-left: 9px;
+      }
+
+      section {
+        padding: 72px 0 0;
+        border-top: 1px solid var(--border);
+      }
+
+      section + section {
+        margin-top: 72px;
+      }
+
+      h2 {
+        margin: 0;
+        font-size: 28px;
+        letter-spacing: -0.035em;
+      }
+
+      h3 {
+        margin: 40px 0 10px;
+        font-size: 17px;
+        letter-spacing: -0.02em;
+      }
+
+      p {
+        text-wrap: pretty;
+      }
+
+      .section-intro {
+        max-width: 620px;
+        margin: 14px 0 0;
+        color: var(--dim);
+        font-size: 16px;
+      }
+
+      .flow {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1px;
+        overflow: hidden;
+        margin-top: 28px;
+        border: 1px solid var(--border);
+        border-radius: 11px;
+        background: var(--border);
+      }
+
+      .flow-item {
+        min-height: 142px;
+        padding: 20px;
+        background: var(--card);
+      }
+
+      .step {
+        color: var(--accent-soft);
+        font-family: var(--mono);
+        font-size: 11px;
+      }
+
+      .flow strong {
+        display: block;
+        margin-top: 16px;
+        color: var(--text);
+        font-size: 14px;
+      }
+
+      .flow p {
+        margin: 6px 0 0;
+        color: var(--dim);
+        font-size: 12px;
+        line-height: 1.55;
+      }
+
+      .requirements {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+        margin: 28px 0 0;
+        padding: 0;
+        list-style: none;
+      }
+
+      .requirements li {
+        position: relative;
+        padding: 14px 14px 14px 38px;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        background: var(--surface);
+        color: var(--soft);
+        font-size: 13px;
+      }
+
+      .requirements li::before {
+        position: absolute;
+        top: 15px;
+        left: 15px;
+        color: var(--success);
+        font-family: var(--mono);
+        content: "✓";
+      }
+
+      .steps {
+        margin: 26px 0 0;
+        padding: 0;
+        list-style: none;
+        counter-reset: step;
+      }
+
+      .steps li {
+        position: relative;
+        min-height: 42px;
+        padding: 0 0 26px 50px;
+        counter-increment: step;
+      }
+
+      .steps li::before {
+        position: absolute;
+        top: -3px;
+        left: 0;
+        display: grid;
+        width: 30px;
+        height: 30px;
+        place-items: center;
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        background: var(--card);
+        color: var(--accent-soft);
+        font-family: var(--mono);
+        font-size: 11px;
+        content: counter(step);
+      }
+
+      .steps li:not(:last-child)::after {
+        position: absolute;
+        top: 32px;
+        bottom: 2px;
+        left: 15px;
+        width: 1px;
+        background: var(--border);
+        content: "";
+      }
+
+      .steps strong {
+        display: block;
+        color: var(--text);
+        font-size: 14px;
+      }
+
+      .steps span {
+        display: block;
+        margin-top: 3px;
+        color: var(--dim);
+        font-size: 13px;
+      }
+
+      code,
+      pre {
+        font-family: var(--mono);
+      }
+
+      :not(pre) > code {
+        padding: 2px 6px;
+        border: 1px solid var(--border);
+        border-radius: 5px;
+        background: var(--surface);
+        color: var(--soft);
+        font-size: 0.84em;
+      }
+
+      .note {
+        margin-top: 24px;
+        padding: 15px 17px;
+        border: 1px solid rgb(139 131 246 / 0.32);
+        border-radius: 8px;
+        background: rgb(139 131 246 / 0.07);
+        color: var(--soft);
+        font-size: 13px;
+      }
+
+      .note strong {
+        color: var(--accent-soft);
+      }
+
+      .code-block {
+        position: relative;
+        margin: 18px 0 0;
+      }
+
+      .code-label {
+        position: absolute;
+        top: 13px;
+        right: 14px;
+        color: var(--faint);
+        font-family: var(--mono);
+        font-size: 9px;
+        letter-spacing: 0.11em;
+        text-transform: uppercase;
+      }
+
+      pre {
+        overflow-x: auto;
+        margin: 0;
+        padding: 20px;
+        border: 1px solid var(--border);
+        border-radius: 9px;
+        background: var(--surface);
+        color: #cbd3df;
+        font-size: 12px;
+        line-height: 1.7;
+        tab-size: 2;
+      }
+
+      .token-key {
+        color: #a8c7fa;
+      }
+
+      .token-value {
+        color: #b9d8aa;
+      }
+
+      .endpoint-list {
+        overflow: hidden;
+        margin-top: 28px;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+      }
+
+      .endpoint {
+        display: grid;
+        grid-template-columns: 72px minmax(190px, 1fr) 1.4fr;
+        gap: 16px;
+        align-items: center;
+        min-height: 62px;
+        padding: 11px 16px;
+        background: var(--surface);
+      }
+
+      .endpoint + .endpoint {
+        border-top: 1px solid var(--border);
+      }
+
+      .method {
+        color: var(--accent-soft);
+      }
+
+      .endpoint code {
+        color: var(--soft);
+        font-size: 12px;
+      }
+
+      .endpoint span:last-child {
+        color: var(--dim);
+        font-size: 12px;
+      }
+
+      .inline-link {
+        color: var(--accent-soft);
+        font-weight: 600;
+        text-decoration-thickness: 1px;
+        text-underline-offset: 3px;
+        transition-property: color;
+        transition-duration: 140ms;
+      }
+
+      .inline-link:hover {
+        color: var(--text);
+      }
+
+      footer {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 24px;
+        margin-top: 88px;
+        padding-top: 28px;
+        border-top: 1px solid var(--border);
+        color: var(--faint);
+        font-size: 12px;
+      }
+
+      .footer-mark {
+        color: var(--dim);
+      }
+
+      @media (max-width: 780px) {
+        html {
+          scroll-padding-top: 124px;
+        }
+
+        .shell {
+          display: block;
+          width: min(700px, calc(100% - 40px));
+          padding-top: 0;
+        }
+
+        .sidebar {
+          z-index: 8;
+          top: 64px;
+          display: flex;
+          gap: 24px;
+          overflow-x: auto;
+          margin: 0 -20px 48px;
+          padding: 8px 20px;
+          border-bottom: 1px solid var(--border);
+          background: rgb(6 8 13 / 0.96);
+          scrollbar-width: none;
+        }
+
+        .sidebar::-webkit-scrollbar {
+          display: none;
+        }
+
+        .nav-group,
+        .nav-group + .nav-group {
+          display: flex;
+          flex: 0 0 auto;
+          gap: 20px;
+          margin: 0;
+        }
+
+        .nav-label {
+          display: none;
+        }
+
+        .sidebar a {
+          min-height: 44px;
+          white-space: nowrap;
+        }
+
+        .hero {
+          padding-top: 8px;
+        }
+      }
+
+      @media (max-width: 560px) {
+        .topbar {
+          padding: 0 20px;
+        }
+
+        .brand-divider,
+        .brand-docs,
+        .top-link span {
+          display: none;
+        }
+
+        .shell {
+          width: min(100% - 32px, 700px);
+        }
+
+        .sidebar {
+          margin-right: -16px;
+          margin-left: -16px;
+          padding-right: 16px;
+          padding-left: 16px;
+        }
+
+        .hero {
+          padding-bottom: 60px;
+        }
+
+        h1 {
+          font-size: 42px;
+        }
+
+        .lede {
+          font-size: 16px;
+        }
+
+        .flow,
+        .requirements {
+          grid-template-columns: 1fr;
+        }
+
+        .endpoint {
+          grid-template-columns: 60px 1fr;
+          gap: 5px 12px;
+          padding: 14px;
+        }
+
+        .endpoint span:last-child {
+          grid-column: 2;
+        }
+
+        footer {
+          align-items: flex-start;
+          flex-direction: column;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        html {
+          scroll-behavior: auto;
+        }
+
+        *,
+        *::before,
+        *::after {
+          transition-duration: 0.01ms !important;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <a class="skip-link" href="#content">Skip to content</a>
+
+    <header class="topbar">
+      <a class="brand" href="#top" aria-label="Pocketful docs home">
+        <svg class="mark" viewBox="0 0 32 32" aria-hidden="true">
+          <defs>
+            <linearGradient id="ring" x1="4" y1="3" x2="28" y2="29">
+              <stop stop-color="#c8d3ff" />
+              <stop offset="1" stop-color="#766ee5" />
+            </linearGradient>
+          </defs>
+          <rect width="32" height="32" rx="8" fill="#1a1f35" />
+          <circle cx="16" cy="16" r="9" fill="none" stroke="url(#ring)" stroke-width="5" />
+          <circle cx="21.5" cy="10.5" r="3.4" fill="#fff" />
+        </svg>
+        <span>Pocketful</span>
+        <span class="brand-divider">/</span>
+        <span class="brand-docs">Docs</span>
+      </a>
+      <a
+        class="top-link"
+        href="https://github.com/abdeen-labs/pocketful"
+        target="_blank"
+        rel="noreferrer"
+      >
+        <span>View source</span>
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M8 16 16 8M9 8h7v7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
+      </a>
+    </header>
+
+    <div class="shell" id="top">
+      <nav class="sidebar" aria-label="Documentation">
+        <div class="nav-group">
+          <p class="nav-label">Start</p>
+          <a href="#overview">Overview</a>
+          <a href="#quick-start">Quick start</a>
+        </div>
+        <div class="nav-group">
+          <p class="nav-label">API</p>
+          <a href="#authentication">Authentication</a>
+          <a href="#create">Create a pass</a>
+          <a href="#endpoints">Endpoints</a>
+        </div>
+        <div class="nav-group">
+          <p class="nav-label">More</p>
+          <a href="https://github.com/abdeen-labs/pocketful/blob/main/INSTRUCTIONS.md">Full setup guide</a>
+        </div>
+      </nav>
+
+      <main id="content">
+        <div class="hero">
+          <p class="eyebrow">Self-hosted Apple Wallet tooling</p>
+          <h1>Build passes.<br />Keep the keys.</h1>
+          <p class="lede">
+            Pocketful is an iPhone pass designer backed by your own signing server.
+            Your certificates stay private, your designs stay yours, and Wallet gets
+            a real signed pass.
+          </p>
+          <div class="hero-links">
+            <a class="button primary" href="#quick-start">
+              Get started
+              <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                <path d="m6 3 5 5-5 5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+            </a>
+            <a
+              class="button"
+              href="https://github.com/abdeen-labs/pocketful"
+              target="_blank"
+              rel="noreferrer"
+            >
+              GitHub
+            </a>
+          </div>
+        </div>
+
+        <section id="overview">
+          <h2>How it works</h2>
+          <p class="section-intro">
+            The app handles design. The server handles identity. Apple Wallet handles
+            the final handoff.
+          </p>
+          <div class="flow" aria-label="Pocketful pass creation flow">
+            <div class="flow-item">
+              <span class="step">01</span>
+              <strong>Design on iPhone</strong>
+              <p>Choose a pass style, fields, colors, barcode, and artwork.</p>
+            </div>
+            <div class="flow-item">
+              <span class="step">02</span>
+              <strong>Sign on your server</strong>
+              <p>The API validates the spec and signs a <code>.pkpass</code> in memory.</p>
+            </div>
+            <div class="flow-item">
+              <span class="step">03</span>
+              <strong>Add to Wallet</strong>
+              <p>The app downloads the pass and opens Apple’s native add sheet.</p>
+            </div>
+          </div>
+        </section>
+
+        <section id="quick-start">
+          <h2>Quick start</h2>
+          <p class="section-intro">
+            Pocketful is intentionally self-hosted. You bring the Apple signing
+            identity and deploy one small Node service.
+          </p>
+          <ul class="requirements" aria-label="Requirements">
+            <li>Paid Apple Developer account</li>
+            <li>Pass Type ID and certificate</li>
+            <li>macOS with Xcode 27+</li>
+            <li>iPhone running iOS 27+</li>
+          </ul>
+          <ol class="steps">
+            <li>
+              <strong>Create your Pass Type ID.</strong>
+              <span>Generate the pass certificate in the Apple Developer portal.</span>
+            </li>
+            <li>
+              <strong>Deploy the signing server.</strong>
+              <span>Set the certificate, team, pass type, and API token environment variables.</span>
+            </li>
+            <li>
+              <strong>Build the iPhone app.</strong>
+              <span>Select your signing team in Xcode and run Pocketful on a physical device.</span>
+            </li>
+            <li>
+              <strong>Point the app at your server.</strong>
+              <span>Enter its URL and API token under Advanced → Server, then create a pass.</span>
+            </li>
+          </ol>
+          <div class="note">
+            <strong>Certificates need a few exact steps.</strong> Follow the
+            <a
+              class="inline-link"
+              href="https://github.com/abdeen-labs/pocketful/blob/main/INSTRUCTIONS.md"
+              >complete setup guide</a
+            >
+            for PEM conversion, Railway variables, and troubleshooting.
+          </div>
+        </section>
+
+        <section id="authentication">
+          <h2>Authentication</h2>
+          <p class="section-intro">
+            Every management request uses the token you set in <code>API_TOKEN</code>.
+            Short-lived pass download URLs are the one exception: their random ID is
+            the credential.
+          </p>
+          <div class="code-block">
+            <span class="code-label">HTTP</span>
+            <pre><code>Authorization: Bearer YOUR_API_TOKEN
+Content-Type: application/json</code></pre>
+          </div>
+          <div class="note">
+            <strong>Keep it server-side.</strong> Treat the API token like a password.
+            Pocketful stores it locally on your device; don’t put it in pass fields or
+            commit it to the repository.
+          </div>
+        </section>
+
+        <section id="create">
+          <h2>Create a pass</h2>
+          <p class="section-intro">
+            Send a pass specification to <code>POST /api/passes</code>. Artwork is a
+            map of Wallet image names to base64-encoded PNG data.
+          </p>
+          <h3>1. Define the pass</h3>
+          <div class="code-block">
+            <span class="code-label">pass.json</span>
+            <pre><code>{
+  <span class="token-key">"style"</span>: <span class="token-value">"generic"</span>,
+  <span class="token-key">"description"</span>: <span class="token-value">"Studio membership"</span>,
+  <span class="token-key">"organizationName"</span>: <span class="token-value">"Northstar Studio"</span>,
+  <span class="token-key">"logoText"</span>: <span class="token-value">"NORTHSTAR"</span>,
+  <span class="token-key">"colors"</span>: {
+    <span class="token-key">"backgroundColor"</span>: <span class="token-value">"#171923"</span>,
+    <span class="token-key">"foregroundColor"</span>: <span class="token-value">"#FFFFFF"</span>
+  },
+  <span class="token-key">"fields"</span>: {
+    <span class="token-key">"primary"</span>: [
+      { <span class="token-key">"key"</span>: <span class="token-value">"member"</span>, <span class="token-key">"label"</span>: <span class="token-value">"MEMBER"</span>, <span class="token-key">"value"</span>: <span class="token-value">"Ada Lovelace"</span> }
+    ]
+  },
+  <span class="token-key">"barcodes"</span>: [
+    { <span class="token-key">"format"</span>: <span class="token-value">"PKBarcodeFormatQR"</span>, <span class="token-key">"message"</span>: <span class="token-value">"member_001"</span> }
+  ],
+  <span class="token-key">"images"</span>: {
+    <span class="token-key">"icon"</span>: <span class="token-value">"BASE64_PNG_DATA"</span>,
+    <span class="token-key">"icon@2x"</span>: <span class="token-value">"BASE64_PNG_DATA"</span>
+  }
+}</code></pre>
+          </div>
+          <h3>2. Send it</h3>
+          <div class="code-block">
+            <span class="code-label">Shell</span>
+            <pre><code>curl https://your-pocketful-server.example/api/passes \
+  --request POST \
+  --header "Authorization: Bearer $API_TOKEN" \
+  --header "Content-Type: application/json" \
+  --data @pass.json</code></pre>
+          </div>
+          <h3>3. Use the download URL</h3>
+          <div class="code-block">
+            <span class="code-label">201 JSON</span>
+            <pre><code>{
+  <span class="token-key">"id"</span>: <span class="token-value">"d4f8…"</span>,
+  <span class="token-key">"url"</span>: <span class="token-value">"https://…/api/passes/d4f8…"</span>,
+  <span class="token-key">"expiresAt"</span>: <span class="token-value">"2026-08-05T18:15:00.000Z"</span>
+}</code></pre>
+          </div>
+          <p>
+            Download links expire after 15 minutes by default. Set
+            <code>"updatable": true</code> to retain a pass and receive a stable serial
+            number for over-the-air updates.
+          </p>
+        </section>
+
+        <section id="endpoints">
+          <h2>Endpoints</h2>
+          <p class="section-intro">
+            The management API is small by design. Apple’s separate <code>/v1</code>
+            web-service routes are called by iOS automatically.
+          </p>
+          <div class="endpoint-list">
+            <div class="endpoint">
+              <span class="method">GET</span>
+              <code>/healthz</code>
+              <span>Check service health</span>
+            </div>
+            <div class="endpoint">
+              <span class="method">POST</span>
+              <code>/api/passes</code>
+              <span>Create and sign a pass</span>
+            </div>
+            <div class="endpoint">
+              <span class="method">GET</span>
+              <code>/api/passes/:id</code>
+              <span>Download a short-lived pass</span>
+            </div>
+            <div class="endpoint">
+              <span class="method">GET</span>
+              <code>/api/passes</code>
+              <span>List updatable passes</span>
+            </div>
+            <div class="endpoint">
+              <span class="method">GET</span>
+              <code>/api/passes/:serial/spec</code>
+              <span>Read a stored pass spec</span>
+            </div>
+            <div class="endpoint">
+              <span class="method">PUT</span>
+              <code>/api/passes/:serial</code>
+              <span>Replace and push an update</span>
+            </div>
+            <div class="endpoint">
+              <span class="method">POST</span>
+              <code>/api/passes/:serial/download</code>
+              <span>Mint a fresh download URL</span>
+            </div>
+            <div class="endpoint">
+              <span class="method">DELETE</span>
+              <code>/api/passes/:serial</code>
+              <span>Delete a stored pass</span>
+            </div>
+          </div>
+          <p>
+            Need every supported pass field? The canonical schema lives in
+            <a
+              class="inline-link"
+              href="https://github.com/abdeen-labs/pocketful/blob/main/server/src/types.ts"
+              ><code>server/src/types.ts</code></a
+            >.
+          </p>
+        </section>
+
+        <footer>
+          <span>Pocketful is an Abdeen Labs internal tool. The source is public.</span>
+          <span class="footer-mark">AXIS//OPEN</span>
+        </footer>
+      </main>
+    </div>
+  </body>
+</html>
