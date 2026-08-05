@@ -1,13 +1,7 @@
 # Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
 
-# dependencies
+# Dependencies
 node_modules/
-
-# Expo
-.expo/
-dist/
-web-build/
-expo-env.d.ts
 
 # Native
 .kotlin/
@@ -21,7 +15,30 @@ expo-env.d.ts
 # Metro
 .metro-health-check*
 
-# debug
+# Xcode
+DerivedData/
+build/
+xcuserdata/
+*.xcuserstate
+*.xccheckout
+*.moved-aside
+*.pbxuser
+*.mode1v3
+*.mode2v3
+*.perspectivev3
+*.hmap
+*.ipa
+*.dSYM
+*.dSYM.zip
+
+# Swift Package Manager
+.swiftpm/
+.build/
+
+# CocoaPods
+Pods/
+
+# Debug
 npm-debug.*
 yarn-debug.*
 yarn-error.*
@@ -29,24 +46,22 @@ yarn-error.*
 # macOS
 .DS_Store
 
-# certificates — never commit these
+# Certificates — never commit these
 *.pem
 *.cer
 
-# updatable-pass database (server/data locally, a mounted volume on Railway)
+# Updatable-pass database
+# Server/data locally, or a mounted volume on Railway
 server/data/
 
-# local env files
+# Local environment files
 .env
 .env.*
 .env*.local
 !.env.example
 
-# typescript
+# TypeScript
 *.tsbuildinfo
 
-example
-
-# generated native folders (recreated by `npx expo prebuild`)
-app/ios/
-app/android/
+# Generated files
+dist/
