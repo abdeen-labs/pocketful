@@ -3,12 +3,13 @@
 # Pocketful setup guide
 
 Design an Apple Wallet pass on your phone, get it signed by your own server, add it
-to Wallet. Entirely self-hosted: no Expo cloud services (no EAS Build/Update/Submit,
-no Expo account needed), and the app runs as a local Xcode build.
+to Wallet. Entirely self-hosted: the app is a local Xcode build, and the only
+service involved is the signing server you deploy.
 
 ```
-app/      Expo (TypeScript, expo-router) — the pass designer UI
+app/      Native SwiftUI iPhone app — the pass designer UI
 server/   Node + Express — signs .pkpass files with passkit-generator, deployed on Railway
+mcp/      MCP server — exposes pass creation and updates to AI agents (Part 5)
 ```
 
 **How it works**
@@ -177,40 +178,24 @@ is self-signed ones (Wallet will refuse the result, but the API works end-to-end
 
 ## Part 3 — Build the app locally
 
-No EAS — the app is compiled on your Mac with Xcode.
+The app is a native SwiftUI Xcode project with zero third-party dependencies —
+there is nothing to install first.
 
-1. Configure the app:
+1. Open `app/Pocketful/Pocketful.xcodeproj` in Xcode 27 or newer.
 
-```bash
-cd app && bun install
-```
+2. Under **Signing & Capabilities**, select your team. If you use a different
+   bundle identifier, change it there too (currently `dev.abdeen.pocketful`).
 
-   The app defaults to `https://pass.abdeen.dev`, so no `.env` is needed. To
-   point it somewhere else, create `app/.env` (see `app/.env.example`) with
-   `EXPO_PUBLIC_PASS_SERVER_URL`, or edit the URL in the Server section of the
-   form at runtime.
+3. Select your iPhone (iOS 27 or newer) as the run destination and hit Run.
+   The complete Wallet flow needs a physical device.
 
-2. If you use a different Apple team/bundle id, change `ios.bundleIdentifier` in
-   `app/app.json` (currently `dev.abdeen.pocketful`).
-
-3. Build and run on your iPhone:
-
-```bash
-npx expo run:ios --device
-```
-
-   This generates the native `app/ios/` project (gitignored), compiles with Xcode,
-   and starts Metro. First run: pick your device, and approve signing in Xcode if
-   prompted (open `app/ios/Pocketful.xcworkspace`, select your team under Signing &
-   Capabilities).
-
-   Prefer building from Xcode itself? Run `npx expo prebuild --platform ios` once,
-   open the workspace, and hit Run — but keep `npx expo start` running in a
-   terminal so the debug build can load JS from Metro.
-
-4. In the app, work through the Design, Content, Smart, and Advanced studios,
+4. In the app, work through the Design, Content, Smart, and Advanced tabs,
    choose an icon image (required — Wallet rejects passes without one), then hit
    **Create pass & add to Wallet**. Wallet's add sheet appears directly in Pocketful.
+
+   The app points at `https://pass.abdeen.dev` out of the box. To use your own
+   deployment, set the URL (and API token, if the server has one configured) in
+   **Advanced → Server** — both persist on the device.
 
 ---
 
@@ -306,20 +291,23 @@ pushes the change straight to Wallet.
   **G4** and that all three base64 vars decode to PEM files (`-----BEGIN …`).
 - **`images.icon is not a PNG`** — the picked photo failed conversion; try another
   image. The app converts everything to PNG on-device before upload.
-- **Server 401** — the app's Server section (or `EXPO_PUBLIC_PASS_API_TOKEN` in
-  `app/.env`) doesn't match the `API_TOKEN` configured on Railway.
-- **Build errors after changing `app.json`** — regenerate native code:
-  `cd app && npx expo prebuild --platform ios --clean`, then build again.
+- **Server 401** — the API token in the app's **Advanced → Server** section
+  doesn't match the `API_TOKEN` configured on Railway.
+- **A poster event ticket renders as a plain pass** — Wallet falls back silently
+  when a poster requirement is missing; a poster needs at least a barcode (or
+  NFC). To see the exact reason, connect the iPhone, open Console.app, and
+  filter for the `passd` process while adding the pass.
 
 ## Notes
 
-- The pass spec type lives in both `server/src/types.ts` and `app/src/types.ts` —
-  they're mirrored by hand; keep them in sync.
+- The pass spec is defined in `server/src/types.ts` and mirrored by hand in the
+  app's `Pocketful/Models/PassSpec.swift` — keep them in sync.
 - The server keeps one-shot signed passes only in memory. A redeploy or restart
   drops pending ids; that's fine, just create the pass again. Updatable passes
   persist in SQLite under `DATA_DIR` — on Railway, keep that on a volume.
-- Everything uses bun locally. Railway builds `server/` from its `Dockerfile`,
-  so the deploy no longer depends on lockfile-based builder detection.
+- The server and MCP use Bun locally. Railway builds `server/` from its
+  `Dockerfile`, so the deploy does not depend on lockfile-based builder
+  detection.
 
 ---
 

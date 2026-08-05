@@ -13,10 +13,10 @@
 # Pocketful
 
 <p align="center">
-  <img src="app/assets/images/icon.png" width="112" alt="Pocketful app icon">
+  <img src="docs/assets/pocketful-icon.png" width="112" alt="Pocketful app icon">
 </p>
 
-Pocketful is a self-hosted Apple Wallet pass designer for iPhone. Build a pass visually, sign it with your own server, and open Apple's native add-to-Wallet sheet without relying on EAS or any other Expo cloud service.
+Pocketful is a self-hosted Apple Wallet pass designer for iPhone. Build a pass visually, sign it with your own server, and open Apple's native add-to-Wallet sheet. The only service involved is the signing server you deploy yourself.
 
 Pocketful is an Abdeen Labs internal tool. The source is public.
 
@@ -33,7 +33,7 @@ Pocketful is an Abdeen Labs internal tool. The source is public.
 
 ## How it works
 
-1. The Expo app turns your design and on-device artwork into a JSON pass specification.
+1. The app turns your design and on-device artwork into a JSON pass specification.
 2. The Express service validates the specification, builds and signs a `.pkpass` in memory, and returns a short-lived download URL.
 3. The app downloads the signed pass and presents it with PassKit's native Wallet sheet.
 
@@ -43,7 +43,7 @@ Signing stays on the server because [`passkit-generator`](https://github.com/ale
 
 | Path | Purpose |
 | --- | --- |
-| [`app/`](app/) | Expo, React Native, and TypeScript pass designer with a local Swift PassKit module |
+| [`app/`](app/) | Native SwiftUI pass designer — an Xcode project with no third-party dependencies |
 | [`server/`](server/) | Node.js, Express, and TypeScript API that validates, signs, serves, and OTA-updates passes |
 | [`mcp/`](mcp/) | MCP server exposing pass creation and updates as tools for AI agents |
 | [`docs/`](docs/) | Abdeen Labs brand assets used by this README |
@@ -51,7 +51,7 @@ Signing stays on the server because [`passkit-generator`](https://github.com/ale
 
 ## Getting started
 
-You will need macOS with Xcode, a physical iPhone for the complete Wallet flow, a paid Apple Developer account, Node.js 20 or newer, and Bun.
+You will need macOS with Xcode 27 or newer, an iPhone running iOS 27 for the complete Wallet flow, a paid Apple Developer account, and Bun for the server tooling.
 
 Start with the [complete setup guide](INSTRUCTIONS.md). It walks through creating a Pass Type ID, exporting the required Apple certificates, deploying the signing service, and building the app locally.
 
@@ -63,28 +63,20 @@ bun install
 bun run dev
 ```
 
-Then build the app for your iPhone:
+Then build the app for your iPhone: open `app/Pocketful/Pocketful.xcodeproj` in Xcode, select your signing team under Signing & Capabilities, and run on your device.
 
-```bash
-cd app
-bun install
-npx expo run:ios --device
-```
-
-The app defaults to `https://pass.abdeen.dev`. Set `EXPO_PUBLIC_PASS_SERVER_URL` in `app/.env` or use the Server section in the app to point it at your own deployment.
+The app defaults to `https://pass.abdeen.dev`. Point it at your own deployment in **Advanced → Server** inside the app — the URL and API token persist on the device.
 
 ## Development
 
 | Area | Command | Description |
 | --- | --- | --- |
-| App | `bun run start` | Start the Expo development server |
-| App | `bun run ios` | Generate/build the native iOS app |
-| App | `bun run lint` | Run Expo's lint checks |
+| App | `open app/Pocketful/Pocketful.xcodeproj` | Open the app in Xcode; build and run from there |
 | Server | `bun run dev` | Run the API with TypeScript watch mode |
 | Server | `bun run build` | Compile the API to `server/dist` |
 | Server | `bun run start` | Run the compiled API |
 
-The pass specification types in [`app/src/types.ts`](app/src/types.ts) and [`server/src/types.ts`](server/src/types.ts) are mirrored manually and should be updated together.
+The pass specification is defined in [`server/src/types.ts`](server/src/types.ts) and mirrored by hand in the app's [`PassSpec.swift`](app/Pocketful/Pocketful/Models/PassSpec.swift) — update them together.
 
 ## API at a glance
 
