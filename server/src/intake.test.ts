@@ -57,6 +57,19 @@ test("health stays open", async () => {
   assert.equal(res.status, 200);
 });
 
+test("docs are served at the root without authentication", async () => {
+  const res = await fetch(`${base}/`);
+  assert.equal(res.status, 200);
+  assert.match(res.headers.get("content-type") ?? "", /^text\/html/);
+  assert.match(await res.text(), /Pocketful docs/);
+});
+
+test("docs have a stable /docs URL", async () => {
+  const res = await fetch(`${base}/docs`);
+  assert.equal(res.status, 200);
+  assert.match(await res.text(), /Build passes\. Keep the keys\./);
+});
+
 test("the pass list requires a token", async () => {
   const res = await fetch(`${base}/api/passes`);
   assert.equal(res.status, 401);

@@ -1,4 +1,5 @@
 import { randomBytes, randomUUID } from "node:crypto";
+import path from "node:path";
 import express from "express";
 import rateLimit from "express-rate-limit";
 import { pushPassUpdate, type PushResult } from "./apns";
@@ -20,6 +21,7 @@ import { walletWebServiceRouter } from "./webService";
 /** The full app minus startup: importable by tests without a listener or env. */
 export function createApp(config: Config): express.Express {
   const app = express();
+  const docsPath = path.join(__dirname, "../public/index.html");
   // Railway terminates TLS at its proxy; trust it so req.protocol is https.
   // NOTE: `trust proxy: true` means req.ip comes from X-Forwarded-For, which a
   // client can spoof. Tightening that to a hop count is plan 007.
@@ -77,6 +79,19 @@ export function createApp(config: Config): express.Express {
 
   app.get("/healthz", (_req, res) => {
     res.json({ ok: true });
+  });
+
+  app.get(["/", "/docs", "/docs/"], (_req, res) => {
+    res
+      .set({
+        "Cache-Control": "public, max-age=300",
+        "Content-Security-Policy":
+          "default-src 'none'; style-src 'unsafe-inline'; img-src data:; " +
+          "base-uri 'none'; form-action 'none'; frame-ancestors 'none'",
+        "Referrer-Policy": "strict-origin-when-cross-origin",
+        "X-Content-Type-Options": "nosniff",
+      })
+      .sendFile(docsPath);
   });
 
   app.post("/api/passes", passJson, (req, res) => {
