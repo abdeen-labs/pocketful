@@ -38,6 +38,17 @@ for (const style of STYLES) {
   });
 }
 
+// 12 digits (Wallet derives the check digit) and 13 (already appended) are
+// both structurally valid EAN-13 messages; the validator must take either.
+for (const message of ["112023378260", "1120233782609"] as const) {
+  test(`accepts an EAN-13 barcode with a ${message.length}-digit message`, () => {
+    validateSpec({
+      ...validSpec(),
+      barcodes: [{ format: "PKBarcodeFormatEAN13", message }],
+    });
+  });
+}
+
 test("accepts the baseline valid spec and returns its parts", () => {
   const result = validateSpec(validSpec());
   assert.equal(result.spec.description, "Test pass");
@@ -206,6 +217,24 @@ const REJECTIONS: Rejection[] = [
     },
     status: 400,
     fragment: "message is required",
+  },
+  {
+    name: "EAN-13 barcode with a non-numeric message",
+    spec: {
+      ...validSpec(),
+      barcodes: [{ format: "PKBarcodeFormatEAN13", message: "ABC023378260" }],
+    },
+    status: 400,
+    fragment: "EAN-13 check digit",
+  },
+  {
+    name: "EAN-13 barcode with a wrong check digit",
+    spec: {
+      ...validSpec(),
+      barcodes: [{ format: "PKBarcodeFormatEAN13", message: "1120233782601" }],
+    },
+    status: 400,
+    fragment: "EAN-13 check digit",
   },
   {
     name: "21 localizations",

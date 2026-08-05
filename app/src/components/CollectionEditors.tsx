@@ -59,6 +59,11 @@ const BARCODE_OPTIONS: { value: BarcodeFormat; label: string }[] = [
   { value: 'PKBarcodeFormatPDF417', label: 'PDF417' },
   { value: 'PKBarcodeFormatAztec', label: 'Aztec' },
   { value: 'PKBarcodeFormatCode128', label: 'Code 128' },
+  // iOS 27+ formats — pair with a legacy fallback for older systems.
+  { value: 'PKBarcodeFormatEAN13', label: 'EAN-13' },
+  { value: 'PKBarcodeFormatCode39', label: 'Code 39' },
+  { value: 'PKBarcodeFormatCodabar', label: 'Codabar' },
+  { value: 'PKBarcodeFormatI2of5', label: 'ITF' },
 ];
 
 function EditorCard({ index, title, onRemove, children }: { index: number; title: string; onRemove: () => void; children: React.ReactNode }) {
