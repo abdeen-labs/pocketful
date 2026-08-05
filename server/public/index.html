@@ -742,6 +742,10 @@
           <a href="#endpoints">Endpoints</a>
         </div>
         <div class="nav-group">
+          <p class="nav-label">Agents</p>
+          <a href="#mcp">MCP server</a>
+        </div>
+        <div class="nav-group">
           <p class="nav-label">More</p>
           <a href="https://github.com/abdeen-labs/pocketful/blob/main/INSTRUCTIONS.md">Full setup guide</a>
         </div>
@@ -972,6 +976,92 @@ Content-Type: application/json</code></pre>
               ><code>server/src/types.ts</code></a
             >.
           </p>
+        </section>
+
+        <section id="mcp">
+          <h2>MCP server</h2>
+          <p class="section-intro">
+            Let an AI agent create, inspect, and update passes through your Pocketful
+            server. The MCP server is a local stdio bridge: signing credentials remain
+            on your server and pass artwork can be read directly from local PNG files.
+          </p>
+
+          <h3>1. Install dependencies</h3>
+          <div class="code-block">
+            <span class="code-label">Shell</span>
+            <pre><code>cd /path/to/pocketful/mcp
+bun install</code></pre>
+          </div>
+
+          <h3>2. Add Pocketful to your MCP client</h3>
+          <p>
+            Use the absolute path to <code>mcp/src/index.ts</code>. The server runs
+            directly with Bun and needs no build step.
+          </p>
+          <div class="code-block">
+            <span class="code-label">MCP config</span>
+            <pre><code>{
+  <span class="token-key">"mcpServers"</span>: {
+    <span class="token-key">"pocketful"</span>: {
+      <span class="token-key">"command"</span>: <span class="token-value">"bun"</span>,
+      <span class="token-key">"args"</span>: [<span class="token-value">"/absolute/path/to/pocketful/mcp/src/index.ts"</span>],
+      <span class="token-key">"env"</span>: {
+        <span class="token-key">"POCKETFUL_SERVER_URL"</span>: <span class="token-value">"https://your-pocketful-server.example"</span>,
+        <span class="token-key">"POCKETFUL_API_TOKEN"</span>: <span class="token-value">"YOUR_API_TOKEN"</span>
+      }
+    }
+  }
+}</code></pre>
+          </div>
+          <div class="note">
+            <strong>Client syntax varies.</strong> If your client uses a CLI instead of
+            JSON, pass the same command, argument, and environment variables. The
+            <a
+              class="inline-link"
+              href="https://github.com/abdeen-labs/pocketful/blob/main/INSTRUCTIONS.md#part-5--let-an-ai-agent-make-passes-optional"
+              >full setup guide</a
+            >
+            includes a ready-to-run Claude Code command.
+          </div>
+
+          <h3>Available tools</h3>
+          <div class="endpoint-list">
+            <div class="endpoint">
+              <span class="method">TOOL</span>
+              <code>create_pass</code>
+              <span>Build, sign, and host a pass</span>
+            </div>
+            <div class="endpoint">
+              <span class="method">TOOL</span>
+              <code>update_pass</code>
+              <span>Replace a stored spec and push it to Wallet</span>
+            </div>
+            <div class="endpoint">
+              <span class="method">TOOL</span>
+              <code>get_pass_spec</code>
+              <span>Read a spec without sending base64 artwork into context</span>
+            </div>
+            <div class="endpoint">
+              <span class="method">TOOL</span>
+              <code>list_passes</code>
+              <span>List updatable passes and registrations</span>
+            </div>
+            <div class="endpoint">
+              <span class="method">TOOL</span>
+              <code>mint_pass_download</code>
+              <span>Create a fresh short-lived Wallet URL</span>
+            </div>
+            <div class="endpoint">
+              <span class="method">TOOL</span>
+              <code>delete_pass</code>
+              <span>Stop managing an updatable pass</span>
+            </div>
+          </div>
+          <div class="note">
+            <strong>Artwork is optional.</strong> Pass local PNG paths through
+            <code>image_files</code>; if no icon is supplied, Pocketful uses its bundled
+            fallback. For updates, omit <code>images</code> to reuse the stored artwork.
+          </div>
         </section>
 
         <footer>
