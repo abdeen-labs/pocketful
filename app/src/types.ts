@@ -6,7 +6,7 @@ export type JsonValue = JsonPrimitive | JsonObject | JsonValue[];
 export interface JsonObject { [key: string]: JsonValue }
 
 export type PassStyle = 'generic' | 'storeCard' | 'coupon' | 'eventTicket' | 'boardingPass';
-export type BarcodeFormat = 'PKBarcodeFormatQR' | 'PKBarcodeFormatPDF417' | 'PKBarcodeFormatAztec' | 'PKBarcodeFormatCode128' | 'PKBarcodeFormatEAN13' | 'PKBarcodeFormatCode39' | 'PKBarcodeFormatCodabar' | 'PKBarcodeFormatI2of5';
+export type BarcodeFormat = 'PKBarcodeFormatQR' | 'PKBarcodeFormatPDF417' | 'PKBarcodeFormatAztec' | 'PKBarcodeFormatCode128';
 export type TransitType = 'PKTransitTypeAir' | 'PKTransitTypeBoat' | 'PKTransitTypeBus' | 'PKTransitTypeTrain' | 'PKTransitTypeGeneric';
 export type FieldCategory = 'header' | 'primary' | 'secondary' | 'auxiliary' | 'back' | 'additionalInfo';
 export type FieldValue = string | number;
