@@ -79,15 +79,10 @@ struct PassDesignerView: View {
     private var hero: some View {
         VStack(alignment: .leading, spacing: 9) {
             HStack(spacing: 12) {
-                ZStack {
-                    Circle()
-                        .stroke(Axis.accent, lineWidth: 2)
-                        .frame(width: 22, height: 22)
-                    Circle()
-                        .fill(Axis.text)
-                        .frame(width: 7, height: 7)
-                }
-                .frame(width: 24, height: 24)
+                Image("SealKey")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 24, height: 24)
                 Rectangle()
                     .fill(Axis.border)
                     .frame(width: 0.5, height: 16)
