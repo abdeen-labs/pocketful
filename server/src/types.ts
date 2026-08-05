@@ -18,7 +18,13 @@ export type BarcodeFormat =
   | "PKBarcodeFormatQR"
   | "PKBarcodeFormatPDF417"
   | "PKBarcodeFormatAztec"
-  | "PKBarcodeFormatCode128";
+  | "PKBarcodeFormatCode128"
+  // iOS 27+; earlier systems render no barcode unless a legacy format follows
+  // in the barcodes array.
+  | "PKBarcodeFormatEAN13"
+  | "PKBarcodeFormatCode39"
+  | "PKBarcodeFormatCodabar"
+  | "PKBarcodeFormatI2of5";
 
 export type TransitType =
   | "PKTransitTypeAir"

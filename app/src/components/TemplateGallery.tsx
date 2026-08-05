@@ -18,6 +18,10 @@ const BARCODE_LABELS: Record<BarcodeFormat, string> = {
   PKBarcodeFormatPDF417: 'PDF417',
   PKBarcodeFormatAztec: 'Aztec',
   PKBarcodeFormatCode128: 'Code 128',
+  PKBarcodeFormatEAN13: 'EAN-13',
+  PKBarcodeFormatCode39: 'Code 39',
+  PKBarcodeFormatCodabar: 'Codabar',
+  PKBarcodeFormatI2of5: 'ITF',
 };
 
 export function TemplateGallery({
