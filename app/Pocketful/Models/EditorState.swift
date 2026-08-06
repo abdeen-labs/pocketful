@@ -207,7 +207,7 @@ final class EditorState {
         suppressHeaderDarkening = template.eventTicketOptions?.suppressHeaderDarkening ?? false
         auxiliaryStoreIdentifiers = template.eventTicketOptions?.auxiliaryStoreIdentifiers?
             .map(String.init).joined(separator: ", ") ?? ""
-        eventLogoText = template.eventTicketOptions?.eventLogoText ?? template.eventLogoText ?? ""
+        eventLogoText = template.eventTicketOptions?.eventLogoText ?? ""
         boardingOptions = boardingActionValues
         upcomingPassJson = ""
         if !bundledImages.isEmpty {
