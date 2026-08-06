@@ -54,7 +54,6 @@ struct PassTemplate: Identifiable {
     var fields: [TemplateField]
     var barcode: TemplateBarcode? = nil
     var semantics: [String: JSONValue] = [:]
-    var eventLogoText: String? = nil
 }
 
 enum Templates {
@@ -209,13 +208,13 @@ enum Templates {
                 transferURL: "https://example.com/midnight-live/transfer",
                 sellURL: "https://example.com/midnight-live/sell",
                 suppressHeaderDarkening: true,
-                useAutomaticColors: true,
-                eventLogoText: "MIDNIGHT LIVE"
+                useAutomaticColors: true
             ),
             description: "Midnight Live concert ticket",
             organizationName: "Neon Stage Presents",
             // The bundled wordmark logo carries the brand — logoText would
-            // render beside it twice.
+            // render beside it twice, and eventLogoText would fight the logo
+            // and the header date for the poster's top row and get clipped.
             logoText: "",
             colors: TemplateColors(background: "#1c1130", foreground: "#f6f1ff", label: "#b79ce4", footer: "#140b24"),
             fields: [
@@ -232,7 +231,9 @@ enum Templates {
                 TemplateField(category: .back, key: "venue-policy", label: "Venue policy", value: "Small bags up to 12 × 6 × 12 inches are permitted. The Grand Hall is a cashless venue."),
                 TemplateField(category: .back, key: "support-phone", label: "Venue support", value: "+1 (212) 555-0144", dataDetectorTypes: [.phoneNumber]),
             ],
-            barcode: TemplateBarcode(format: .qr, message: "MIDNIGHT-104-B-12", altText: "Seat 104-B-12"),
+            // No altText — the poster already prints the seat row, and Wallet
+            // truncates the caption under the QR.
+            barcode: TemplateBarcode(format: .qr, message: "MIDNIGHT-104-B-12"),
             semantics: [
                 "eventType": "PKEventTypeLivePerformance",
                 "eventName": "Midnight Live",
@@ -265,8 +266,7 @@ enum Templates {
                     "seatDescription": "Aisle seat",
                     "seatSectionColor": "#8b5cf6",
                 ]],
-            ],
-            eventLogoText: "Midnight Live"
+            ]
         ),
         PassTemplate(
             id: "harbor-fc",
@@ -283,11 +283,12 @@ enum Templates {
                 directionsInformationURL: "https://maps.apple.com/?q=Harbor+Stadium",
                 merchandiseURL: "https://example.com/harbor-fc/shop",
                 contactVenueWebsite: "https://example.com/harbor-fc/matchday",
-                useAutomaticColors: true,
-                eventLogoText: "HARBOR FC"
+                useAutomaticColors: true
             ),
             description: "Harbor FC match ticket",
             organizationName: "Harbor FC",
+            // Same as Midnight Live: the crest wordmark is the brand, so no
+            // logoText and no eventLogoText competing for the poster top row.
             logoText: "",
             colors: TemplateColors(background: "#082f49", foreground: "#f0f9ff", label: "#7dd3fc", footer: "#062538"),
             fields: [
@@ -303,7 +304,8 @@ enum Templates {
                 TemplateField(category: .back, key: "matchday", label: "Match-day guide", value: "Blue Gate opens at 5 PM. Food ordering, parking, directions, and team merchandise are available in the Event Guide."),
                 TemplateField(category: .back, key: "policy", label: "Stadium policy", value: "Bags must be smaller than 12 × 12 × 6 inches. No outside food or beverages."),
             ],
-            barcode: TemplateBarcode(format: .qr, message: "HBR-ATC-118-F-21", altText: "Section 118 · Row F · Seat 21"),
+            // No altText — see Midnight Live.
+            barcode: TemplateBarcode(format: .qr, message: "HBR-ATC-118-F-21"),
             semantics: [
                 "eventType": "PKEventTypeSports",
                 "eventName": "Harbor FC vs. Atlantic City",
@@ -334,13 +336,14 @@ enum Templates {
                     "seatSection": "118",
                     "seatRow": "F",
                     "seatNumber": "21",
-                    "seatLevel": "Lower Stand",
+                    // Wallet renders this as the poster's first seat column
+                    // (Harbor has no seatAisle) and truncates past ~8 glyphs.
+                    "seatLevel": "Lower",
                     "seatType": "Home Supporter",
                     "seatDescription": "Blue section",
                     "seatSectionColor": "#0ea5e9",
                 ]],
-            ],
-            eventLogoText: "Harbor FC"
+            ]
         ),
         PassTemplate(
             id: "golden-hour",
