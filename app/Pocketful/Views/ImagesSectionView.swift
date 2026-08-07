@@ -32,23 +32,23 @@ private struct ImageSlotRow: View {
             VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: 8) {
                     Text(slot.label)
-                        .font(AxisFont.textSemiBold(14))
-                        .foregroundStyle(Axis.text)
+                        .font(PocketfulFont.textSemiBold(14))
+                        .foregroundStyle(PocketfulTheme.text)
                     Spacer(minLength: 0)
                     if slot.required {
-                        AxisBadge("Required")
+                        PocketfulBadge("Required")
                     } else if slot.recommended {
-                        AxisBadge("Recommended")
+                        PocketfulBadge("Recommended")
                     }
                 }
                 Text(slot.hint)
-                    .font(AxisFont.text(12))
-                    .foregroundStyle(Axis.dim)
+                    .font(PocketfulFont.text(12))
+                    .foregroundStyle(PocketfulTheme.dim)
             }
 
             if let picked {
                 Rectangle()
-                    .fill(Axis.bg)
+                    .fill(PocketfulTheme.bg)
                     .aspectRatio(slot.aspect, contentMode: .fit)
                     .overlay(
                         Image(uiImage: picked.preview)
@@ -64,24 +64,24 @@ private struct ImageSlotRow: View {
                     ZStack {
                         if state.busySlot == slot.name {
                             ProgressView()
-                                .tint(Axis.text)
+                                .tint(PocketfulTheme.text)
                         } else {
                             Text(picked != nil ? "Replace artwork" : "Choose artwork")
-                                .font(AxisFont.monoMedium(13))
-                                .foregroundStyle(Axis.textSoft)
+                                .font(PocketfulFont.monoMedium(13))
+                                .foregroundStyle(PocketfulTheme.textSoft)
                         }
                     }
                     .frame(maxWidth: .infinity)
                     .frame(minHeight: 48)
                     .overlay(
                         RoundedRectangle(cornerRadius: Radii.control)
-                            .stroke(Axis.border, lineWidth: 1)
+                            .stroke(PocketfulTheme.border, lineWidth: 1)
                     )
                 }
                 .disabled(state.busySlot != nil)
 
                 if picked != nil {
-                    AxisButton("Clear", kind: .danger) {
+                    PocketfulButton("Clear", kind: .danger) {
                         state.images[slot.name] = nil
                     }
                 }

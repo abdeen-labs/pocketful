@@ -35,7 +35,7 @@ struct DesignTabView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            AxisSection(
+            PocketfulSection(
                 title: "Templates",
                 description: state.lastAppliedTemplateId != nil
                     ? "A polished starting point is applied. Expand to switch it."
@@ -46,7 +46,7 @@ struct DesignTabView: View {
                 TemplateGalleryView(lastAppliedId: state.lastAppliedTemplateId, onApply: onTemplate)
             }
 
-            AxisSection(
+            PocketfulSection(
                 title: "Pass format",
                 description: "Choose Wallet's visual template and modern layout preference.",
                 badge: "Core"
@@ -68,17 +68,17 @@ struct DesignTabView: View {
                 }
             }
 
-            AxisSection(
+            PocketfulSection(
                 title: "Identity",
                 description: "The pass name, issuer, and stable identity used by Wallet."
             ) {
-                AxisInput("Wallet description · required", text: $state.descriptionText, placeholder: "Coffee rewards card", capitalization: .sentences)
-                AxisInput("Organization name", text: $state.organizationName, placeholder: "Pocketful Coffee", capitalization: .words)
-                AxisInput("Logo text", text: $state.logoText, placeholder: "Pocketful", capitalization: .words)
-                AxisInput("Serial number", text: $state.serialNumber, placeholder: "Generated automatically when blank", helper: "Supply this when you need a stable identifier for updates; otherwise the server creates a UUID.")
+                PocketfulInput("Wallet description · required", text: $state.descriptionText, placeholder: "Coffee rewards card", capitalization: .sentences)
+                PocketfulInput("Organization name", text: $state.organizationName, placeholder: "Pocketful Coffee", capitalization: .words)
+                PocketfulInput("Logo text", text: $state.logoText, placeholder: "Pocketful", capitalization: .words)
+                PocketfulInput("Serial number", text: $state.serialNumber, placeholder: "Generated automatically when blank", helper: "Supply this when you need a stable identifier for updates; otherwise the server creates a UUID.")
             }
 
-            AxisSection(
+            PocketfulSection(
                 title: "Color system",
                 description: "Wallet uses these colors across the front, labels, strips, and modern event footer."
             ) {
@@ -87,40 +87,40 @@ struct DesignTabView: View {
                         Rectangle()
                             .fill(color.range(of: EditorState.hexColorPattern, options: .regularExpression) != nil
                                   ? Color(hex: color)
-                                  : Axis.border)
+                                  : PocketfulTheme.border)
                     }
                 }
                 .frame(height: 42)
                 .clipShape(RoundedRectangle(cornerRadius: Radii.control))
                 .overlay(
                     RoundedRectangle(cornerRadius: Radii.control)
-                        .stroke(Axis.border, lineWidth: 1)
+                        .stroke(PocketfulTheme.border, lineWidth: 1)
                 )
-                AxisInput("Background", text: $state.bgColor, placeholder: "#131822")
-                AxisInput("Foreground text", text: $state.fgColor, placeholder: "#ffffff")
-                AxisInput("Labels", text: $state.labelColor, placeholder: "#a9b2c0")
-                AxisDisclosure("Specialized colors", description: "Optional strip-field and poster-event footer colors") {
-                    AxisInput("Strip text color", text: $state.stripColor, placeholder: "Optional #ffffff")
-                    AxisInput("Event footer background", text: $state.footerColor, placeholder: "Optional #0c1017")
+                PocketfulInput("Background", text: $state.bgColor, placeholder: "#131822")
+                PocketfulInput("Foreground text", text: $state.fgColor, placeholder: "#ffffff")
+                PocketfulInput("Labels", text: $state.labelColor, placeholder: "#a9b2c0")
+                PocketfulDisclosure("Specialized colors", description: "Optional strip-field and poster-event footer colors") {
+                    PocketfulInput("Strip text color", text: $state.stripColor, placeholder: "Optional #ffffff")
+                    PocketfulInput("Event footer background", text: $state.footerColor, placeholder: "Optional #0c1017")
                 }
             }
 
-            AxisSection(
+            PocketfulSection(
                 title: "Artwork",
                 description: "Every standard Wallet asset is resized and exported at 1×, 2×, and 3×.",
                 badge: "PNG"
             ) {
                 ImagesSectionView(slots: state.recommendedSlots, state: state)
-                AxisDisclosure("More standard artwork", description: "Strip, thumbnail, background, and footer slots that are less common for this format") {
+                PocketfulDisclosure("More standard artwork", description: "Strip, thumbnail, background, and footer slots that are less common for this format") {
                     ImagesSectionView(slots: state.optionalSlots, state: state)
                 }
                 if !state.localizedSlots.isEmpty {
-                    AxisDisclosure("Localized artwork", description: "\(state.localizationLanguages.count) language-specific asset sets") {
+                    PocketfulDisclosure("Localized artwork", description: "\(state.localizationLanguages.count) language-specific asset sets") {
                         ImagesSectionView(slots: state.localizedSlots, state: state)
                     }
                 }
                 if state.personalizationEnabled {
-                    AxisDisclosure("Personalization artwork", description: "Required alongside NFC and personalization.json", defaultOpen: true) {
+                    PocketfulDisclosure("Personalization artwork", description: "Required alongside NFC and personalization.json", defaultOpen: true) {
                         ImagesSectionView(slots: [Slots.personalizationLogo], state: state)
                     }
                 }

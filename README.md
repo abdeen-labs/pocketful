@@ -6,7 +6,7 @@
   <img src="docs/assets/lockup-dark.svg" alt="Abdeen Labs" width="205" height="40">
 </picture>
 
-`AXIS//OPEN`
+`NIGHTFIELD//OPEN`
 
 </div>
 
@@ -101,6 +101,6 @@ No account is required. Designs and artwork stay on your device while you edit. 
   <img src="docs/assets/seal-roundel-chalk.svg" alt="Abdeen Labs roundel seal" width="72" height="72">
 </picture>
 
-`AXIS//OPEN`
+`NIGHTFIELD//OPEN`
 
 </div>

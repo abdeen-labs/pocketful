@@ -43,26 +43,26 @@ struct PassPreviewView: View {
         HStack(alignment: .center) {
             VStack(alignment: .leading, spacing: 2) {
                 Text("LIVE PREVIEW")
-                    .font(AxisFont.monoMedium(11))
+                    .font(PocketfulFont.monoMedium(11))
                     .tracking(Tracking.micro)
-                    .foregroundStyle(Axis.dim)
+                    .foregroundStyle(PocketfulTheme.dim)
                 Text(Self.styleLabels[state.style] ?? "")
-                    .font(AxisFont.textSemiBold(17))
-                    .foregroundStyle(Axis.text)
+                    .font(PocketfulFont.textSemiBold(17))
+                    .foregroundStyle(PocketfulTheme.text)
             }
             Spacer()
             HStack(spacing: 6) {
-                Circle().fill(Axis.success).frame(width: 6, height: 6)
+                Circle().fill(PocketfulTheme.success).frame(width: 6, height: 6)
                 Text("Draft")
-                    .font(AxisFont.monoMedium(11))
-                    .foregroundStyle(Axis.textSoft)
+                    .font(PocketfulFont.monoMedium(11))
+                    .foregroundStyle(PocketfulTheme.textSoft)
             }
             .padding(.horizontal, 10)
             .padding(.vertical, 6)
-            .background(Axis.card, in: RoundedRectangle(cornerRadius: Radii.control))
+            .background(PocketfulTheme.card, in: RoundedRectangle(cornerRadius: Radii.control))
             .overlay(
                 RoundedRectangle(cornerRadius: Radii.control)
-                    .stroke(Axis.border, lineWidth: 0.5)
+                    .stroke(PocketfulTheme.border, lineWidth: 0.5)
             )
         }
         .padding(.horizontal, 4)
@@ -165,13 +165,13 @@ struct PassPreviewView: View {
                     HStack(spacing: 2) {
                         ForEach(Array([2, 1, 3, 1, 2, 4, 1, 3, 2, 1, 4, 2, 1].enumerated()), id: \.offset) { _, width in
                             Rectangle()
-                                .fill(Axis.black)
+                                .fill(PocketfulTheme.black)
                                 .frame(width: CGFloat(width))
                         }
                     }
                     .frame(height: 18)
                     .padding(5)
-                    .background(Axis.white, in: RoundedRectangle(cornerRadius: 4))
+                    .background(PocketfulTheme.white, in: RoundedRectangle(cornerRadius: 4))
                 } else {
                     Text("NO BARCODE")
                         .font(.system(size: 9, weight: .heavy))
@@ -190,9 +190,9 @@ struct PassPreviewView: View {
                 ZStack {
                     Color(red: 70 / 255, green: 0, blue: 10 / 255).opacity(0.42)
                     Text("VOID")
-                        .font(AxisFont.displayHeavy(42))
+                        .font(PocketfulFont.displayHeavy(42))
                         .tracking(5)
-                        .foregroundStyle(Axis.white)
+                        .foregroundStyle(PocketfulTheme.white)
                         .rotationEffect(.degrees(-12))
                 }
             }
@@ -201,11 +201,11 @@ struct PassPreviewView: View {
             GeometryReader { geo in
                 let y = geo.size.height * 0.58 + 11
                 Circle()
-                    .fill(Axis.bg)
+                    .fill(PocketfulTheme.bg)
                     .frame(width: 22, height: 22)
                     .position(x: 0, y: y)
                 Circle()
-                    .fill(Axis.bg)
+                    .fill(PocketfulTheme.bg)
                     .frame(width: 22, height: 22)
                     .position(x: geo.size.width, y: y)
             }
@@ -213,7 +213,7 @@ struct PassPreviewView: View {
         .clipShape(RoundedRectangle(cornerRadius: 24))
         .overlay(
             RoundedRectangle(cornerRadius: 24)
-                .stroke(Axis.border, lineWidth: 0.5)
+                .stroke(PocketfulTheme.border, lineWidth: 0.5)
         )
     }
 

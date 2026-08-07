@@ -235,6 +235,10 @@
         letter-spacing: -0.065em;
       }
 
+      .hero h1 span {
+        display: block;
+      }
+
       .lede {
         max-width: 610px;
         margin: 24px 0 0;
@@ -389,9 +393,12 @@
         position: absolute;
         top: 15px;
         left: 15px;
-        color: var(--success);
-        font-family: var(--mono);
-        content: "✓";
+        width: 16px;
+        height: 16px;
+        background: var(--success);
+        content: "";
+        -webkit-mask: url("data:image/svg+xml,%3Csvg width='24' height='24' stroke-width='1.5' viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M5 13L9 17L19 7' stroke='black' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / contain no-repeat;
+        mask: url("data:image/svg+xml,%3Csvg width='24' height='24' stroke-width='1.5' viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M5 13L9 17L19 7' stroke='black' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / contain no-repeat;
       }
 
       .steps {
@@ -723,7 +730,7 @@
       >
         <span>View source</span>
         <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-          <path d="M8 16 16 8M9 8h7v7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+          <path d="M6.00005 19L19 5.99996M19 5.99996V18.48M19 5.99996H6.52005" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
         </svg>
       </a>
     </header>
@@ -754,7 +761,7 @@
       <main id="content">
         <div class="hero">
           <p class="eyebrow">Self-hosted Apple Wallet tooling</p>
-          <h1>Build passes.<br />Keep the keys.</h1>
+          <h1 aria-label="Build passes. Keep the keys.">Build passes. <span>Keep the keys.</span></h1>
           <p class="lede">
             Pocketful is an iPhone pass designer backed by your own signing server.
             Your certificates stay private, your designs stay yours, and Wallet gets
@@ -763,8 +770,8 @@
           <div class="hero-links">
             <a class="button primary" href="#quick-start">
               Get started
-              <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                <path d="m6 3 5 5-5 5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" />
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M9 6L15 12L9 18" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
               </svg>
             </a>
             <a
@@ -1066,7 +1073,7 @@ bun install</code></pre>
 
         <footer>
           <span>Pocketful is an Abdeen Labs internal tool. The source is public.</span>
-          <span class="footer-mark">AXIS//OPEN</span>
+          <span class="footer-mark">NIGHTFIELD//OPEN</span>
         </footer>
       </main>
     </div>

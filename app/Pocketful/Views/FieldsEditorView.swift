@@ -11,16 +11,16 @@ struct FieldsEditorView: View {
             if state.fields.isEmpty {
                 VStack(spacing: 5) {
                     Text("No content fields yet")
-                        .font(AxisFont.textSemiBold(15))
-                        .foregroundStyle(Axis.textSoft)
+                        .font(PocketfulFont.textSemiBold(15))
+                        .foregroundStyle(PocketfulTheme.textSoft)
                     Text("Add the visible text, dates, numbers, and back-of-pass details Wallet should render.")
-                        .font(AxisFont.text(12))
-                        .foregroundStyle(Axis.dim)
+                        .font(PocketfulFont.text(12))
+                        .foregroundStyle(PocketfulTheme.dim)
                         .multilineTextAlignment(.center)
                 }
                 .frame(maxWidth: .infinity)
                 .padding(20)
-                .background(Axis.surface, in: RoundedRectangle(cornerRadius: Radii.plate))
+                .background(PocketfulTheme.surface, in: RoundedRectangle(cornerRadius: Radii.plate))
             }
 
             ForEach(Array($state.fields.enumerated()), id: \.element.id) { index, $field in
@@ -34,7 +34,7 @@ struct FieldsEditorView: View {
                 )
             }
 
-            AxisButton("+ Add pass field", kind: .secondary) {
+            PocketfulButton("+ Add pass field", kind: .secondary) {
                 state.fields.append(EditableField())
             }
         }
@@ -109,34 +109,34 @@ private struct FieldCardView: View {
         VStack(alignment: .leading, spacing: 13) {
             HStack(spacing: 10) {
                 Text("\(index + 1)")
-                    .font(AxisFont.monoSemiBold(12))
-                    .foregroundStyle(Axis.textSoft)
+                    .font(PocketfulFont.monoSemiBold(12))
+                    .foregroundStyle(PocketfulTheme.textSoft)
                     .frame(width: 28, height: 28)
-                    .background(Axis.band, in: Circle())
-                    .overlay(Circle().stroke(Axis.border, lineWidth: 0.5))
+                    .background(PocketfulTheme.band, in: Circle())
+                    .overlay(Circle().stroke(PocketfulTheme.border, lineWidth: 0.5))
                 VStack(alignment: .leading, spacing: 1) {
                     Text(!field.label.isEmpty ? field.label : (!field.key.isEmpty ? field.key : "Untitled field"))
-                        .font(AxisFont.textSemiBold(14))
-                        .foregroundStyle(Axis.text)
+                        .font(PocketfulFont.textSemiBold(14))
+                        .foregroundStyle(PocketfulTheme.text)
                         .lineLimit(1)
                     Text("\(field.category.rawValue) · \(field.valueType.rawValue)")
-                        .font(AxisFont.mono(11))
-                        .foregroundStyle(Axis.dim)
+                        .font(PocketfulFont.mono(11))
+                        .foregroundStyle(PocketfulTheme.dim)
                 }
                 Spacer(minLength: 0)
-                AxisButton("Remove", kind: .ghost, compact: true, action: onRemove)
+                PocketfulButton("Remove", kind: .ghost, compact: true, action: onRemove)
             }
 
             ChipRow(options: categoryOptions, value: field.category) { field.category = $0 }
 
             HStack(alignment: .top, spacing: 10) {
-                AxisInput("Label", text: $field.label, placeholder: "MEMBER")
-                AxisInput("Unique key", text: $field.key, placeholder: "\(field.category.rawValue)-\(index + 1)")
+                PocketfulInput("Label", text: $field.label, placeholder: "MEMBER")
+                PocketfulInput("Unique key", text: $field.key, placeholder: "\(field.category.rawValue)-\(index + 1)")
             }
 
             ChipRow(options: Self.valueTypeOptions, value: field.valueType) { field.valueType = $0 }
 
-            AxisInput(
+            PocketfulInput(
                 field.valueType == .date ? "ISO-8601 date value" : (field.valueType == .number ? "Numeric value" : "Value"),
                 text: $field.value,
                 placeholder: field.valueType == .date
@@ -145,9 +145,9 @@ private struct FieldCardView: View {
                 keyboard: field.valueType == .number ? .decimalPad : .default
             )
 
-            AxisDisclosure("Formatting & behavior", description: "Attributed display, updates, alignment, data detection, and type-specific formatting") {
-                AxisInput("Attributed value", text: $field.attributedValue, placeholder: "Optional rich display value")
-                AxisInput("Change message", text: $field.changeMessage, placeholder: "Gate changed to %@", helper: "Use %@ where Wallet should insert the new value.")
+            PocketfulDisclosure("Formatting & behavior", description: "Attributed display, updates, alignment, data detection, and type-specific formatting") {
+                PocketfulInput("Attributed value", text: $field.attributedValue, placeholder: "Optional rich display value")
+                PocketfulInput("Change message", text: $field.changeMessage, placeholder: "Gate changed to %@", helper: "Use %@ where Wallet should insert the new value.")
                 MicroLabel("Text alignment")
                 ChipRow(options: Self.alignmentOptions, value: field.textAlignment) { field.textAlignment = $0 }
                 if field.category == .back {
@@ -159,19 +159,19 @@ private struct FieldCardView: View {
                     ChipRow(options: Self.dateStyleOptions, value: field.dateStyle) { field.dateStyle = $0 }
                     MicroLabel("Time style")
                     ChipRow(options: Self.dateStyleOptions, value: field.timeStyle) { field.timeStyle = $0 }
-                    AxisToggleRow("Ignore time zone", value: $field.ignoresTimeZone)
-                    AxisToggleRow("Show relative date", description: "For example, “in 3 hours.”", value: $field.isRelative)
+                    PocketfulToggleRow("Ignore time zone", value: $field.ignoresTimeZone)
+                    PocketfulToggleRow("Show relative date", description: "For example, “in 3 hours.”", value: $field.isRelative)
                 }
                 if field.valueType == .number {
                     MicroLabel("Number style")
                     ChipRow(options: Self.numberStyleOptions, value: field.numberStyle) { field.numberStyle = $0 }
-                    AxisInput("Currency code", text: $field.currencyCode, placeholder: "USD", capitalization: .characters)
+                    PocketfulInput("Currency code", text: $field.currencyCode, placeholder: "USD", capitalization: .characters)
                 }
                 if style == .eventTicket, field.category == .auxiliary {
                     MicroLabel("Auxiliary row")
                     ChipRow(options: Self.rowOptions, value: field.row) { field.row = $0 }
                 }
-                AxisInput(
+                PocketfulInput(
                     "Field semantics (JSON)",
                     text: $field.semanticsJson,
                     placeholder: "{\n  \"seat\": { \"seatNumber\": \"12A\" }\n}",
@@ -181,10 +181,10 @@ private struct FieldCardView: View {
             }
         }
         .padding(14)
-        .background(Axis.cardElevated, in: RoundedRectangle(cornerRadius: Radii.plate))
+        .background(PocketfulTheme.cardElevated, in: RoundedRectangle(cornerRadius: Radii.plate))
         .overlay(
             RoundedRectangle(cornerRadius: Radii.plate)
-                .stroke(Axis.border, lineWidth: 1)
+                .stroke(PocketfulTheme.border, lineWidth: 1)
         )
     }
 }

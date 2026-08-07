@@ -42,7 +42,7 @@ struct PassDesignerView: View {
             .padding(.horizontal, 16)
             .padding(.top, 12)
         }
-        .background(Axis.bg.ignoresSafeArea())
+        .background(PocketfulTheme.bg.ignoresSafeArea())
         .scrollDismissesKeyboard(.interactively)
         .preferredColorScheme(.dark)
         .alert(
@@ -84,27 +84,27 @@ struct PassDesignerView: View {
                     .scaledToFit()
                     .frame(width: 24, height: 24)
                 Rectangle()
-                    .fill(Axis.border)
+                    .fill(PocketfulTheme.border)
                     .frame(width: 0.5, height: 16)
                 Text("ABDEEN LABS")
-                    .font(AxisFont.monoMedium(11))
+                    .font(PocketfulFont.monoMedium(11))
                     .tracking(2.42)
-                    .foregroundStyle(Axis.textSoft)
+                    .foregroundStyle(PocketfulTheme.textSoft)
             }
             Text("POCKETFUL")
-                .font(AxisFont.displayHeavy(28))
+                .font(PocketfulFont.displayHeavy(28))
                 .tracking(28 * Tracking.display)
-                .foregroundStyle(Axis.text)
+                .foregroundStyle(PocketfulTheme.text)
             Text("A complete, visual editor for signed Apple Wallet passes.")
-                .font(AxisFont.text(13))
-                .foregroundStyle(Axis.textSoft)
+                .font(PocketfulFont.text(13))
+                .foregroundStyle(PocketfulTheme.textSoft)
         }
         .frame(maxWidth: .infinity, minHeight: 148, alignment: .leading)
         .padding(22)
-        .background(Axis.card, in: RoundedRectangle(cornerRadius: Radii.shell))
+        .background(PocketfulTheme.card, in: RoundedRectangle(cornerRadius: Radii.shell))
         .overlay(
             RoundedRectangle(cornerRadius: Radii.shell)
-                .stroke(Axis.border, lineWidth: 0.5)
+                .stroke(PocketfulTheme.border, lineWidth: 0.5)
         )
     }
 
@@ -112,17 +112,17 @@ struct PassDesignerView: View {
         VStack(alignment: .leading, spacing: 11) {
             ChipRow(options: Self.tabOptions, value: state.tab) { state.tab = $0 }
             WrapLayout(spacing: 6) {
-                AxisBadge("\(state.fields.count) fields")
-                AxisBadge("\(state.images.count) artwork")
-                AxisBadge("\(state.localizations.count) languages")
+                PocketfulBadge("\(state.fields.count) fields")
+                PocketfulBadge("\(state.images.count) artwork")
+                PocketfulBadge("\(state.localizations.count) languages")
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(12)
-        .background(Axis.card, in: RoundedRectangle(cornerRadius: Radii.plate))
+        .background(PocketfulTheme.card, in: RoundedRectangle(cornerRadius: Radii.plate))
         .overlay(
             RoundedRectangle(cornerRadius: Radii.plate)
-                .stroke(Axis.border, lineWidth: 0.5)
+                .stroke(PocketfulTheme.border, lineWidth: 0.5)
         )
     }
 
@@ -130,20 +130,20 @@ struct PassDesignerView: View {
         VStack(alignment: .leading, spacing: 16) {
             VStack(alignment: .leading, spacing: 3) {
                 Text("Ready for Wallet?")
-                    .font(AxisFont.textSemiBold(17))
-                    .foregroundStyle(Axis.text)
+                    .font(PocketfulFont.textSemiBold(17))
+                    .foregroundStyle(PocketfulTheme.text)
                 Text("The server will validate, sign, and return the finished pass.")
-                    .font(AxisFont.text(12))
-                    .foregroundStyle(Axis.dim)
+                    .font(PocketfulFont.text(12))
+                    .foregroundStyle(PocketfulTheme.dim)
             }
-            AxisButton("Create pass & add to Wallet", loading: state.submitting, action: submit)
+            PocketfulButton("Create pass & add to Wallet", loading: state.submitting, action: submit)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(18)
-        .background(Axis.cardElevated, in: RoundedRectangle(cornerRadius: Radii.plate))
+        .background(PocketfulTheme.cardElevated, in: RoundedRectangle(cornerRadius: Radii.plate))
         .overlay(
             RoundedRectangle(cornerRadius: Radii.plate)
-                .stroke(Axis.borderStrong, lineWidth: 1)
+                .stroke(PocketfulTheme.borderStrong, lineWidth: 1)
         )
     }
 
