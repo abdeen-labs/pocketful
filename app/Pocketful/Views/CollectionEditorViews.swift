@@ -16,26 +16,26 @@ private struct EditorCard<Content: View>: View {
         VStack(alignment: .leading, spacing: 13) {
             HStack(spacing: 10) {
                 Text("\(index + 1)")
-                    .font(AxisFont.monoSemiBold(12))
-                    .foregroundStyle(Axis.textSoft)
+                    .font(PocketfulFont.monoSemiBold(12))
+                    .foregroundStyle(PocketfulTheme.textSoft)
                     .frame(width: 27, height: 27)
-                    .background(Axis.band, in: Circle())
-                    .overlay(Circle().stroke(Axis.border, lineWidth: 0.5))
+                    .background(PocketfulTheme.band, in: Circle())
+                    .overlay(Circle().stroke(PocketfulTheme.border, lineWidth: 0.5))
                 Text(title)
-                    .font(AxisFont.textSemiBold(14))
-                    .foregroundStyle(Axis.text)
+                    .font(PocketfulFont.textSemiBold(14))
+                    .foregroundStyle(PocketfulTheme.text)
                     .lineLimit(1)
                 Spacer(minLength: 0)
-                AxisButton("Remove", kind: .ghost, compact: true, action: onRemove)
+                PocketfulButton("Remove", kind: .ghost, compact: true, action: onRemove)
             }
-            AxisDivider()
+            PocketfulDivider()
             content()
         }
         .padding(14)
-        .background(Axis.cardElevated, in: RoundedRectangle(cornerRadius: Radii.plate))
+        .background(PocketfulTheme.cardElevated, in: RoundedRectangle(cornerRadius: Radii.plate))
         .overlay(
             RoundedRectangle(cornerRadius: Radii.plate)
-                .stroke(Axis.border, lineWidth: 1)
+                .stroke(PocketfulTheme.border, lineWidth: 1)
         )
     }
 }
@@ -49,8 +49,8 @@ private struct EmptyHint: View {
 
     var body: some View {
         Text(text)
-            .font(AxisFont.text(12))
-            .foregroundStyle(Axis.dim)
+            .font(PocketfulFont.text(12))
+            .foregroundStyle(PocketfulTheme.dim)
             .multilineTextAlignment(.center)
             .frame(maxWidth: .infinity)
             .padding(14)
@@ -78,15 +78,15 @@ struct BarcodesEditorView: View {
                     onRemove: { barcodes.removeAll { $0.id == barcode.id } }
                 ) {
                     ChipRow(options: Self.formatOptions, value: barcode.format) { barcode.format = $0 }
-                    AxisInput("Encoded message", text: $barcode.message, placeholder: "MEMBER-12345")
-                    AxisInput("Text below barcode", text: $barcode.altText, placeholder: "Member 12345")
-                    AxisInput("Message encoding", text: $barcode.messageEncoding, placeholder: "iso-8859-1")
+                    PocketfulInput("Encoded message", text: $barcode.message, placeholder: "MEMBER-12345")
+                    PocketfulInput("Text below barcode", text: $barcode.altText, placeholder: "Member 12345")
+                    PocketfulInput("Message encoding", text: $barcode.messageEncoding, placeholder: "iso-8859-1")
                 }
             }
             if barcodes.isEmpty {
                 EmptyHint("No barcodes. Wallet can render up to four fallback formats.")
             }
-            AxisButton("+ Add barcode", kind: .secondary, disabled: barcodes.count >= 4) {
+            PocketfulButton("+ Add barcode", kind: .secondary, disabled: barcodes.count >= 4) {
                 barcodes.append(EditableBarcode())
             }
         }
@@ -107,17 +107,17 @@ struct LocationsEditorView: View {
                     onRemove: { locations.removeAll { $0.id == location.id } }
                 ) {
                     HStack(alignment: .top, spacing: 10) {
-                        AxisInput("Latitude", text: $location.latitude, placeholder: "40.7128", keyboard: .numbersAndPunctuation)
-                        AxisInput("Longitude", text: $location.longitude, placeholder: "-74.0060", keyboard: .numbersAndPunctuation)
+                        PocketfulInput("Latitude", text: $location.latitude, placeholder: "40.7128", keyboard: .numbersAndPunctuation)
+                        PocketfulInput("Longitude", text: $location.longitude, placeholder: "-74.0060", keyboard: .numbersAndPunctuation)
                     }
-                    AxisInput("Altitude", text: $location.altitude, placeholder: "Optional meters", keyboard: .numbersAndPunctuation)
-                    AxisInput("Relevant text", text: $location.relevantText, placeholder: "You're near the venue")
+                    PocketfulInput("Altitude", text: $location.altitude, placeholder: "Optional meters", keyboard: .numbersAndPunctuation)
+                    PocketfulInput("Relevant text", text: $location.relevantText, placeholder: "You're near the venue")
                 }
             }
             if locations.isEmpty {
                 EmptyHint("Add geographic points where Wallet may surface this pass.")
             }
-            AxisButton("+ Add location", kind: .secondary, disabled: locations.count >= 10) {
+            PocketfulButton("+ Add location", kind: .secondary, disabled: locations.count >= 10) {
                 locations.append(EditableLocation())
             }
         }
@@ -137,18 +137,18 @@ struct BeaconsEditorView: View {
                     title: beacon.relevantText.isEmpty ? "iBeacon" : beacon.relevantText,
                     onRemove: { beacons.removeAll { $0.id == beacon.id } }
                 ) {
-                    AxisInput("Proximity UUID", text: $beacon.proximityUUID, placeholder: "00000000-0000-0000-0000-000000000000")
+                    PocketfulInput("Proximity UUID", text: $beacon.proximityUUID, placeholder: "00000000-0000-0000-0000-000000000000")
                     HStack(alignment: .top, spacing: 10) {
-                        AxisInput("Major", text: $beacon.major, placeholder: "Optional", keyboard: .numberPad)
-                        AxisInput("Minor", text: $beacon.minor, placeholder: "Optional", keyboard: .numberPad)
+                        PocketfulInput("Major", text: $beacon.major, placeholder: "Optional", keyboard: .numberPad)
+                        PocketfulInput("Minor", text: $beacon.minor, placeholder: "Optional", keyboard: .numberPad)
                     }
-                    AxisInput("Relevant text", text: $beacon.relevantText, placeholder: "Welcome to the entrance")
+                    PocketfulInput("Relevant text", text: $beacon.relevantText, placeholder: "Welcome to the entrance")
                 }
             }
             if beacons.isEmpty {
                 EmptyHint("Add iBeacons that can make Wallet surface the pass nearby.")
             }
-            AxisButton("+ Add beacon", kind: .secondary, disabled: beacons.count >= 10) {
+            PocketfulButton("+ Add beacon", kind: .secondary, disabled: beacons.count >= 10) {
                 beacons.append(EditableBeacon())
             }
         }
@@ -175,17 +175,17 @@ struct RelevantDatesEditorView: View {
                 ) {
                     ChipRow(options: Self.kindOptions, value: entry.kind) { entry.kind = $0 }
                     if entry.kind == .date {
-                        AxisInput("ISO-8601 date", text: $entry.date, placeholder: "2026-09-01T19:30:00-04:00")
+                        PocketfulInput("ISO-8601 date", text: $entry.date, placeholder: "2026-09-01T19:30:00-04:00")
                     } else {
-                        AxisInput("Start date", text: $entry.startDate, placeholder: "2026-09-01T18:30:00-04:00")
-                        AxisInput("End date", text: $entry.endDate, placeholder: "2026-09-01T22:30:00-04:00", helper: "passkit-generator allows a relevancy interval up to 24 hours.")
+                        PocketfulInput("Start date", text: $entry.startDate, placeholder: "2026-09-01T18:30:00-04:00")
+                        PocketfulInput("End date", text: $entry.endDate, placeholder: "2026-09-01T22:30:00-04:00", helper: "passkit-generator allows a relevancy interval up to 24 hours.")
                     }
                 }
             }
             if relevantDates.isEmpty {
                 EmptyHint("Single dates control relevance; intervals can trigger modern event Live Activities.")
             }
-            AxisButton("+ Add relevant date", kind: .secondary) {
+            PocketfulButton("+ Add relevant date", kind: .secondary) {
                 relevantDates.append(EditableRelevantDate())
             }
         }
@@ -205,27 +205,27 @@ struct LocalizationsEditorView: View {
                     title: localization.language.isEmpty ? "Language" : localization.language,
                     onRemove: { localizations.removeAll { $0.id == localization.id } }
                 ) {
-                    AxisInput("Language tag", text: $localization.language, placeholder: "en or en-US", helper: "This also enables localized artwork slots in the Artwork tab.")
+                    PocketfulInput("Language tag", text: $localization.language, placeholder: "en or en-US", helper: "This also enables localized artwork slots in the Artwork tab.")
                     ForEach(Array($localization.translations.enumerated()), id: \.element.id) { translationIndex, $translation in
                         VStack(alignment: .leading, spacing: 10) {
                             HStack {
                                 Text("Translation \(translationIndex + 1)")
-                                    .font(AxisFont.textSemiBold(12))
-                                    .foregroundStyle(Axis.textSoft)
+                                    .font(PocketfulFont.textSemiBold(12))
+                                    .foregroundStyle(PocketfulTheme.textSoft)
                                 Spacer(minLength: 0)
-                                AxisButton("Remove", kind: .ghost, compact: true) {
+                                PocketfulButton("Remove", kind: .ghost, compact: true) {
                                     localization.translations.removeAll { $0.id == translation.id }
                                 }
                             }
-                            AxisInput("Source key", text: $translation.key, placeholder: "MEMBER_LABEL")
-                            AxisInput("Localized value", text: $translation.value, placeholder: "Member", capitalization: .sentences)
+                            PocketfulInput("Source key", text: $translation.key, placeholder: "MEMBER_LABEL")
+                            PocketfulInput("Localized value", text: $translation.value, placeholder: "Member", capitalization: .sentences)
                         }
                         .padding(.top, 12)
                         .overlay(alignment: .top) {
-                            Rectangle().fill(Axis.border).frame(height: 0.5)
+                            Rectangle().fill(PocketfulTheme.border).frame(height: 0.5)
                         }
                     }
-                    AxisButton("+ Add translation", kind: .ghost) {
+                    PocketfulButton("+ Add translation", kind: .ghost) {
                         localization.translations.append(EditableTranslation())
                     }
                 }
@@ -233,7 +233,7 @@ struct LocalizationsEditorView: View {
             if localizations.isEmpty {
                 EmptyHint("Localize any text key and optionally provide per-language artwork.")
             }
-            AxisButton("+ Add language", kind: .secondary) {
+            PocketfulButton("+ Add language", kind: .secondary) {
                 localizations.append(EditableLocalization())
             }
         }

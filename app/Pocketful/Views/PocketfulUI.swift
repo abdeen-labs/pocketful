@@ -1,4 +1,4 @@
-// Axis-styled controls, ported from src/components/ui.tsx.
+// Pocketful controls, ported from src/components/ui.tsx.
 
 import SwiftUI
 import UIKit
@@ -54,7 +54,9 @@ struct WrapLayout: Layout {
 
 // MARK: - Section
 
-struct AxisSection<Content: View>: View {
+struct PocketfulSection<Content: View>: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     let title: String
     var description: String? = nil
     var badge: String? = nil
@@ -74,10 +76,10 @@ struct AxisSection<Content: View>: View {
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(16)
-                .background(Axis.card, in: RoundedRectangle(cornerRadius: Radii.plate))
+                .background(PocketfulTheme.card, in: RoundedRectangle(cornerRadius: Radii.plate))
                 .overlay(
                     RoundedRectangle(cornerRadius: Radii.plate)
-                        .stroke(Axis.border, lineWidth: 0.5)
+                        .stroke(PocketfulTheme.border, lineWidth: 0.5)
                 )
             }
         }
@@ -88,30 +90,34 @@ struct AxisSection<Content: View>: View {
         HStack(alignment: .top, spacing: 12) {
             VStack(alignment: .leading, spacing: 4) {
                 Text(title.uppercased())
-                    .font(AxisFont.monoSemiBold(13))
+                    .font(PocketfulFont.monoSemiBold(13))
                     .tracking(Tracking.micro)
-                    .foregroundStyle(Axis.text)
+                    .foregroundStyle(PocketfulTheme.text)
                 if let description {
                     Text(description)
-                        .font(AxisFont.text(13))
-                        .foregroundStyle(Axis.dim)
+                        .font(PocketfulFont.text(13))
+                        .foregroundStyle(PocketfulTheme.dim)
                 }
             }
             Spacer(minLength: 0)
             HStack(spacing: 8) {
                 if let badge {
-                    AxisBadge(badge)
+                    PocketfulBadge(badge)
                 }
                 if let collapsed {
-                    Text(collapsed.wrappedValue ? "+" : "−")
-                        .font(.system(size: 20))
-                        .foregroundStyle(Axis.textSoft)
+                    Image(collapsed.wrappedValue ? "NavArrowRight" : "NavArrowDown")
+                        .renderingMode(.template)
+                        .resizable()
+                        .scaledToFit()
+                        .foregroundStyle(PocketfulTheme.textSoft)
+                        .frame(width: 16, height: 16)
                         .frame(width: 28, height: 28)
-                        .background(Axis.surface, in: RoundedRectangle(cornerRadius: Radii.control))
+                        .background(PocketfulTheme.surface, in: RoundedRectangle(cornerRadius: Radii.control))
                         .overlay(
                             RoundedRectangle(cornerRadius: Radii.control)
-                                .stroke(Axis.borderStrong, lineWidth: 0.5)
+                                .stroke(PocketfulTheme.borderStrong, lineWidth: 0.5)
                         )
+                        .accessibilityHidden(true)
                 }
             }
         }
@@ -119,9 +125,17 @@ struct AxisSection<Content: View>: View {
         .contentShape(Rectangle())
         .onTapGesture {
             if let collapsed {
-                withAnimation(.easeInOut(duration: 0.18)) {
-                    collapsed.wrappedValue.toggle()
-                }
+                toggle(collapsed)
+            }
+        }
+    }
+
+    private func toggle(_ collapsed: Binding<Bool>) {
+        if reduceMotion {
+            collapsed.wrappedValue.toggle()
+        } else {
+            withAnimation(.easeInOut(duration: 0.18)) {
+                collapsed.wrappedValue.toggle()
             }
         }
     }
@@ -129,7 +143,9 @@ struct AxisSection<Content: View>: View {
 
 // MARK: - Disclosure
 
-struct AxisDisclosure<Content: View>: View {
+struct PocketfulDisclosure<Content: View>: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     let title: String
     var description: String? = nil
     @State private var open: Bool
@@ -145,30 +161,32 @@ struct AxisDisclosure<Content: View>: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             Button {
-                withAnimation(.easeInOut(duration: 0.18)) {
-                    open.toggle()
-                }
+                toggle()
             } label: {
                 HStack(spacing: 12) {
                     VStack(alignment: .leading, spacing: 2) {
                         Text(title)
-                            .font(AxisFont.monoMedium(13))
-                            .foregroundStyle(Axis.textSoft)
+                            .font(PocketfulFont.monoMedium(13))
+                            .foregroundStyle(PocketfulTheme.textSoft)
                             .multilineTextAlignment(.leading)
                         if let description {
                             Text(description)
-                                .font(AxisFont.text(12))
-                                .foregroundStyle(Axis.dim)
+                                .font(PocketfulFont.text(12))
+                                .foregroundStyle(PocketfulTheme.dim)
                                 .multilineTextAlignment(.leading)
                         }
                     }
                     Spacer(minLength: 0)
-                    Text(open ? "−" : "+")
-                        .font(AxisFont.mono(22))
-                        .foregroundStyle(Axis.link)
+                    Image(open ? "NavArrowDown" : "NavArrowRight")
+                        .renderingMode(.template)
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 16, height: 16)
+                        .foregroundStyle(PocketfulTheme.link)
+                        .accessibilityHidden(true)
                 }
                 .padding(14)
-                .background(Axis.surface)
+                .background(PocketfulTheme.surface)
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
@@ -180,21 +198,31 @@ struct AxisDisclosure<Content: View>: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(14)
                 .overlay(alignment: .top) {
-                    Rectangle().fill(Axis.border).frame(height: 0.5)
+                    Rectangle().fill(PocketfulTheme.border).frame(height: 0.5)
                 }
             }
         }
         .clipShape(RoundedRectangle(cornerRadius: Radii.plate))
         .overlay(
             RoundedRectangle(cornerRadius: Radii.plate)
-                .stroke(Axis.border, lineWidth: 0.5)
+                .stroke(PocketfulTheme.border, lineWidth: 0.5)
         )
+    }
+
+    private func toggle() {
+        if reduceMotion {
+            open.toggle()
+        } else {
+            withAnimation(.easeInOut(duration: 0.18)) {
+                open.toggle()
+            }
+        }
     }
 }
 
 // MARK: - Input
 
-struct AxisInput: View {
+struct PocketfulInput: View {
     let label: String?
     @Binding var text: String
     var placeholder = ""
@@ -228,29 +256,29 @@ struct AxisInput: View {
         VStack(alignment: .leading, spacing: 7) {
             if let label {
                 Text(label.uppercased())
-                    .font(AxisFont.monoMedium(11))
+                    .font(PocketfulFont.monoMedium(11))
                     .tracking(Tracking.micro)
-                    .foregroundStyle(Axis.textSoft)
+                    .foregroundStyle(PocketfulTheme.textSoft)
             }
             field
-                .font(AxisFont.mono(14))
-                .foregroundStyle(Axis.text)
-                .tint(Axis.link)
+                .font(PocketfulFont.mono(14))
+                .foregroundStyle(PocketfulTheme.text)
+                .tint(PocketfulTheme.link)
                 .keyboardType(keyboard)
                 .textInputAutocapitalization(capitalization)
                 .autocorrectionDisabled(true)
                 .padding(.horizontal, 13)
                 .padding(.vertical, 11)
                 .frame(minHeight: multiline ? 104 : 0, alignment: .topLeading)
-                .background(Axis.surface, in: RoundedRectangle(cornerRadius: Radii.control))
+                .background(PocketfulTheme.surface, in: RoundedRectangle(cornerRadius: Radii.control))
                 .overlay(
                     RoundedRectangle(cornerRadius: Radii.control)
-                        .stroke(Axis.border, lineWidth: 1)
+                        .stroke(PocketfulTheme.border, lineWidth: 1)
                 )
             if let helper {
                 Text(helper)
-                    .font(AxisFont.text(12))
-                    .foregroundStyle(Axis.dim)
+                    .font(PocketfulFont.text(12))
+                    .foregroundStyle(PocketfulTheme.dim)
             }
         }
     }
@@ -284,14 +312,14 @@ struct ChipRow<Value: Hashable>: View {
                     onChange(option.value)
                 } label: {
                     Text(option.label)
-                        .font(AxisFont.monoMedium(13))
-                        .foregroundStyle(selected ? Axis.text : Axis.dim)
+                        .font(PocketfulFont.monoMedium(13))
+                        .foregroundStyle(selected ? PocketfulTheme.text : PocketfulTheme.dim)
                         .padding(.horizontal, 12)
                         .padding(.vertical, 8)
-                        .background(selected ? Axis.band : Axis.surface, in: RoundedRectangle(cornerRadius: Radii.control))
+                        .background(selected ? PocketfulTheme.band : PocketfulTheme.surface, in: RoundedRectangle(cornerRadius: Radii.control))
                         .overlay(
                             RoundedRectangle(cornerRadius: Radii.control)
-                                .stroke(selected ? Axis.accent : Axis.border, lineWidth: 1)
+                                .stroke(selected ? PocketfulTheme.accent : PocketfulTheme.border, lineWidth: 1)
                         )
                 }
                 .buttonStyle(.plain)
@@ -318,14 +346,14 @@ struct MultiChipRow<Value: Hashable>: View {
                     }
                 } label: {
                     Text(option.label)
-                        .font(AxisFont.monoMedium(13))
-                        .foregroundStyle(selected ? Axis.text : Axis.dim)
+                        .font(PocketfulFont.monoMedium(13))
+                        .foregroundStyle(selected ? PocketfulTheme.text : PocketfulTheme.dim)
                         .padding(.horizontal, 12)
                         .padding(.vertical, 8)
-                        .background(selected ? Axis.band : Axis.surface, in: RoundedRectangle(cornerRadius: Radii.control))
+                        .background(selected ? PocketfulTheme.band : PocketfulTheme.surface, in: RoundedRectangle(cornerRadius: Radii.control))
                         .overlay(
                             RoundedRectangle(cornerRadius: Radii.control)
-                                .stroke(selected ? Axis.accent : Axis.border, lineWidth: 1)
+                                .stroke(selected ? PocketfulTheme.accent : PocketfulTheme.border, lineWidth: 1)
                         )
                 }
                 .buttonStyle(.plain)
@@ -336,7 +364,7 @@ struct MultiChipRow<Value: Hashable>: View {
 
 // MARK: - Toggle row
 
-struct AxisToggleRow: View {
+struct PocketfulToggleRow: View {
     let label: String
     var description: String? = nil
     @Binding var value: Bool
@@ -351,18 +379,18 @@ struct AxisToggleRow: View {
         HStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 2) {
                 Text(label)
-                    .font(AxisFont.monoMedium(13))
-                    .foregroundStyle(Axis.textSoft)
+                    .font(PocketfulFont.monoMedium(13))
+                    .foregroundStyle(PocketfulTheme.textSoft)
                 if let description {
                     Text(description)
-                        .font(AxisFont.text(12))
-                        .foregroundStyle(Axis.dim)
+                        .font(PocketfulFont.text(12))
+                        .foregroundStyle(PocketfulTheme.dim)
                 }
             }
             Spacer(minLength: 0)
             Toggle("", isOn: $value)
                 .labelsHidden()
-                .tint(Axis.accent)
+                .tint(PocketfulTheme.accent)
         }
         .frame(minHeight: 44)
     }
@@ -370,7 +398,7 @@ struct AxisToggleRow: View {
 
 // MARK: - Notice
 
-struct AxisNotice: View {
+struct PocketfulNotice: View {
     enum Tone {
         case info, warning
     }
@@ -389,24 +417,24 @@ struct AxisNotice: View {
         VStack(alignment: .leading, spacing: 3) {
             if let title {
                 Text(title)
-                    .font(AxisFont.textSemiBold(13))
-                    .foregroundStyle(tone == .warning ? Axis.warning : Axis.text)
+                    .font(PocketfulFont.textSemiBold(13))
+                    .foregroundStyle(tone == .warning ? PocketfulTheme.warning : PocketfulTheme.text)
             }
             Text(text)
-                .font(AxisFont.text(12))
-                .foregroundStyle(Axis.textSoft)
+                .font(PocketfulFont.text(12))
+                .foregroundStyle(PocketfulTheme.textSoft)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(12)
-        .background(Axis.surface, in: RoundedRectangle(cornerRadius: Radii.control))
+        .background(PocketfulTheme.surface, in: RoundedRectangle(cornerRadius: Radii.control))
         .overlay(
             RoundedRectangle(cornerRadius: Radii.control)
-                .stroke(Axis.border, lineWidth: 0.5)
+                .stroke(PocketfulTheme.border, lineWidth: 0.5)
         )
         .overlay(alignment: .leading) {
             if tone == .warning {
                 RoundedRectangle(cornerRadius: 1)
-                    .fill(Axis.warning)
+                    .fill(PocketfulTheme.warning)
                     .frame(width: 2)
             }
         }
@@ -415,7 +443,7 @@ struct AxisNotice: View {
 
 // MARK: - Badge, divider, micro label
 
-struct AxisBadge: View {
+struct PocketfulBadge: View {
     let text: String
 
     init(_ text: String) {
@@ -424,23 +452,23 @@ struct AxisBadge: View {
 
     var body: some View {
         Text(text.uppercased())
-            .font(AxisFont.monoMedium(11))
+            .font(PocketfulFont.monoMedium(11))
             .tracking(1)
-            .foregroundStyle(Axis.textSoft)
+            .foregroundStyle(PocketfulTheme.textSoft)
             .padding(.horizontal, 9)
             .padding(.vertical, 4)
-            .background(Axis.band, in: RoundedRectangle(cornerRadius: Radii.control))
+            .background(PocketfulTheme.band, in: RoundedRectangle(cornerRadius: Radii.control))
             .overlay(
                 RoundedRectangle(cornerRadius: Radii.control)
-                    .stroke(Axis.border, lineWidth: 0.5)
+                    .stroke(PocketfulTheme.border, lineWidth: 0.5)
             )
     }
 }
 
-struct AxisDivider: View {
+struct PocketfulDivider: View {
     var body: some View {
         Rectangle()
-            .fill(Axis.border)
+            .fill(PocketfulTheme.border)
             .frame(height: 0.5)
     }
 }
@@ -454,15 +482,15 @@ struct MicroLabel: View {
 
     var body: some View {
         Text(text.uppercased())
-            .font(AxisFont.monoMedium(11))
+            .font(PocketfulFont.monoMedium(11))
             .tracking(Tracking.micro)
-            .foregroundStyle(Axis.textSoft)
+            .foregroundStyle(PocketfulTheme.textSoft)
     }
 }
 
 // MARK: - Button
 
-struct AxisButton: View {
+struct PocketfulButton: View {
     enum Kind {
         case primary, secondary, danger, ghost
     }
@@ -495,10 +523,10 @@ struct AxisButton: View {
             ZStack {
                 if loading {
                     ProgressView()
-                        .tint(kind == .primary ? Axis.white : Axis.text)
+                        .tint(kind == .primary ? PocketfulTheme.accentInk : PocketfulTheme.text)
                 } else {
                     Text(title)
-                        .font(AxisFont.monoMedium(13))
+                        .font(PocketfulFont.monoMedium(13))
                         .foregroundStyle(textColor)
                 }
             }
@@ -518,7 +546,7 @@ struct AxisButton: View {
 
     private var background: Color {
         switch kind {
-        case .primary: return Axis.accent
+        case .primary: return PocketfulTheme.accent
         case .secondary, .danger, .ghost: return .clear
         }
     }
@@ -526,16 +554,16 @@ struct AxisButton: View {
     private var borderColor: Color {
         switch kind {
         case .primary, .ghost: return .clear
-        case .secondary: return Axis.border
-        case .danger: return Axis.accent
+        case .secondary: return PocketfulTheme.border
+        case .danger: return PocketfulTheme.danger
         }
     }
 
     private var textColor: Color {
         switch kind {
-        case .primary: return Axis.white
-        case .secondary, .ghost: return Axis.textSoft
-        case .danger: return Axis.link
+        case .primary: return PocketfulTheme.accentInk
+        case .secondary, .ghost: return PocketfulTheme.textSoft
+        case .danger: return PocketfulTheme.danger
         }
     }
 }

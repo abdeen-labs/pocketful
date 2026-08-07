@@ -7,7 +7,7 @@ struct ContentTabView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            AxisSection(
+            PocketfulSection(
                 title: "Pass fields",
                 description: "Header, primary, secondary, auxiliary, back, and modern event-details fields.",
                 badge: "Rich content"
@@ -15,7 +15,7 @@ struct ContentTabView: View {
                 FieldsEditorView(state: state)
             }
 
-            AxisSection(
+            PocketfulSection(
                 title: "Barcodes",
                 description: "Add ordered fallback formats with their own encodings and visible text.",
                 badge: "Up to 4"

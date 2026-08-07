@@ -27,12 +27,12 @@ struct TemplateGalleryView: View {
         VStack(alignment: .leading, spacing: 13) {
             VStack(alignment: .leading, spacing: 3) {
                 Text("CURATED STARTING POINTS")
-                    .font(AxisFont.monoMedium(11))
+                    .font(PocketfulFont.monoMedium(11))
                     .tracking(Tracking.micro)
-                    .foregroundStyle(Axis.dim)
+                    .foregroundStyle(PocketfulTheme.dim)
                 Text("Swipe to browse. Your artwork and server settings stay untouched.")
-                    .font(AxisFont.text(11))
-                    .foregroundStyle(Axis.dim)
+                    .font(PocketfulFont.text(11))
+                    .foregroundStyle(PocketfulTheme.dim)
             }
 
             ScrollView(.horizontal, showsIndicators: false) {
@@ -52,8 +52,8 @@ struct TemplateGalleryView: View {
             .padding(.horizontal, -16)
 
             Text("\(Templates.all.count) templates · Tap any card to use it")
-                .font(AxisFont.monoMedium(10))
-                .foregroundStyle(Axis.dim)
+                .font(PocketfulFont.monoMedium(10))
+                .foregroundStyle(PocketfulTheme.dim)
                 .frame(maxWidth: .infinity)
         }
     }
@@ -146,9 +146,9 @@ private struct TemplateCardView: View {
                 .frame(height: 154)
                 .overlay {
                     GeometryReader { geo in
-                        Circle().fill(Axis.surface).frame(width: 16, height: 16)
+                        Circle().fill(PocketfulTheme.surface).frame(width: 16, height: 16)
                             .position(x: 0, y: 95)
-                        Circle().fill(Axis.surface).frame(width: 16, height: 16)
+                        Circle().fill(PocketfulTheme.surface).frame(width: 16, height: 16)
                             .position(x: geo.size.width, y: 95)
                     }
                 }
@@ -158,19 +158,19 @@ private struct TemplateCardView: View {
                 VStack(alignment: .leading, spacing: 5) {
                     HStack(spacing: 8) {
                         Text(template.name)
-                            .font(AxisFont.textSemiBold(15))
+                            .font(PocketfulFont.textSemiBold(15))
                             .tracking(-0.2)
-                            .foregroundStyle(Axis.text)
+                            .foregroundStyle(PocketfulTheme.text)
                             .lineLimit(1)
                         Spacer(minLength: 0)
                         Text(lastApplied ? "LAST USED ✓" : "USE TEMPLATE →")
-                            .font(AxisFont.monoSemiBold(10))
+                            .font(PocketfulFont.monoSemiBold(10))
                             .tracking(0.65)
-                            .foregroundStyle(lastApplied ? Axis.success : Axis.link)
+                            .foregroundStyle(lastApplied ? PocketfulTheme.success : PocketfulTheme.link)
                     }
                     Text(template.tagline)
-                        .font(AxisFont.text(11))
-                        .foregroundStyle(Axis.textSoft)
+                        .font(PocketfulFont.text(11))
+                        .foregroundStyle(PocketfulTheme.textSoft)
                         .lineLimit(2)
                         .multilineTextAlignment(.leading)
                         .fixedSize(horizontal: false, vertical: true)
@@ -178,14 +178,14 @@ private struct TemplateCardView: View {
                         WrapLayout(spacing: 5) {
                             ForEach(template.features.prefix(3), id: \.self) { feature in
                                 Text(feature)
-                                    .font(AxisFont.monoMedium(10))
-                                    .foregroundStyle(Axis.textSoft)
+                                    .font(PocketfulFont.monoMedium(10))
+                                    .foregroundStyle(PocketfulTheme.textSoft)
                                     .padding(.horizontal, 7)
                                     .padding(.vertical, 4)
-                                    .background(Axis.band, in: RoundedRectangle(cornerRadius: Radii.control))
+                                    .background(PocketfulTheme.band, in: RoundedRectangle(cornerRadius: Radii.control))
                                     .overlay(
                                         RoundedRectangle(cornerRadius: Radii.control)
-                                            .stroke(Axis.border, lineWidth: 0.5)
+                                            .stroke(PocketfulTheme.border, lineWidth: 0.5)
                                     )
                             }
                         }
@@ -193,15 +193,15 @@ private struct TemplateCardView: View {
                     }
                     HStack(spacing: 6) {
                         Text(styleLabel)
-                        Circle().fill(Axis.borderStrong).frame(width: 3, height: 3)
+                        Circle().fill(PocketfulTheme.borderStrong).frame(width: 3, height: 3)
                         Text("\(template.fields.count) fields")
                         if let barcodeLabel {
-                            Circle().fill(Axis.borderStrong).frame(width: 3, height: 3)
+                            Circle().fill(PocketfulTheme.borderStrong).frame(width: 3, height: 3)
                             Text(barcodeLabel)
                         }
                     }
-                    .font(AxisFont.monoMedium(10))
-                    .foregroundStyle(Axis.dim)
+                    .font(PocketfulFont.monoMedium(10))
+                    .foregroundStyle(PocketfulTheme.dim)
                     .padding(.top, 2)
                 }
                 .padding(.horizontal, 2)
@@ -209,10 +209,10 @@ private struct TemplateCardView: View {
             }
             .padding(9)
             .frame(width: 264)
-            .background(lastApplied ? Axis.cardElevated : Axis.surface, in: RoundedRectangle(cornerRadius: Radii.plate))
+            .background(lastApplied ? PocketfulTheme.cardElevated : PocketfulTheme.surface, in: RoundedRectangle(cornerRadius: Radii.plate))
             .overlay(
                 RoundedRectangle(cornerRadius: Radii.plate)
-                    .stroke(lastApplied ? Axis.accent : Axis.border, lineWidth: 1)
+                    .stroke(lastApplied ? PocketfulTheme.accent : PocketfulTheme.border, lineWidth: 1)
             )
         }
         .buttonStyle(.plain)
@@ -262,27 +262,27 @@ private struct BarcodeMark: View {
             HStack(spacing: 1.5) {
                 ForEach(Array([2, 1, 3, 1, 2, 4, 1, 3, 2, 1].enumerated()), id: \.offset) { _, width in
                     Rectangle()
-                        .fill(Axis.black)
+                        .fill(PocketfulTheme.black)
                         .frame(width: CGFloat(width))
                 }
             }
             .frame(height: 17)
             .padding(.horizontal, 5)
             .padding(.vertical, 4)
-            .background(Axis.white, in: RoundedRectangle(cornerRadius: 4))
+            .background(PocketfulTheme.white, in: RoundedRectangle(cornerRadius: 4))
         } else {
             ZStack {
-                RoundedRectangle(cornerRadius: 4).fill(Axis.white)
-                Rectangle().stroke(Axis.black, lineWidth: 2)
+                RoundedRectangle(cornerRadius: 4).fill(PocketfulTheme.white)
+                Rectangle().stroke(PocketfulTheme.black, lineWidth: 2)
                     .frame(width: 7, height: 7)
                     .offset(x: -7, y: -7)
-                Rectangle().stroke(Axis.black, lineWidth: 2)
+                Rectangle().stroke(PocketfulTheme.black, lineWidth: 2)
                     .frame(width: 7, height: 7)
                     .offset(x: 7, y: -7)
-                Rectangle().stroke(Axis.black, lineWidth: 2)
+                Rectangle().stroke(PocketfulTheme.black, lineWidth: 2)
                     .frame(width: 7, height: 7)
                     .offset(x: -7, y: 7)
-                Rectangle().fill(Axis.black)
+                Rectangle().fill(PocketfulTheme.black)
                     .frame(width: 7, height: 7)
                     .offset(x: 7, y: 7)
             }

@@ -1,4 +1,4 @@
-`AXIS//OPEN`
+`NIGHTFIELD//OPEN`
 
 # Pocketful setup guide
 
@@ -311,4 +311,4 @@ pushes the change straight to Wallet.
 
 ---
 
-`AXIS//OPEN`
+`NIGHTFIELD//OPEN`
