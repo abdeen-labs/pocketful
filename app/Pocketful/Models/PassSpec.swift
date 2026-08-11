@@ -7,6 +7,8 @@ import Foundation
 
 nonisolated enum PassStyle: String, Codable, CaseIterable, Identifiable {
     case generic, storeCard, coupon, eventTicket, boardingPass
+    /// iOS 27+ poster layout; the server emits no legacy fallback key.
+    case posterGeneric
     var id: String { rawValue }
 }
 
@@ -15,6 +17,11 @@ nonisolated enum BarcodeFormat: String, Codable, CaseIterable, Identifiable {
     case pdf417 = "PKBarcodeFormatPDF417"
     case aztec = "PKBarcodeFormatAztec"
     case code128 = "PKBarcodeFormatCode128"
+    // iOS 27+ formats — pair with a legacy fallback for older systems.
+    case ean13 = "PKBarcodeFormatEAN13"
+    case code39 = "PKBarcodeFormatCode39"
+    case codabar = "PKBarcodeFormatCodabar"
+    case i2of5 = "PKBarcodeFormatI2of5"
     var id: String { rawValue }
 }
 
@@ -28,6 +35,8 @@ nonisolated enum TransitType: String, Codable, CaseIterable {
 
 nonisolated enum FieldCategory: String, Codable, CaseIterable {
     case header, primary, secondary, auxiliary, back, additionalInfo
+    /// posterGeneric only; Wallet renders a single footer field.
+    case footer
 }
 
 nonisolated enum PassTextAlignment: String, Codable, CaseIterable {
@@ -297,6 +306,27 @@ nonisolated struct BoardingPassOptions: Codable, Equatable {
     }
 }
 
+nonisolated struct PosterGenericOptions: Codable, Equatable {
+    /// Removes the automatic darkening gradient behind the header.
+    var suppressHeaderDarkening: Bool? = nil
+
+    var isEmpty: Bool { suppressHeaderDarkening == nil }
+}
+
+/// iOS 27 featured actions — up to two tappable actions beneath the pass.
+/// Not supported with posterEventTicket or semanticBoardingPass layouts.
+nonisolated enum FeaturedActionType: String, Codable, CaseIterable {
+    case viewSchedule, watchTrailer, listenToMusic, call, place, addToBalance
+    case order, shop, membershipBenefits, bookAppointment, bookCar, bookFlight
+    case bookStay, viewOffersRewards
+}
+
+nonisolated struct FeaturedAction: Codable, Equatable {
+    var identifier: String
+    var type: FeaturedActionType
+    var url: String
+}
+
 nonisolated struct PassSpec: Codable {
     var style: PassStyle
     var description: String
@@ -310,6 +340,9 @@ nonisolated struct PassSpec: Codable {
     var options: PassOptions? = nil
     var eventTicketOptions: EventTicketOptions? = nil
     var boardingPassOptions: BoardingPassOptions? = nil
+    var posterGenericOptions: PosterGenericOptions? = nil
+    /// iOS 27+; at most two, ignored by older systems.
+    var featuredActions: [FeaturedAction]? = nil
     /// Keys are FieldCategory raw values; a string-keyed dictionary so the
     /// JSON encodes as an object.
     var fields: [String: [PassField]]? = nil

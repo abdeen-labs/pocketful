@@ -13,6 +13,7 @@ struct DesignTabView: View {
         (.coupon, "Coupon"),
         (.eventTicket, "Event ticket"),
         (.boardingPass, "Boarding pass"),
+        (.posterGeneric, "Poster generic"),
     ]
 
     private static let transitOptions: [(value: TransitType, label: String)] = [

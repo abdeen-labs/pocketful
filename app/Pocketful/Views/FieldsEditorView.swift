@@ -58,6 +58,9 @@ private struct FieldCardView: View {
         if style == .eventTicket {
             options.append((.additionalInfo, "Event details"))
         }
+        if style == .posterGeneric {
+            options.append((.footer, "Footer"))
+        }
         return options
     }
 

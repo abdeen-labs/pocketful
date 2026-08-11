@@ -38,6 +38,43 @@ for (const style of STYLES) {
   });
 }
 
+// 12 digits (Wallet derives the check digit) and 13 (already appended) are
+// both structurally valid EAN-13 messages; the validator must take either.
+for (const message of ["200000000000", "2000000000008"] as const) {
+  test(`accepts an EAN-13 barcode with a ${message.length}-digit message`, () => {
+    validateSpec({
+      ...validSpec(),
+      barcodes: [{ format: "PKBarcodeFormatEAN13", message }],
+    });
+  });
+}
+
+// posterGeneric is deliberately absent from the STYLES loop above: it is the
+// one style with a hard image requirement (background), so its baseline lives
+// here instead.
+test("accepts a minimal posterGeneric spec with background art and a footer field", () => {
+  const result = validateSpec({
+    ...validSpec(),
+    style: "posterGeneric",
+    images: { icon: icon(), background: icon() },
+    fields: { footer: [{ key: "membership", value: "Family Pass" }] },
+  });
+  assert.equal(result.spec.style, "posterGeneric");
+  assert.equal(result.fields.footer?.length, 1);
+  assert.ok(result.images.background instanceof Buffer);
+});
+
+test("accepts two featured actions on a store card", () => {
+  validateSpec({
+    ...validSpec(),
+    style: "storeCard",
+    featuredActions: [
+      { identifier: "benefits", type: "membershipBenefits", url: "https://example.com/benefits" },
+      { identifier: "shop", type: "shop", url: "https://example.com/shop" },
+    ],
+  });
+});
+
 test("accepts the baseline valid spec and returns its parts", () => {
   const result = validateSpec(validSpec());
   assert.equal(result.spec.description, "Test pass");
@@ -206,6 +243,106 @@ const REJECTIONS: Rejection[] = [
     },
     status: 400,
     fragment: "message is required",
+  },
+  {
+    name: "EAN-13 barcode with a non-numeric message",
+    spec: {
+      ...validSpec(),
+      barcodes: [{ format: "PKBarcodeFormatEAN13", message: "ABC023378260" }],
+    },
+    status: 400,
+    fragment: "EAN-13 check digit",
+  },
+  {
+    name: "EAN-13 barcode with a wrong check digit",
+    spec: {
+      ...validSpec(),
+      barcodes: [{ format: "PKBarcodeFormatEAN13", message: "2000000000001" }],
+    },
+    status: 400,
+    fragment: "EAN-13 check digit",
+  },
+  {
+    name: "posterGeneric without background artwork",
+    spec: {
+      ...validSpec(),
+      style: "posterGeneric",
+    },
+    status: 400,
+    fragment: "background PNG artwork",
+  },
+  {
+    name: "footer fields on a non-poster style",
+    spec: {
+      ...validSpec(),
+      fields: { footer: [{ key: "membership", value: "Family Pass" }] },
+    },
+    status: 400,
+    fragment: "footer fields require the posterGeneric style",
+  },
+  {
+    name: "two footer fields",
+    spec: {
+      ...validSpec(),
+      style: "posterGeneric",
+      images: { icon: icon(), background: icon() },
+      fields: {
+        footer: [
+          { key: "one", value: "First" },
+          { key: "two", value: "Second" },
+        ],
+      },
+    },
+    status: 400,
+    fragment: "at most one",
+  },
+  {
+    name: "three featured actions",
+    spec: {
+      ...validSpec(),
+      featuredActions: [
+        { identifier: "a", type: "shop", url: "https://example.com/a" },
+        { identifier: "b", type: "order", url: "https://example.com/b" },
+        { identifier: "c", type: "call", url: "tel:+18005551212" },
+      ],
+    },
+    status: 400,
+    fragment: "at most two",
+  },
+  {
+    name: "featured action with an unknown type",
+    spec: {
+      ...validSpec(),
+      featuredActions: [
+        { identifier: "a", type: "teleport", url: "https://example.com" },
+      ],
+    },
+    status: 400,
+    fragment: "type must be one of",
+  },
+  {
+    name: "featured action with a script-scheme url",
+    spec: {
+      ...validSpec(),
+      featuredActions: [
+        { identifier: "a", type: "shop", url: "javascript:alert(1)" },
+      ],
+    },
+    status: 400,
+    fragment: "script scheme",
+  },
+  {
+    name: "featured actions combined with the posterEventTicket scheme",
+    spec: {
+      ...validSpec(),
+      style: "eventTicket",
+      preferredStyleSchemes: ["posterEventTicket", "eventTicket"],
+      featuredActions: [
+        { identifier: "a", type: "viewSchedule", url: "https://example.com" },
+      ],
+    },
+    status: 400,
+    fragment: "not supported with posterEventTicket",
   },
   {
     name: "21 localizations",

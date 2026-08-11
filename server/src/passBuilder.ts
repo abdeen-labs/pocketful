@@ -32,6 +32,9 @@ export function buildPass(
   if (spec.style === "boardingPass") {
     styleBody.transitType = spec.transitType ?? "PKTransitTypeGeneric";
   }
+  if (spec.style === "posterGeneric") {
+    styleBody.footerFields = fields.footer ?? [];
+  }
 
   const passJson: Record<string, unknown> = {
     formatVersion: 1,
@@ -43,8 +46,12 @@ export function buildPass(
     ...(spec.options ?? {}),
     ...(spec.style === "eventTicket" ? spec.eventTicketOptions ?? {} : {}),
     ...(spec.style === "boardingPass" ? spec.boardingPassOptions ?? {} : {}),
+    ...(spec.style === "posterGeneric" ? spec.posterGenericOptions ?? {} : {}),
     ...(spec.upcomingPassInformation
       ? { upcomingPassInformation: spec.upcomingPassInformation }
+      : {}),
+    ...(spec.featuredActions?.length
+      ? { featuredActions: spec.featuredActions }
       : {}),
     [spec.style]: styleBody,
   };

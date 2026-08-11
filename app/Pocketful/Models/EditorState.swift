@@ -147,6 +147,13 @@ final class EditorState {
                 return updated
             }
         }
+        if next != .posterGeneric {
+            fields = fields.map { field in
+                var updated = field
+                if updated.category == .footer { updated.category = .back }
+                return updated
+            }
+        }
     }
 
     /// Ports applyTemplate: replaces format, identity, colors, fields,

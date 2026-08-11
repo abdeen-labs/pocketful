@@ -13,6 +13,7 @@ struct PassPreviewView: View {
         .coupon: "Coupon",
         .eventTicket: "Event ticket",
         .boardingPass: "Boarding pass",
+        .posterGeneric: "Poster generic",
     ]
 
     private func validHex(_ value: String, fallback: String) -> String {
@@ -23,7 +24,9 @@ struct PassPreviewView: View {
         let background = Color(hex: validHex(state.bgColor, fallback: "#131822"))
         let foreground = Color(hex: validHex(state.fgColor, fallback: "#ffffff"))
         let labels = Color(hex: validHex(state.labelColor, fallback: "#a9b2c0"))
-        let posterArtwork = state.style == .eventTicket ? state.images["artwork"] : nil
+        let posterArtwork = state.style == .eventTicket
+            ? state.images["artwork"]
+            : state.style == .posterGeneric ? state.images["background"] : nil
         let strip = posterArtwork ?? state.images["strip"] ?? state.images["background"]
 
         VStack(alignment: .leading, spacing: 12) {

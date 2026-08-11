@@ -151,6 +151,11 @@ enum EditorCatalog {
                 SemanticFieldSpec(key: "membershipProgramName", label: "Loyalty program", placeholder: "Pocketful Rewards"),
                 SemanticFieldSpec(key: "membershipProgramNumber", label: "Member number", placeholder: "104820"),
             ]
+        case .posterGeneric:
+            return [
+                SemanticFieldSpec(key: "membershipProgramName", label: "Membership program", placeholder: "Pocketful Plus"),
+                SemanticFieldSpec(key: "membershipProgramNumber", label: "Membership number", placeholder: "PFL-2048"),
+            ]
         case .coupon:
             return [
                 SemanticFieldSpec(key: "confirmationNumber", label: "Confirmation number", placeholder: "SAVE-2026"),

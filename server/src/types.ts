@@ -12,13 +12,22 @@ export type PassStyle =
   | "storeCard"
   | "coupon"
   | "eventTicket"
-  | "boardingPass";
+  | "boardingPass"
+  // iOS 27+; earlier systems cannot install a pass whose only style key is
+  // posterGeneric. This server deliberately emits no legacy fallback key.
+  | "posterGeneric";
 
 export type BarcodeFormat =
   | "PKBarcodeFormatQR"
   | "PKBarcodeFormatPDF417"
   | "PKBarcodeFormatAztec"
-  | "PKBarcodeFormatCode128";
+  | "PKBarcodeFormatCode128"
+  // iOS 27+; earlier systems render no barcode unless a legacy format follows
+  // in the barcodes array.
+  | "PKBarcodeFormatEAN13"
+  | "PKBarcodeFormatCode39"
+  | "PKBarcodeFormatCodabar"
+  | "PKBarcodeFormatI2of5";
 
 export type TransitType =
   | "PKTransitTypeAir"
@@ -33,7 +42,9 @@ export type FieldCategory =
   | "secondary"
   | "auxiliary"
   | "back"
-  | "additionalInfo";
+  | "additionalInfo"
+  /** posterGeneric only; Wallet renders a single footer field. */
+  | "footer";
 
 export type FieldValue = string | number;
 export type TextAlignment =
@@ -166,6 +177,37 @@ export interface EventTicketOptions {
   eventLogoText?: string;
 }
 
+/**
+ * iOS 27 featured actions — up to two tappable actions rendered beneath the
+ * pass. Valid on every layout except posterEventTicket and semanticBoardingPass.
+ */
+export type FeaturedActionType =
+  | "viewSchedule"
+  | "watchTrailer"
+  | "listenToMusic"
+  | "call"
+  | "place"
+  | "addToBalance"
+  | "order"
+  | "shop"
+  | "membershipBenefits"
+  | "bookAppointment"
+  | "bookCar"
+  | "bookFlight"
+  | "bookStay"
+  | "viewOffersRewards";
+
+export interface FeaturedAction {
+  identifier: string;
+  type: FeaturedActionType;
+  url: string;
+}
+
+export interface PosterGenericOptions {
+  /** Removes the automatic darkening gradient behind the header. */
+  suppressHeaderDarkening?: boolean;
+}
+
 export interface BoardingPassOptions {
   changeSeatURL?: string;
   entertainmentURL?: string;
@@ -204,6 +246,9 @@ export interface PassSpec {
   options?: PassOptions;
   eventTicketOptions?: EventTicketOptions;
   boardingPassOptions?: BoardingPassOptions;
+  posterGenericOptions?: PosterGenericOptions;
+  /** iOS 27+; at most two, ignored by older systems. */
+  featuredActions?: FeaturedAction[];
   fields?: Partial<Record<FieldCategory, PassField[]>>;
   barcodes?: BarcodeSpec[];
   transitType?: TransitType;

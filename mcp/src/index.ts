@@ -123,11 +123,14 @@ function fail(err: unknown) {
 }
 
 const SPEC_GUIDE = `The spec is a Pocketful PassSpec (mirrors server/src/types.ts):
-- Required: style ("generic" | "storeCard" | "coupon" | "eventTicket" | "boardingPass"), description (≤200 chars), images (auto-filled with a default icon when omitted).
+- Required: style ("generic" | "storeCard" | "coupon" | "eventTicket" | "boardingPass" | "posterGeneric"), description (≤200 chars), images (auto-filled with a default icon when omitted).
+- posterGeneric (iOS 27+ poster layout, ideal for membership/loyalty cards): REQUIRES background PNG artwork (full-bleed, Wallet crops to the pass face — keep the subject centered); primaryLogo recommended. The face renders headerFields, primaryFields, ONE footer field (fields.footer, max 1), and the barcode. No legacy fallback key is emitted — iOS 26 and earlier cannot install these passes.
 - updatable: true — the server keeps the pass and can push OTA updates to Wallet later; the response then includes its serialNumber.
 - colors: { backgroundColor, foregroundColor, labelColor, stripColor?, footerBackgroundColor? } as #RRGGBB.
-- fields: { header?, primary?, secondary?, auxiliary?, back? } arrays of { key, label?, value, changeMessage? ("...%@..." shows a Wallet notification on update), dateStyle?, currencyCode?, numberStyle?, textAlignment? }.
-- barcodes: [{ format: "PKBarcodeFormatQR" | "PKBarcodeFormatPDF417" | "PKBarcodeFormatAztec" | "PKBarcodeFormatCode128", message, altText? }].
+- fields: { header?, primary?, secondary?, auxiliary?, back?, footer? } arrays of { key, label?, value, changeMessage? ("...%@..." shows a Wallet notification on update), dateStyle?, currencyCode?, numberStyle?, textAlignment? }. footer is posterGeneric-only.
+- featuredActions (iOS 27+, all styles except posterEventTicket/semanticBoardingPass): up to two of { identifier, type: "viewSchedule"|"watchTrailer"|"listenToMusic"|"call"|"place"|"addToBalance"|"order"|"shop"|"membershipBenefits"|"bookAppointment"|"bookCar"|"bookFlight"|"bookStay"|"viewOffersRewards", url }.
+- posterGenericOptions: { suppressHeaderDarkening? } (posterGeneric only).
+- barcodes: [{ format: "PKBarcodeFormatQR" | "PKBarcodeFormatPDF417" | "PKBarcodeFormatAztec" | "PKBarcodeFormatCode128" | "PKBarcodeFormatEAN13" | "PKBarcodeFormatCode39" | "PKBarcodeFormatCodabar" | "PKBarcodeFormatI2of5", message, altText? }]. The last four are iOS 27+; list a legacy-format fallback after them or older systems render no barcode. EAN13 messages must be 12 digits, or 13 with a valid check digit.
 - images maps Wallet asset names (icon, logo, primaryLogo, secondaryLogo, strip, thumbnail, background, footer, artwork — optionally @2x/@3x) to base64 PNG strings; prefer image_files with local paths instead of inlining base64.
 - Also supported: organizationName, logoText, serialNumber, expirationDate/relevantDates (ISO-8601), locations, beacons, nfc, localizations, personalization, preferredStyleSchemes (posterEventTicket needs eventTicket style + artwork PNGs + eventName/venue semantics + a barcode or NFC — Wallet silently falls back to the legacy layout without an entry credential), transitType (boardingPass), upcomingPassInformation.
 - Semantic tags go in options.semantics (NOT the spec root, where they are ignored), e.g. options: { semantics: { eventName, venueName, ... } }. Other options keys: voided, userInfo, groupingIdentifier, suppressStripShine, appLaunchURL, sharingProhibited.

@@ -39,6 +39,14 @@ enum Slots {
             ),
         ] : []
 
+        let posterGenericSlots: [ImageSlot] = style == .posterGeneric ? [
+            ImageSlot(
+                name: "primaryLogo", label: "Poster primary logo",
+                width: 126, height: 30, required: false, recommended: true,
+                hint: "iOS 27+ poster identity · up to 126×30 pt"
+            ),
+        ] : []
+
         return [
             ImageSlot(
                 name: "icon", label: "Icon",
@@ -50,7 +58,7 @@ enum Slots {
                 width: 160, height: 50, required: false, recommended: true,
                 hint: "Top-left artwork · 160×50 pt"
             ),
-        ] + posterEventSlots + [
+        ] + posterEventSlots + posterGenericSlots + [
             ImageSlot(
                 name: "strip", label: "Strip",
                 width: 375, height: stripHeight, required: false, recommended: hasStrip,
@@ -64,9 +72,11 @@ enum Slots {
             ),
             ImageSlot(
                 name: "background", label: "Background",
-                width: 180, height: 220, required: false,
-                recommended: style == .eventTicket,
-                hint: "Full-pass background artwork · 180×220 pt"
+                width: 180, height: 220, required: style == .posterGeneric,
+                recommended: style == .eventTicket || style == .posterGeneric,
+                hint: style == .posterGeneric
+                    ? "Full-bleed poster artwork, Wallet crops to the face — the server requires it · keep the subject centered"
+                    : "Full-pass background artwork · 180×220 pt"
             ),
             ImageSlot(
                 name: "footer", label: "Footer",

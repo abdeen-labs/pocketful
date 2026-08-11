@@ -67,6 +67,11 @@ struct BarcodesEditorView: View {
         (.pdf417, "PDF417"),
         (.aztec, "Aztec"),
         (.code128, "Code 128"),
+        // iOS 27+ formats — pair with a legacy fallback for older systems.
+        (.ean13, "EAN-13"),
+        (.code39, "Code 39"),
+        (.codabar, "Codabar"),
+        (.i2of5, "ITF"),
     ]
 
     var body: some View {

@@ -1,5 +1,6 @@
 import type {
   BarcodeFormat,
+  FeaturedActionType,
   FieldCategory,
   PassField,
   PassSpec,
@@ -21,12 +22,17 @@ const STYLES: PassStyle[] = [
   "coupon",
   "eventTicket",
   "boardingPass",
+  "posterGeneric",
 ];
 const BARCODE_FORMATS: BarcodeFormat[] = [
   "PKBarcodeFormatQR",
   "PKBarcodeFormatPDF417",
   "PKBarcodeFormatAztec",
   "PKBarcodeFormatCode128",
+  "PKBarcodeFormatEAN13",
+  "PKBarcodeFormatCode39",
+  "PKBarcodeFormatCodabar",
+  "PKBarcodeFormatI2of5",
 ];
 const TRANSIT_TYPES: TransitType[] = [
   "PKTransitTypeAir",
@@ -42,6 +48,23 @@ const FIELD_CATEGORIES: FieldCategory[] = [
   "auxiliary",
   "back",
   "additionalInfo",
+  "footer",
+];
+const FEATURED_ACTION_TYPES: FeaturedActionType[] = [
+  "viewSchedule",
+  "watchTrailer",
+  "listenToMusic",
+  "call",
+  "place",
+  "addToBalance",
+  "order",
+  "shop",
+  "membershipBenefits",
+  "bookAppointment",
+  "bookCar",
+  "bookFlight",
+  "bookStay",
+  "viewOffersRewards",
 ];
 const STYLE_SCHEMES: PreferredStyleScheme[] = [
   "posterEventTicket",
@@ -168,12 +191,26 @@ function validateImages(images: unknown): Record<string, Buffer> {
   return out;
 }
 
+// Apple does not document the message shape for PKBarcodeFormatEAN13, but the
+// symbology itself is fixed: 12 data digits plus a check digit. Accept either
+// length and verify the check digit when all 13 are given.
+function isValidEan13Message(message: string): boolean {
+  if (!/^\d{12,13}$/.test(message)) return false;
+  if (message.length === 12) return true;
+  const digits = [...message].map(Number);
+  const sum = digits.slice(0, 12).reduce((total, digit, index) => total + digit * (index % 2 ? 3 : 1), 0);
+  return (10 - (sum % 10)) % 10 === digits[12];
+}
+
 function validateCollections(spec: PassSpec): void {
   if (spec.barcodes !== undefined) {
     if (!Array.isArray(spec.barcodes) || spec.barcodes.length > 4) throw new ApiError(400, "barcodes must contain at most four entries");
     spec.barcodes.forEach((barcode, index) => {
       if (!isRecord(barcode) || !BARCODE_FORMATS.includes(barcode.format as BarcodeFormat)) throw new ApiError(400, `barcodes[${index}].format is invalid`);
       if (typeof barcode.message !== "string" || !barcode.message) throw new ApiError(400, `barcodes[${index}].message is required`);
+      if (barcode.format === "PKBarcodeFormatEAN13" && !isValidEan13Message(barcode.message)) {
+        throw new ApiError(400, `barcodes[${index}].message must be 12 digits, or 13 digits ending in a valid EAN-13 check digit`);
+      }
       assertOptionalString(barcode.altText, `barcodes[${index}].altText`, 1_000);
       assertOptionalString(barcode.messageEncoding, `barcodes[${index}].messageEncoding`, 100);
     });
@@ -227,6 +264,27 @@ function validateAdvanced(spec: PassSpec): void {
   if (spec.nfc !== undefined) {
     if (!isRecord(spec.nfc) || typeof spec.nfc.message !== "string" || !spec.nfc.message || typeof spec.nfc.encryptionPublicKey !== "string" || !spec.nfc.encryptionPublicKey) throw new ApiError(400, "nfc requires message and encryptionPublicKey");
   }
+  if (spec.featuredActions !== undefined) {
+    if (!Array.isArray(spec.featuredActions) || spec.featuredActions.length > 2) throw new ApiError(400, "featuredActions allows at most two entries");
+    // Wallet ignores featured actions on these two layouts; reject instead of
+    // signing a pass that silently drops them.
+    if (spec.preferredStyleSchemes?.some((scheme) => scheme === "posterEventTicket" || scheme === "semanticBoardingPass")) {
+      throw new ApiError(400, "featuredActions are not supported with posterEventTicket or semanticBoardingPass layouts");
+    }
+    spec.featuredActions.forEach((action, index) => {
+      if (!isRecord(action)) throw new ApiError(400, `featuredActions[${index}] must be an object`);
+      if (typeof action.identifier !== "string" || !action.identifier || action.identifier.length > 200) throw new ApiError(400, `featuredActions[${index}].identifier must be a string of at most 200 characters`);
+      if (!FEATURED_ACTION_TYPES.includes(action.type as FeaturedActionType)) throw new ApiError(400, `featuredActions[${index}].type must be one of ${FEATURED_ACTION_TYPES.join(", ")}`);
+      if (typeof action.url !== "string") throw new ApiError(400, `featuredActions[${index}].url must be a string`);
+      let parsed: URL;
+      try {
+        parsed = new URL(action.url);
+      } catch {
+        throw new ApiError(400, `featuredActions[${index}].url must be an absolute URL`);
+      }
+      if (SCRIPT_SCHEMES.has(parsed.protocol)) throw new ApiError(400, `featuredActions[${index}].url must not use a script scheme`);
+    });
+  }
   if (spec.localizations !== undefined) {
     if (!Array.isArray(spec.localizations) || spec.localizations.length > 20) throw new ApiError(400, "localizations must contain at most twenty languages");
     const languages = new Set<string>();
@@ -260,6 +318,13 @@ function validateModernStyleRequirements(
   const semantics = isRecord(spec.options) && isRecord(spec.options.semantics)
     ? spec.options.semantics
     : {};
+
+  // The poster face is drawn around full-bleed artwork; unlike
+  // posterEventTicket there is no legacy fallback rendering to hide behind,
+  // so require the asset instead of signing a pass that renders a bare color.
+  if (spec.style === "posterGeneric" && !hasImageAsset(images, "background")) {
+    throw new ApiError(400, "posterGeneric requires background PNG artwork");
+  }
 
   if (spec.preferredStyleSchemes?.includes("posterEventTicket")) {
     if (spec.style !== "eventTicket") {
@@ -402,6 +467,10 @@ const EVENT_TICKET_OPTION_RULES: Record<string, OptionRule> = {
   useAutomaticColors: { kind: "boolean" },
   auxiliaryStoreIdentifiers: { kind: "storeIds" },
   eventLogoText: { kind: "string", max: 200 },
+};
+
+const POSTER_GENERIC_OPTION_RULES: Record<string, OptionRule> = {
+  suppressHeaderDarkening: { kind: "boolean" },
 };
 
 const BOARDING_PASS_OPTION_RULES: Record<string, OptionRule> = {
@@ -555,9 +624,20 @@ export function validateSpec(body: unknown): ValidatedSpec {
     "boardingPassOptions",
     BOARDING_PASS_OPTION_RULES
   );
+  validateOptionObject(
+    spec.posterGenericOptions,
+    "posterGenericOptions",
+    POSTER_GENERIC_OPTION_RULES
+  );
   const fields = validateFields(spec.fields);
   if (fields.additionalInfo?.length && spec.style !== "eventTicket") {
     throw new ApiError(400, "additionalInfo fields require the eventTicket style");
+  }
+  if (fields.footer?.length && spec.style !== "posterGeneric") {
+    throw new ApiError(400, "footer fields require the posterGeneric style");
+  }
+  if ((fields.footer?.length ?? 0) > 1) {
+    throw new ApiError(400, "posterGeneric renders a single footer field — provide at most one");
   }
   const images = validateImages(spec.images);
   validateModernStyleRequirements(spec, images);
