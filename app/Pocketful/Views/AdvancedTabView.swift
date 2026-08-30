@@ -30,10 +30,7 @@ struct AdvancedTabView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            PocketfulSection(
-                title: "Pass behavior",
-                description: "App launching, grouping, sharing, relevance radius, update services, and custom metadata."
-            ) {
+            PocketfulSection(title: "Behavior") {
                 PocketfulInput("App launch URL", text: $state.appLaunchURL, placeholder: "pocketful://pass/123", keyboard: .URL)
                 PocketfulInput("Grouping identifier", text: $state.groupingIdentifier, placeholder: "membership-cards")
                 PocketfulInput("Maximum relevance distance", text: $state.maxDistance, placeholder: "Meters", keyboard: .decimalPad)
@@ -54,11 +51,7 @@ struct AdvancedTabView: View {
             }
 
             if state.style == .eventTicket {
-                PocketfulSection(
-                    title: "Event experience",
-                    description: "Poster layout, Event Guide actions, contact details, and ticket menu actions.",
-                    badge: "iOS 18+"
-                ) {
+                PocketfulSection(title: "Event experience") {
                     PocketfulToggleRow("Use automatic colors", description: "Derive foreground and label colors from poster artwork.", value: $state.eventAutomaticColors)
                     PocketfulToggleRow("Suppress header darkening", value: $state.suppressHeaderDarkening)
                     PocketfulInput("Poster event logo text", text: $state.eventLogoText, placeholder: "Pocketful Live")
@@ -83,30 +76,18 @@ struct AdvancedTabView: View {
             }
 
             if state.style == .boardingPass {
-                PocketfulSection(
-                    title: "Enhanced boarding",
-                    description: "Seat, entertainment, baggage, lounge, Wi-Fi, accessibility, and provider actions.",
-                    badge: "iOS 26+"
-                ) {
+                PocketfulSection(title: "Enhanced boarding") {
                     ForEach(EditorCatalog.boardingOptionFields) { field in
                         PocketfulInput(field.label, text: boardingOptionBinding(field.key), placeholder: field.placeholder, keyboard: field.keyboard)
                     }
                 }
             }
 
-            PocketfulSection(
-                title: "Localization",
-                description: "Generate pass.strings for every language and enable localized artwork folders.",
-                badge: "\(state.localizations.count) languages"
-            ) {
+            PocketfulSection(title: "Localization") {
                 LocalizationsEditorView(localizations: $state.localizations)
             }
 
-            PocketfulSection(
-                title: "Personalization",
-                description: "Ask for customer information before adding an NFC pass.",
-                badge: "NFC required"
-            ) {
+            PocketfulSection(title: "Personalization") {
                 PocketfulToggleRow("Enable personalization", value: $state.personalizationEnabled)
                 if state.personalizationEnabled {
                     PocketfulNotice("Wallet only keeps personalization.json when NFC details and personalization logo artwork are also present.", title: "Three required pieces", tone: .warning)
@@ -119,11 +100,7 @@ struct AdvancedTabView: View {
                 }
             }
 
-            PocketfulSection(
-                title: "Server",
-                description: "The signing service remains the authority for certificates, team ID, and pass type ID.",
-                badge: "Secure"
-            ) {
+            PocketfulSection(title: "Server") {
                 PocketfulInput("Pass server URL", text: $state.serverUrl, placeholder: "https://pass.abdeen.dev", keyboard: .URL)
                 PocketfulInput("API token", text: $state.apiToken, placeholder: "Only when configured on the server", secure: true)
                 PocketfulNotice("Signing certificates never enter the app or pass payload. The server supplies the pass type identifier, team identifier, and signing chain.")

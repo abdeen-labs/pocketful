@@ -16,46 +16,21 @@ struct TemplateGalleryView: View {
         .boardingPass: "Travel",
     ]
 
-    private static let barcodeLabels: [BarcodeFormat: String] = [
-        .qr: "QR",
-        .pdf417: "PDF417",
-        .aztec: "Aztec",
-        .code128: "Code 128",
-    ]
-
     var body: some View {
-        VStack(alignment: .leading, spacing: 13) {
-            VStack(alignment: .leading, spacing: 3) {
-                Text("CURATED STARTING POINTS")
-                    .font(PocketfulFont.monoMedium(11))
-                    .tracking(Tracking.micro)
-                    .foregroundStyle(PocketfulTheme.dim)
-                Text("Swipe to browse. Your artwork and server settings stay untouched.")
-                    .font(PocketfulFont.text(11))
-                    .foregroundStyle(PocketfulTheme.dim)
-            }
-
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(alignment: .top, spacing: 12) {
-                    ForEach(Templates.all) { template in
-                        TemplateCardView(
-                            template: template,
-                            lastApplied: template.id == lastAppliedId,
-                            styleLabel: Self.styleLabels[template.style] ?? "",
-                            barcodeLabel: template.barcode.flatMap { Self.barcodeLabels[$0.format] },
-                            onPress: { onApply(template) }
-                        )
-                    }
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(alignment: .top, spacing: 12) {
+                ForEach(Templates.all) { template in
+                    TemplateCardView(
+                        template: template,
+                        lastApplied: template.id == lastAppliedId,
+                        styleLabel: Self.styleLabels[template.style] ?? "",
+                        onPress: { onApply(template) }
+                    )
                 }
-                .padding(.horizontal, 16)
             }
-            .padding(.horizontal, -16)
-
-            Text("\(Templates.all.count) templates · Tap any card to use it")
-                .font(PocketfulFont.monoMedium(10))
-                .foregroundStyle(PocketfulTheme.dim)
-                .frame(maxWidth: .infinity)
+            .padding(.horizontal, 16)
         }
+        .padding(.horizontal, -16)
     }
 }
 
@@ -63,7 +38,6 @@ private struct TemplateCardView: View {
     let template: PassTemplate
     let lastApplied: Bool
     let styleLabel: String
-    let barcodeLabel: String?
     let onPress: () -> Void
 
     var body: some View {
@@ -76,7 +50,7 @@ private struct TemplateCardView: View {
             .prefix(2)
 
         Button(action: onPress) {
-            VStack(alignment: .leading, spacing: 11) {
+            VStack(alignment: .leading, spacing: 10) {
                 // Mini pass
                 ZStack {
                     background
@@ -144,78 +118,46 @@ private struct TemplateCardView: View {
                     .padding(14)
                 }
                 .frame(height: 154)
+                .clipShape(RoundedRectangle(cornerRadius: 18))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 18)
+                        .stroke(lastApplied ? PocketfulTheme.accent : PocketfulTheme.border, lineWidth: lastApplied ? 1 : 0.5)
+                )
                 .overlay {
                     GeometryReader { geo in
-                        Circle().fill(PocketfulTheme.surface).frame(width: 16, height: 16)
+                        Circle().fill(PocketfulTheme.bg).frame(width: 16, height: 16)
                             .position(x: 0, y: 95)
-                        Circle().fill(PocketfulTheme.surface).frame(width: 16, height: 16)
+                        Circle().fill(PocketfulTheme.bg).frame(width: 16, height: 16)
                             .position(x: geo.size.width, y: 95)
                     }
                 }
-                .clipShape(RoundedRectangle(cornerRadius: 18))
 
                 // Caption
-                VStack(alignment: .leading, spacing: 5) {
+                VStack(alignment: .leading, spacing: 4) {
                     HStack(spacing: 8) {
                         Text(template.name)
-                            .font(PocketfulFont.textSemiBold(15))
+                            .font(PocketfulFont.textSemiBold(14))
                             .tracking(-0.2)
                             .foregroundStyle(PocketfulTheme.text)
                             .lineLimit(1)
                         Spacer(minLength: 0)
-                        Text(lastApplied ? "LAST USED ✓" : "USE TEMPLATE →")
+                        Text(lastApplied ? "APPLIED ✓" : "USE →")
                             .font(PocketfulFont.monoSemiBold(10))
                             .tracking(0.65)
                             .foregroundStyle(lastApplied ? PocketfulTheme.success : PocketfulTheme.link)
                     }
                     Text(template.tagline)
                         .font(PocketfulFont.text(11))
-                        .foregroundStyle(PocketfulTheme.textSoft)
+                        .foregroundStyle(PocketfulTheme.dim)
                         .lineLimit(2)
                         .multilineTextAlignment(.leading)
                         .fixedSize(horizontal: false, vertical: true)
-                    if !template.features.isEmpty {
-                        WrapLayout(spacing: 5) {
-                            ForEach(template.features.prefix(3), id: \.self) { feature in
-                                Text(feature)
-                                    .font(PocketfulFont.monoMedium(10))
-                                    .foregroundStyle(PocketfulTheme.textSoft)
-                                    .padding(.horizontal, 7)
-                                    .padding(.vertical, 4)
-                                    .background(PocketfulTheme.band, in: RoundedRectangle(cornerRadius: Radii.control))
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: Radii.control)
-                                            .stroke(PocketfulTheme.border, lineWidth: 0.5)
-                                    )
-                            }
-                        }
-                        .padding(.top, 2)
-                    }
-                    HStack(spacing: 6) {
-                        Text(styleLabel)
-                        Circle().fill(PocketfulTheme.borderStrong).frame(width: 3, height: 3)
-                        Text("\(template.fields.count) fields")
-                        if let barcodeLabel {
-                            Circle().fill(PocketfulTheme.borderStrong).frame(width: 3, height: 3)
-                            Text(barcodeLabel)
-                        }
-                    }
-                    .font(PocketfulFont.monoMedium(10))
-                    .foregroundStyle(PocketfulTheme.dim)
-                    .padding(.top, 2)
                 }
-                .padding(.horizontal, 2)
-                .padding(.bottom, 2)
+                .padding(.horizontal, 4)
             }
-            .padding(9)
-            .frame(width: 264)
-            .background(lastApplied ? PocketfulTheme.cardElevated : PocketfulTheme.surface, in: RoundedRectangle(cornerRadius: Radii.plate))
-            .overlay(
-                RoundedRectangle(cornerRadius: Radii.plate)
-                    .stroke(lastApplied ? PocketfulTheme.accent : PocketfulTheme.border, lineWidth: 1)
-            )
+            .frame(width: 256)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(PressableButtonStyle())
     }
 }
 

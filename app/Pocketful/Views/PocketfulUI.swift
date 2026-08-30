@@ -52,6 +52,16 @@ struct WrapLayout: Layout {
     }
 }
 
+// MARK: - Press feedback
+
+struct PressableButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(configuration.isPressed ? 0.96 : 1)
+            .animation(.easeOut(duration: 0.15), value: configuration.isPressed)
+    }
+}
+
 // MARK: - Section
 
 struct PocketfulSection<Content: View>: View {
@@ -68,61 +78,46 @@ struct PocketfulSection<Content: View>: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 16) {
             heading
             if !isCollapsed {
                 VStack(alignment: .leading, spacing: 14) {
                     content()
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(16)
-                .background(PocketfulTheme.card, in: RoundedRectangle(cornerRadius: Radii.plate))
-                .overlay(
-                    RoundedRectangle(cornerRadius: Radii.plate)
-                        .stroke(PocketfulTheme.border, lineWidth: 0.5)
-                )
             }
         }
-        .padding(.bottom, 28)
+        .padding(.bottom, 40)
     }
 
     private var heading: some View {
-        HStack(alignment: .top, spacing: 12) {
-            VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(alignment: .center, spacing: 8) {
                 Text(title.uppercased())
-                    .font(PocketfulFont.monoSemiBold(13))
+                    .font(PocketfulFont.monoSemiBold(12))
                     .tracking(Tracking.micro)
-                    .foregroundStyle(PocketfulTheme.text)
-                if let description {
-                    Text(description)
-                        .font(PocketfulFont.text(13))
-                        .foregroundStyle(PocketfulTheme.dim)
-                }
-            }
-            Spacer(minLength: 0)
-            HStack(spacing: 8) {
+                    .foregroundStyle(PocketfulTheme.textSoft)
                 if let badge {
                     PocketfulBadge(badge)
                 }
+                Spacer(minLength: 0)
                 if let collapsed {
                     Image(collapsed.wrappedValue ? "NavArrowRight" : "NavArrowDown")
                         .renderingMode(.template)
                         .resizable()
                         .scaledToFit()
-                        .foregroundStyle(PocketfulTheme.textSoft)
                         .frame(width: 16, height: 16)
-                        .frame(width: 28, height: 28)
-                        .background(PocketfulTheme.surface, in: RoundedRectangle(cornerRadius: Radii.control))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: Radii.control)
-                                .stroke(PocketfulTheme.borderStrong, lineWidth: 0.5)
-                        )
+                        .foregroundStyle(PocketfulTheme.dim)
                         .accessibilityHidden(true)
                 }
             }
+            if let description {
+                Text(description)
+                    .font(PocketfulFont.text(12))
+                    .foregroundStyle(PocketfulTheme.dim)
+            }
         }
-        .padding(.horizontal, 2)
-        .contentShape(Rectangle())
+        .contentShape(Rectangle().inset(by: collapsed != nil ? -8 : 0))
         .onTapGesture {
             if let collapsed {
                 toggle(collapsed)
@@ -296,6 +291,52 @@ struct PocketfulInput: View {
     }
 }
 
+// MARK: - Segmented control
+
+struct PocketfulSegmented<Value: Hashable>: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Namespace private var indicator
+
+    let options: [(value: Value, label: String)]
+    let value: Value
+    let onChange: (Value) -> Void
+
+    var body: some View {
+        HStack(spacing: 4) {
+            ForEach(options.indices, id: \.self) { index in
+                let option = options[index]
+                let selected = option.value == value
+                Button {
+                    onChange(option.value)
+                } label: {
+                    Text(option.label)
+                        .font(PocketfulFont.monoMedium(12))
+                        .foregroundStyle(selected ? PocketfulTheme.text : PocketfulTheme.dim)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.8)
+                        .frame(maxWidth: .infinity, minHeight: 38)
+                        .background {
+                            if selected {
+                                RoundedRectangle(cornerRadius: Radii.control)
+                                    .fill(PocketfulTheme.band)
+                                    .matchedGeometryEffect(id: "selection", in: indicator)
+                            }
+                        }
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(4)
+        .background(PocketfulTheme.surface, in: RoundedRectangle(cornerRadius: Radii.plate))
+        .overlay(
+            RoundedRectangle(cornerRadius: Radii.plate)
+                .stroke(PocketfulTheme.border, lineWidth: 0.5)
+        )
+        .animation(reduceMotion ? nil : Animation.spring(duration: 0.3, bounce: 0), value: value)
+    }
+}
+
 // MARK: - Chips
 
 struct ChipRow<Value: Hashable>: View {
@@ -315,14 +356,14 @@ struct ChipRow<Value: Hashable>: View {
                         .font(PocketfulFont.monoMedium(13))
                         .foregroundStyle(selected ? PocketfulTheme.text : PocketfulTheme.dim)
                         .padding(.horizontal, 12)
-                        .padding(.vertical, 8)
+                        .frame(minHeight: 36)
                         .background(selected ? PocketfulTheme.band : PocketfulTheme.surface, in: RoundedRectangle(cornerRadius: Radii.control))
                         .overlay(
                             RoundedRectangle(cornerRadius: Radii.control)
-                                .stroke(selected ? PocketfulTheme.accent : PocketfulTheme.border, lineWidth: 1)
+                                .stroke(selected ? PocketfulTheme.accent : PocketfulTheme.border, lineWidth: selected ? 1 : 0.5)
                         )
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(PressableButtonStyle())
             }
         }
     }
@@ -349,14 +390,14 @@ struct MultiChipRow<Value: Hashable>: View {
                         .font(PocketfulFont.monoMedium(13))
                         .foregroundStyle(selected ? PocketfulTheme.text : PocketfulTheme.dim)
                         .padding(.horizontal, 12)
-                        .padding(.vertical, 8)
+                        .frame(minHeight: 36)
                         .background(selected ? PocketfulTheme.band : PocketfulTheme.surface, in: RoundedRectangle(cornerRadius: Radii.control))
                         .overlay(
                             RoundedRectangle(cornerRadius: Radii.control)
-                                .stroke(selected ? PocketfulTheme.accent : PocketfulTheme.border, lineWidth: 1)
+                                .stroke(selected ? PocketfulTheme.accent : PocketfulTheme.border, lineWidth: selected ? 1 : 0.5)
                         )
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(PressableButtonStyle())
             }
         }
     }
@@ -452,16 +493,12 @@ struct PocketfulBadge: View {
 
     var body: some View {
         Text(text.uppercased())
-            .font(PocketfulFont.monoMedium(11))
+            .font(PocketfulFont.monoMedium(10))
             .tracking(1)
             .foregroundStyle(PocketfulTheme.textSoft)
-            .padding(.horizontal, 9)
+            .padding(.horizontal, 8)
             .padding(.vertical, 4)
             .background(PocketfulTheme.band, in: RoundedRectangle(cornerRadius: Radii.control))
-            .overlay(
-                RoundedRectangle(cornerRadius: Radii.control)
-                    .stroke(PocketfulTheme.border, lineWidth: 0.5)
-            )
     }
 }
 
@@ -540,14 +577,15 @@ struct PocketfulButton: View {
             )
             .opacity(disabled || loading ? 0.45 : 1)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(PressableButtonStyle())
         .disabled(disabled || loading)
     }
 
     private var background: Color {
         switch kind {
         case .primary: return PocketfulTheme.accent
-        case .secondary, .danger, .ghost: return .clear
+        case .secondary: return PocketfulTheme.surface
+        case .danger, .ghost: return .clear
         }
     }
 

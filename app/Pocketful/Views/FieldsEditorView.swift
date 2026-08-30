@@ -34,7 +34,7 @@ struct FieldsEditorView: View {
                 )
             }
 
-            PocketfulButton("+ Add pass field", kind: .secondary) {
+            PocketfulButton("+ Add field", kind: .secondary) {
                 state.fields.append(EditableField())
             }
         }
@@ -111,12 +111,9 @@ private struct FieldCardView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 13) {
             HStack(spacing: 10) {
-                Text("\(index + 1)")
-                    .font(PocketfulFont.monoSemiBold(12))
-                    .foregroundStyle(PocketfulTheme.textSoft)
-                    .frame(width: 28, height: 28)
-                    .background(PocketfulTheme.band, in: Circle())
-                    .overlay(Circle().stroke(PocketfulTheme.border, lineWidth: 0.5))
+                Text(String(format: "%02d", index + 1))
+                    .font(PocketfulFont.monoMedium(11))
+                    .foregroundStyle(PocketfulTheme.faint)
                 VStack(alignment: .leading, spacing: 1) {
                     Text(!field.label.isEmpty ? field.label : (!field.key.isEmpty ? field.key : "Untitled field"))
                         .font(PocketfulFont.textSemiBold(14))
@@ -184,10 +181,10 @@ private struct FieldCardView: View {
             }
         }
         .padding(14)
-        .background(PocketfulTheme.cardElevated, in: RoundedRectangle(cornerRadius: Radii.plate))
+        .background(PocketfulTheme.card, in: RoundedRectangle(cornerRadius: Radii.plate))
         .overlay(
             RoundedRectangle(cornerRadius: Radii.plate)
-                .stroke(PocketfulTheme.border, lineWidth: 1)
+                .stroke(PocketfulTheme.border, lineWidth: 0.5)
         )
     }
 }

@@ -15,12 +15,9 @@ private struct EditorCard<Content: View>: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 13) {
             HStack(spacing: 10) {
-                Text("\(index + 1)")
-                    .font(PocketfulFont.monoSemiBold(12))
-                    .foregroundStyle(PocketfulTheme.textSoft)
-                    .frame(width: 27, height: 27)
-                    .background(PocketfulTheme.band, in: Circle())
-                    .overlay(Circle().stroke(PocketfulTheme.border, lineWidth: 0.5))
+                Text(String(format: "%02d", index + 1))
+                    .font(PocketfulFont.monoMedium(11))
+                    .foregroundStyle(PocketfulTheme.faint)
                 Text(title)
                     .font(PocketfulFont.textSemiBold(14))
                     .foregroundStyle(PocketfulTheme.text)
@@ -32,10 +29,10 @@ private struct EditorCard<Content: View>: View {
             content()
         }
         .padding(14)
-        .background(PocketfulTheme.cardElevated, in: RoundedRectangle(cornerRadius: Radii.plate))
+        .background(PocketfulTheme.card, in: RoundedRectangle(cornerRadius: Radii.plate))
         .overlay(
             RoundedRectangle(cornerRadius: Radii.plate)
-                .stroke(PocketfulTheme.border, lineWidth: 1)
+                .stroke(PocketfulTheme.border, lineWidth: 0.5)
         )
     }
 }

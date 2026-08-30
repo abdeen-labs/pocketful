@@ -14,11 +14,7 @@ struct SmartTabView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            PocketfulSection(
-                title: "Semantic intelligence",
-                description: "Help Wallet understand events, transit, loyalty, seats, prices, people, Wi-Fi, and more.",
-                badge: "iOS 18/26"
-            ) {
+            PocketfulSection(title: "Semantics") {
                 ForEach(EditorCatalog.commonSemantics(for: state.style)) { field in
                     PocketfulInput(field.label, text: semanticBinding(field.key), placeholder: field.placeholder)
                 }
@@ -34,10 +30,7 @@ struct SmartTabView: View {
                 }
             }
 
-            PocketfulSection(
-                title: "Relevant moments",
-                description: "Expiration, legacy relevance, modern relevant dates, and Live Activity intervals."
-            ) {
+            PocketfulSection(title: "Dates") {
                 PocketfulInput("Expiration date", text: $state.expirationDate, placeholder: "2026-09-02T00:00:00-04:00")
                 PocketfulDisclosure("Legacy relevant date", description: "Deprecated in iOS 18, retained because passkit-generator exposes it") {
                     PocketfulInput("Relevant date", text: $state.legacyRelevantDate, placeholder: "2026-09-01T19:30:00-04:00")
@@ -45,26 +38,15 @@ struct SmartTabView: View {
                 RelevantDatesEditorView(relevantDates: $state.relevantDates)
             }
 
-            PocketfulSection(
-                title: "Locations",
-                description: "Geographic relevance points that can surface the pass nearby.",
-                badge: "Up to 10"
-            ) {
+            PocketfulSection(title: "Locations") {
                 LocationsEditorView(locations: $state.locations)
             }
 
-            PocketfulSection(
-                title: "iBeacons",
-                description: "Proximity UUIDs, major/minor identifiers, and relevant messages.",
-                badge: "Up to 10"
-            ) {
+            PocketfulSection(title: "iBeacons") {
                 BeaconsEditorView(beacons: $state.beacons)
             }
 
-            PocketfulSection(
-                title: "NFC",
-                description: "Configure contactless payloads and authentication behavior."
-            ) {
+            PocketfulSection(title: "NFC") {
                 PocketfulToggleRow("Enable NFC", description: "Required for personalization passes.", value: $state.nfcEnabled)
                 if state.nfcEnabled {
                     PocketfulInput("NFC message", text: $state.nfcMessage, placeholder: "Payload read by the NFC terminal")

@@ -29,7 +29,7 @@ struct PassPreviewView: View {
             : state.style == .posterGeneric ? state.images["background"] : nil
         let strip = posterArtwork ?? state.images["strip"] ?? state.images["background"]
 
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 10) {
             heading
             passCard(
                 background: background,
@@ -39,34 +39,19 @@ struct PassPreviewView: View {
                 isPoster: posterArtwork != nil
             )
         }
-        .padding(.bottom, 22)
+        .padding(.bottom, 24)
     }
 
     private var heading: some View {
-        HStack(alignment: .center) {
-            VStack(alignment: .leading, spacing: 2) {
-                Text("LIVE PREVIEW")
-                    .font(PocketfulFont.monoMedium(11))
-                    .tracking(Tracking.micro)
-                    .foregroundStyle(PocketfulTheme.dim)
-                Text(Self.styleLabels[state.style] ?? "")
-                    .font(PocketfulFont.textSemiBold(17))
-                    .foregroundStyle(PocketfulTheme.text)
-            }
-            Spacer()
-            HStack(spacing: 6) {
-                Circle().fill(PocketfulTheme.success).frame(width: 6, height: 6)
-                Text("Draft")
-                    .font(PocketfulFont.monoMedium(11))
-                    .foregroundStyle(PocketfulTheme.textSoft)
-            }
-            .padding(.horizontal, 10)
-            .padding(.vertical, 6)
-            .background(PocketfulTheme.card, in: RoundedRectangle(cornerRadius: Radii.control))
-            .overlay(
-                RoundedRectangle(cornerRadius: Radii.control)
-                    .stroke(PocketfulTheme.border, lineWidth: 0.5)
-            )
+        HStack(alignment: .firstTextBaseline) {
+            Text("LIVE PREVIEW")
+                .font(PocketfulFont.monoMedium(11))
+                .tracking(Tracking.micro)
+                .foregroundStyle(PocketfulTheme.dim)
+            Spacer(minLength: 0)
+            Text(Self.styleLabels[state.style] ?? "")
+                .font(PocketfulFont.monoMedium(11))
+                .foregroundStyle(PocketfulTheme.textSoft)
         }
         .padding(.horizontal, 4)
     }
@@ -200,6 +185,11 @@ struct PassPreviewView: View {
                 }
             }
         }
+        .clipShape(RoundedRectangle(cornerRadius: 24))
+        .overlay(
+            RoundedRectangle(cornerRadius: 24)
+                .stroke(PocketfulTheme.border, lineWidth: 0.5)
+        )
         .overlay {
             GeometryReader { geo in
                 let y = geo.size.height * 0.58 + 11
@@ -213,11 +203,6 @@ struct PassPreviewView: View {
                     .position(x: geo.size.width, y: y)
             }
         }
-        .clipShape(RoundedRectangle(cornerRadius: 24))
-        .overlay(
-            RoundedRectangle(cornerRadius: 24)
-                .stroke(PocketfulTheme.border, lineWidth: 0.5)
-        )
     }
 
     private func logoLineText(isPoster: Bool) -> String {

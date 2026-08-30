@@ -23,7 +23,7 @@ struct PassDesignerView: View {
                     .padding(.bottom, 24)
                 PassPreviewView(state: state)
                 tabBar
-                    .padding(.bottom, 28)
+                    .padding(.bottom, 32)
 
                 switch state.tab {
                 case .design:
@@ -35,13 +35,12 @@ struct PassDesignerView: View {
                 case .advanced:
                     AdvancedTabView(state: state)
                 }
-
-                submitCard
-                Color.clear.frame(height: 52)
             }
             .padding(.horizontal, 16)
-            .padding(.top, 12)
+            .padding(.top, 8)
+            .padding(.bottom, 12)
         }
+        .safeAreaInset(edge: .bottom) { bottomBar }
         .background(PocketfulTheme.bg.ignoresSafeArea())
         .scrollDismissesKeyboard(.interactively)
         .preferredColorScheme(.dark)
@@ -77,74 +76,38 @@ struct PassDesignerView: View {
     // MARK: - Chrome
 
     private var hero: some View {
-        VStack(alignment: .leading, spacing: 9) {
-            HStack(spacing: 12) {
-                Image("SealKey")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 24, height: 24)
-                Rectangle()
-                    .fill(PocketfulTheme.border)
-                    .frame(width: 0.5, height: 16)
-                Text("ABDEEN LABS")
-                    .font(PocketfulFont.monoMedium(11))
-                    .tracking(2.42)
-                    .foregroundStyle(PocketfulTheme.textSoft)
-            }
+        HStack(spacing: 12) {
+            Image("SealKey")
+                .resizable()
+                .scaledToFit()
+                .frame(width: 26, height: 26)
             Text("POCKETFUL")
-                .font(PocketfulFont.displayHeavy(28))
-                .tracking(28 * Tracking.display)
+                .font(PocketfulFont.displayHeavy(24))
+                .tracking(24 * Tracking.display)
                 .foregroundStyle(PocketfulTheme.text)
-            Text("A complete, visual editor for signed Apple Wallet passes.")
-                .font(PocketfulFont.text(13))
-                .foregroundStyle(PocketfulTheme.textSoft)
+            Spacer(minLength: 0)
+            Text("ABDEEN LABS")
+                .font(PocketfulFont.monoMedium(10))
+                .tracking(2.2)
+                .foregroundStyle(PocketfulTheme.faint)
         }
-        .frame(maxWidth: .infinity, minHeight: 148, alignment: .leading)
-        .padding(22)
-        .background(PocketfulTheme.card, in: RoundedRectangle(cornerRadius: Radii.shell))
-        .overlay(
-            RoundedRectangle(cornerRadius: Radii.shell)
-                .stroke(PocketfulTheme.border, lineWidth: 0.5)
-        )
     }
 
     private var tabBar: some View {
-        VStack(alignment: .leading, spacing: 11) {
-            ChipRow(options: Self.tabOptions, value: state.tab) { state.tab = $0 }
-            WrapLayout(spacing: 6) {
-                PocketfulBadge("\(state.fields.count) fields")
-                PocketfulBadge("\(state.images.count) artwork")
-                PocketfulBadge("\(state.localizations.count) languages")
-            }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(12)
-        .background(PocketfulTheme.card, in: RoundedRectangle(cornerRadius: Radii.plate))
-        .overlay(
-            RoundedRectangle(cornerRadius: Radii.plate)
-                .stroke(PocketfulTheme.border, lineWidth: 0.5)
-        )
+        PocketfulSegmented(options: Self.tabOptions, value: state.tab) { state.tab = $0 }
     }
 
-    private var submitCard: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            VStack(alignment: .leading, spacing: 3) {
-                Text("Ready for Wallet?")
-                    .font(PocketfulFont.textSemiBold(17))
-                    .foregroundStyle(PocketfulTheme.text)
-                Text("The server will validate, sign, and return the finished pass.")
-                    .font(PocketfulFont.text(12))
-                    .foregroundStyle(PocketfulTheme.dim)
+    private var bottomBar: some View {
+        PocketfulButton("Create pass & add to Wallet", loading: state.submitting, action: submit)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
+            .background {
+                PocketfulTheme.bg
+                    .overlay(alignment: .top) {
+                        Rectangle().fill(PocketfulTheme.border).frame(height: 0.5)
+                    }
+                    .ignoresSafeArea()
             }
-            PocketfulButton("Create pass & add to Wallet", loading: state.submitting, action: submit)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(18)
-        .background(PocketfulTheme.cardElevated, in: RoundedRectangle(cornerRadius: Radii.plate))
-        .overlay(
-            RoundedRectangle(cornerRadius: Radii.plate)
-                .stroke(PocketfulTheme.borderStrong, lineWidth: 1)
-        )
     }
 
     // MARK: - Actions

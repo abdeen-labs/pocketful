@@ -38,20 +38,13 @@ struct DesignTabView: View {
         VStack(alignment: .leading, spacing: 0) {
             PocketfulSection(
                 title: "Templates",
-                description: state.lastAppliedTemplateId != nil
-                    ? "A polished starting point is applied. Expand to switch it."
-                    : "Pick a polished starting point, then make every detail yours.",
-                badge: state.lastAppliedTemplateId != nil ? "Applied" : "Curated",
+                badge: state.lastAppliedTemplateId != nil ? "Applied" : nil,
                 collapsed: $state.templatesCollapsed
             ) {
                 TemplateGalleryView(lastAppliedId: state.lastAppliedTemplateId, onApply: onTemplate)
             }
 
-            PocketfulSection(
-                title: "Pass format",
-                description: "Choose Wallet's visual template and modern layout preference.",
-                badge: "Core"
-            ) {
+            PocketfulSection(title: "Pass format") {
                 ChipRow(options: Self.styleOptions, value: state.style) { state.selectStyle($0) }
                 if state.style == .boardingPass {
                     MicroLabel("Transit type")
@@ -69,20 +62,14 @@ struct DesignTabView: View {
                 }
             }
 
-            PocketfulSection(
-                title: "Identity",
-                description: "The pass name, issuer, and stable identity used by Wallet."
-            ) {
+            PocketfulSection(title: "Identity") {
                 PocketfulInput("Wallet description · required", text: $state.descriptionText, placeholder: "Coffee rewards card", capitalization: .sentences)
                 PocketfulInput("Organization name", text: $state.organizationName, placeholder: "Pocketful Coffee", capitalization: .words)
                 PocketfulInput("Logo text", text: $state.logoText, placeholder: "Pocketful", capitalization: .words)
                 PocketfulInput("Serial number", text: $state.serialNumber, placeholder: "Generated automatically when blank", helper: "Supply this when you need a stable identifier for updates; otherwise the server creates a UUID.")
             }
 
-            PocketfulSection(
-                title: "Color system",
-                description: "Wallet uses these colors across the front, labels, strips, and modern event footer."
-            ) {
+            PocketfulSection(title: "Colors") {
                 HStack(spacing: 0) {
                     ForEach(Array([state.bgColor, state.fgColor, state.labelColor].enumerated()), id: \.offset) { _, color in
                         Rectangle()
@@ -106,11 +93,7 @@ struct DesignTabView: View {
                 }
             }
 
-            PocketfulSection(
-                title: "Artwork",
-                description: "Every standard Wallet asset is resized and exported at 1×, 2×, and 3×.",
-                badge: "PNG"
-            ) {
+            PocketfulSection(title: "Artwork") {
                 ImagesSectionView(slots: state.recommendedSlots, state: state)
                 PocketfulDisclosure("More standard artwork", description: "Strip, thumbnail, background, and footer slots that are less common for this format") {
                     ImagesSectionView(slots: state.optionalSlots, state: state)
