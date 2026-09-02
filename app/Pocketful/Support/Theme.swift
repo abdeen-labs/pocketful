@@ -1,5 +1,5 @@
-// Pocketful UI roles grounded in Abdeen Labs Nightfield v3.11.
-// Pocketful continues to own its product typography, layout, and motion.
+// Pocketful UI roles grounded in Abdeen Labs Redline v4.0.
+// Pocketful owns its product typography and layout.
 
 import Foundation
 import SwiftUI
@@ -22,65 +22,82 @@ extension Color {
     }
 }
 
-enum NightfieldPalette {
+enum RedlinePalette {
     // Canonical anchors
-    static let void = Color(hex: "#000704")
-    static let surface = Color(hex: "#001A0F")
-    static let border = Color(hex: "#07452D")
-    static let mist = Color(hex: "#EEF5F0")
-    static let accent = Color(hex: "#1FB977")
+    static let void = Color(hex: "#0A0F1C")
+    static let surface = Color(hex: "#192133")
+    static let border = Color(hex: "#3A4769")
+    static let mist = Color(hex: "#F0F3FA")
+    static let accent = Color(hex: "#FE002A")
 
-    // Pitch — dark-green depth
-    static let pitch900 = Color(hex: "#00100A")
-    static let pitch800 = Color(hex: "#012416")
-    static let pitch700 = Color(hex: "#022E1D")
-    static let pitch600 = Color(hex: "#043923")
+    // Pitch — the dark ladder
+    static let pitch960 = Color(hex: "#000000")
+    static let pitch900 = Color(hex: "#121827")
+    static let pitch800 = Color(hex: "#212A40")
+    static let pitch700 = Color(hex: "#29334D")
+    static let pitch600 = Color(hex: "#313C5A")
 
     // Graphite — structure and dim text
-    static let graphite500 = Color(hex: "#6B837A")
-    static let graphite400 = Color(hex: "#86A998")
+    static let graphite500 = Color(hex: "#747D90")
+    static let graphite400 = Color(hex: "#939FBD")
 
-    // Chalk — supporting light ink
-    static let chalk300 = Color(hex: "#D4E8DE")
+    // Chalk — dark-ground text
+    static let chalk100 = Color(hex: "#F3F7FF")
+    static let chalk300 = Color(hex: "#DBE2F4")
 
-    // Accent and state signals
-    static let accentBright = Color(hex: "#43D995")
-    static let accentDeep = Color(hex: "#0D8F5B")
-    static let accentInk = Color(hex: "#06150D")
+    // Carbon — ink on a filled scarlet or alarm field
+    static let carbon900 = Color(hex: "#0A0F1C")
+
+    // Accent and signals
+    static let accentDeep = Color(hex: "#D4212C")
     static let cobalt400 = Color(hex: "#5AA7FF")
-    static let amber400 = Color(hex: "#E2A81E")
-    static let hazard500 = Color(hex: "#FF2A2A")
+    static let warn400 = Color(hex: "#F5FF00")
+    static let alarm500 = Color(hex: "#FF2BD6")
 }
 
 /// Role tokens — components consume these, never a ramp step.
 enum PocketfulTheme {
     // Surfaces
-    static let bg = NightfieldPalette.void
-    static let surface = NightfieldPalette.pitch900
-    static let card = NightfieldPalette.surface
-    static let band = NightfieldPalette.pitch800
-    static let cardElevated = NightfieldPalette.pitch700
-    static let border = NightfieldPalette.pitch600
-    static let borderStrong = NightfieldPalette.border
+    static let bg = RedlinePalette.void
+    static let surface = RedlinePalette.pitch900
+    static let card = RedlinePalette.surface
+    static let band = RedlinePalette.pitch800
+    static let cardElevated = RedlinePalette.pitch700
+    static let border = RedlinePalette.pitch600
+    static let borderStrong = RedlinePalette.border
+    /// Removed content.
+    static let removed = RedlinePalette.pitch960
 
     // Ink
-    static let text = NightfieldPalette.mist
-    static let textSoft = NightfieldPalette.chalk300
-    static let dim = NightfieldPalette.graphite400
-    static let faint = NightfieldPalette.graphite500
+    static let text = RedlinePalette.chalk100
+    static let textSoft = RedlinePalette.chalk300
+    static let dim = RedlinePalette.graphite400
+    /// Holds AA on `bg` only; ink on any surface above the ground uses `dim`.
+    static let faint = RedlinePalette.graphite500
+    /// Ink on a filled accent or alarm field.
+    static let fillInk = RedlinePalette.carbon900
 
-    // Signals
-    static let accent = NightfieldPalette.accent
-    static let link = NightfieldPalette.accentBright
-    static let press = NightfieldPalette.accentDeep
-    static let accentInk = NightfieldPalette.accentInk
-    static let success = NightfieldPalette.cobalt400
-    static let warning = NightfieldPalette.amber400
-    static let danger = NightfieldPalette.hazard500
+    // Signals — identity is a solid line; a warning is dashed, ticked, or a
+    // highlighter chip; an alarm is hatched, struck, pulsed, or a filled field.
+    static let accent = RedlinePalette.accent
+    static let link = RedlinePalette.accent
+    static let press = RedlinePalette.accentDeep
+    static let success = RedlinePalette.cobalt400
+    static let warning = RedlinePalette.warn400
+    static let alarm = RedlinePalette.alarm500
 
     // Pass previews need literal product artwork colors.
     static let white = Color.white
     static let black = Color.black
+}
+
+/// Brand motion cadence on cubic-bezier(0.2, 0, 0, 1): 120ms for state
+/// feedback, 170ms for a small shift, 0.96 for a press. Reduced motion keeps
+/// the static cue and drops the travel.
+enum PocketfulMotion {
+    static let state = Animation.timingCurve(0.2, 0, 0, 1, duration: 0.12)
+    static let shift = Animation.timingCurve(0.2, 0, 0, 1, duration: 0.17)
+    static let pressScale: CGFloat = 0.96
 }
 
 /// Radius is concentric: each step 4px tighter than the frame around it.
@@ -105,8 +122,9 @@ enum PocketfulFont {
     static func displayHeavy(_ size: CGFloat) -> Font { .custom("SchibstedGrotesk-ExtraBold", size: size) }
 }
 
-/// Micro-labels are uppercase mono at 0.11em tracking.
+/// Micro-labels are uppercase mono at 0.11em tracking; the wordmark is fixed at 0.22em.
 enum Tracking {
     static let micro: CGFloat = 1.2       // 0.11em at 11pt
     static let display: CGFloat = -0.055  // multiply by font size
+    static let wordmark: CGFloat = 0.22   // multiply by font size
 }

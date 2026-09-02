@@ -55,10 +55,12 @@ struct WrapLayout: Layout {
 // MARK: - Press feedback
 
 struct PressableButtonStyle: ButtonStyle {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .scaleEffect(configuration.isPressed ? 0.96 : 1)
-            .animation(.easeOut(duration: 0.15), value: configuration.isPressed)
+            .scaleEffect(configuration.isPressed && !reduceMotion ? PocketfulMotion.pressScale : 1)
+            .animation(PocketfulMotion.state, value: configuration.isPressed)
     }
 }
 
@@ -129,7 +131,7 @@ struct PocketfulSection<Content: View>: View {
         if reduceMotion {
             collapsed.wrappedValue.toggle()
         } else {
-            withAnimation(.easeInOut(duration: 0.18)) {
+            withAnimation(PocketfulMotion.shift) {
                 collapsed.wrappedValue.toggle()
             }
         }
@@ -208,7 +210,7 @@ struct PocketfulDisclosure<Content: View>: View {
         if reduceMotion {
             open.toggle()
         } else {
-            withAnimation(.easeInOut(duration: 0.18)) {
+            withAnimation(PocketfulMotion.shift) {
                 open.toggle()
             }
         }
@@ -333,7 +335,7 @@ struct PocketfulSegmented<Value: Hashable>: View {
             RoundedRectangle(cornerRadius: Radii.plate)
                 .stroke(PocketfulTheme.border, lineWidth: 0.5)
         )
-        .animation(reduceMotion ? nil : Animation.spring(duration: 0.3, bounce: 0), value: value)
+        .animation(reduceMotion ? nil : PocketfulMotion.shift, value: value)
     }
 }
 
@@ -454,16 +456,25 @@ struct PocketfulNotice: View {
         self.tone = tone
     }
 
+    private var label: String? {
+        title ?? (tone == .warning ? "Warning" : nil)
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 3) {
-            if let title {
-                Text(title)
-                    .font(PocketfulFont.textSemiBold(13))
-                    .foregroundStyle(tone == .warning ? PocketfulTheme.warning : PocketfulTheme.text)
+            if let label {
+                HStack(spacing: 6) {
+                    if tone == .warning {
+                        WarningMarker()
+                    }
+                    Text(label)
+                        .font(PocketfulFont.textSemiBold(13))
+                        .foregroundStyle(tone == .warning ? PocketfulTheme.warning : PocketfulTheme.text)
+                }
             }
             Text(text)
                 .font(PocketfulFont.text(12))
-                .foregroundStyle(PocketfulTheme.textSoft)
+                .foregroundStyle(tone == .warning ? PocketfulTheme.text : PocketfulTheme.textSoft)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(12)
@@ -474,11 +485,40 @@ struct PocketfulNotice: View {
         )
         .overlay(alignment: .leading) {
             if tone == .warning {
-                RoundedRectangle(cornerRadius: 1)
-                    .fill(PocketfulTheme.warning)
-                    .frame(width: 2)
+                DashedLeadingEdge(color: PocketfulTheme.warning, inset: Radii.control)
             }
         }
+    }
+}
+
+/// The small rotated square that sits ahead of a warning label.
+struct WarningMarker: View {
+    var body: some View {
+        Rectangle()
+            .fill(PocketfulTheme.warning)
+            .frame(width: 6, height: 6)
+            .rotationEffect(.degrees(45))
+            .frame(width: 9, height: 9)
+            .accessibilityHidden(true)
+    }
+}
+
+/// A 3pt dashed rule along the leading edge — one of the warning frames.
+struct DashedLeadingEdge: View {
+    var color: Color
+    var lineWidth: CGFloat = 3
+    var inset: CGFloat = 0
+
+    var body: some View {
+        GeometryReader { geo in
+            Path { path in
+                path.move(to: CGPoint(x: lineWidth / 2, y: inset))
+                path.addLine(to: CGPoint(x: lineWidth / 2, y: geo.size.height - inset))
+            }
+            .stroke(color, style: StrokeStyle(lineWidth: lineWidth, dash: [lineWidth * 3, lineWidth * 2]))
+        }
+        .frame(width: lineWidth)
+        .accessibilityHidden(true)
     }
 }
 
@@ -560,7 +600,7 @@ struct PocketfulButton: View {
             ZStack {
                 if loading {
                     ProgressView()
-                        .tint(kind == .primary ? PocketfulTheme.accentInk : PocketfulTheme.text)
+                        .tint(filled ? PocketfulTheme.fillInk : PocketfulTheme.text)
                 } else {
                     Text(title)
                         .font(PocketfulFont.monoMedium(13))
@@ -581,27 +621,31 @@ struct PocketfulButton: View {
         .disabled(disabled || loading)
     }
 
+    /// Primary sits on a scarlet field; danger on an alarm field. Both take carbon ink.
+    private var filled: Bool {
+        kind == .primary || kind == .danger
+    }
+
     private var background: Color {
         switch kind {
         case .primary: return PocketfulTheme.accent
+        case .danger: return PocketfulTheme.alarm
         case .secondary: return PocketfulTheme.surface
-        case .danger, .ghost: return .clear
+        case .ghost: return .clear
         }
     }
 
     private var borderColor: Color {
         switch kind {
-        case .primary, .ghost: return .clear
+        case .primary, .danger, .ghost: return .clear
         case .secondary: return PocketfulTheme.border
-        case .danger: return PocketfulTheme.danger
         }
     }
 
     private var textColor: Color {
         switch kind {
-        case .primary: return PocketfulTheme.accentInk
+        case .primary, .danger: return PocketfulTheme.fillInk
         case .secondary, .ghost: return PocketfulTheme.textSoft
-        case .danger: return PocketfulTheme.danger
         }
     }
 }

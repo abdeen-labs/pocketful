@@ -176,7 +176,7 @@ struct PassPreviewView: View {
         .overlay {
             if state.voided {
                 ZStack {
-                    Color(red: 70 / 255, green: 0, blue: 10 / 255).opacity(0.42)
+                    PocketfulTheme.removed.opacity(0.42)
                     Text("VOID")
                         .font(PocketfulFont.displayHeavy(42))
                         .tracking(5)

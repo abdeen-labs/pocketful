@@ -87,8 +87,8 @@ struct PassDesignerView: View {
                 .foregroundStyle(PocketfulTheme.text)
             Spacer(minLength: 0)
             Text("ABDEEN LABS")
-                .font(PocketfulFont.monoMedium(10))
-                .tracking(2.2)
+                .font(PocketfulFont.monoMedium(11))
+                .tracking(11 * Tracking.wordmark)
                 .foregroundStyle(PocketfulTheme.faint)
         }
     }

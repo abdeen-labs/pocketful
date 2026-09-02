@@ -113,7 +113,7 @@ private struct FieldCardView: View {
             HStack(spacing: 10) {
                 Text(String(format: "%02d", index + 1))
                     .font(PocketfulFont.monoMedium(11))
-                    .foregroundStyle(PocketfulTheme.faint)
+                    .foregroundStyle(PocketfulTheme.dim)
                 VStack(alignment: .leading, spacing: 1) {
                     Text(!field.label.isEmpty ? field.label : (!field.key.isEmpty ? field.key : "Untitled field"))
                         .font(PocketfulFont.textSemiBold(14))

@@ -17,7 +17,7 @@ private struct EditorCard<Content: View>: View {
             HStack(spacing: 10) {
                 Text(String(format: "%02d", index + 1))
                     .font(PocketfulFont.monoMedium(11))
-                    .foregroundStyle(PocketfulTheme.faint)
+                    .foregroundStyle(PocketfulTheme.dim)
                 Text(title)
                     .font(PocketfulFont.textSemiBold(14))
                     .foregroundStyle(PocketfulTheme.text)
