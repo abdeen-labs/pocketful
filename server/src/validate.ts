@@ -134,33 +134,84 @@ export function toRgbString(color: string): string {
   return `rgb(${parseInt(hex.slice(0, 2), 16)}, ${parseInt(hex.slice(2, 4), 16)}, ${parseInt(hex.slice(4, 6), 16)})`;
 }
 
-function validateFields(fields: unknown): Partial<Record<FieldCategory, PassField[]>> {
+function validateFields(fields: unknown, path = "fields"): Partial<Record<FieldCategory, PassField[]>> {
   if (fields === undefined) return {};
   if (!isRecord(fields)) {
-    throw new ApiError(400, "fields must be an object keyed by category");
+    throw new ApiError(400, `${path} must be an object keyed by category`);
   }
   const out: Partial<Record<FieldCategory, PassField[]>> = {};
   for (const [category, list] of Object.entries(fields)) {
     if (!FIELD_CATEGORIES.includes(category as FieldCategory)) {
       throw new ApiError(400, `Unknown field category "${category}"`);
     }
-    if (!Array.isArray(list)) throw new ApiError(400, `fields.${category} must be an array`);
+    if (!Array.isArray(list)) throw new ApiError(400, `${path}.${category} must be an array`);
     const max = category === "back" || category === "additionalInfo" ? 20 : 10;
-    if (list.length > max) throw new ApiError(400, `fields.${category} allows at most ${max} fields`);
+    if (list.length > max) throw new ApiError(400, `${path}.${category} allows at most ${max} fields`);
     const cleaned: PassField[] = [];
     list.forEach((candidate, index) => {
-      if (!isRecord(candidate)) throw new ApiError(400, `fields.${category}[${index}] must be an object`);
+      if (!isRecord(candidate)) throw new ApiError(400, `${path}.${category}[${index}] must be an object`);
       const value = candidate.value;
       if ((typeof value !== "string" && typeof value !== "number") || value === "" || (typeof value === "number" && !Number.isFinite(value))) {
-        throw new ApiError(400, `fields.${category}[${index}].value must be text or a finite number`);
+        throw new ApiError(400, `${path}.${category}[${index}].value must be text or a finite number`);
       }
       const key = typeof candidate.key === "string" && candidate.key ? candidate.key : `${category}-${index + 1}`;
-      assertOptionalString(candidate.label, `fields.${category}[${index}].label`, 500);
+      assertOptionalString(candidate.label, `${path}.${category}[${index}].label`, 500);
       cleaned.push({ ...candidate, key, value } as PassField);
     });
     if (cleaned.length) out[category as FieldCategory] = cleaned;
   }
   return out;
+}
+
+/** The two category restrictions Wallet ties to a style, plus the poster footer cap. */
+function assertFieldsFitStyle(
+  fields: Partial<Record<FieldCategory, PassField[]>>,
+  style: PassStyle,
+  prefix = ""
+): void {
+  if (fields.additionalInfo?.length && style !== "eventTicket") {
+    throw new ApiError(400, `${prefix}additionalInfo fields require the eventTicket style`);
+  }
+  if (fields.footer?.length && style !== "posterGeneric") {
+    throw new ApiError(400, `${prefix}footer fields require the posterGeneric style`);
+  }
+  if ((fields.footer?.length ?? 0) > 1) {
+    throw new ApiError(400, `${prefix}posterGeneric renders a single footer field — provide at most one`);
+  }
+}
+
+export interface ValidatedAdditionalStyle {
+  style: PassStyle;
+  fields: Partial<Record<FieldCategory, PassField[]>>;
+  transitType?: TransitType;
+}
+
+const MAX_ADDITIONAL_STYLES = STYLES.length - 1;
+
+function validateAdditionalStyles(spec: PassSpec): ValidatedAdditionalStyle[] {
+  if (spec.additionalStyles === undefined) return [];
+  if (!Array.isArray(spec.additionalStyles) || spec.additionalStyles.length > MAX_ADDITIONAL_STYLES) {
+    throw new ApiError(400, `additionalStyles must be an array of at most ${MAX_ADDITIONAL_STYLES} entries`);
+  }
+  const seen = new Set<PassStyle>([spec.style]);
+  return spec.additionalStyles.map((entry, index) => {
+    const path = `additionalStyles[${index}]`;
+    if (!isRecord(entry)) throw new ApiError(400, `${path} must be an object`);
+    const style = entry.style as PassStyle;
+    if (!STYLES.includes(style)) throw new ApiError(400, `${path}.style must be one of ${STYLES.join(", ")}`);
+    if (style === spec.style) throw new ApiError(400, `${path}.style duplicates the pass style "${style}"`);
+    if (seen.has(style)) throw new ApiError(400, `${path}.style "${style}" appears more than once`);
+    seen.add(style);
+    let transitType: TransitType | undefined;
+    if (entry.transitType !== undefined) {
+      if (style !== "boardingPass") throw new ApiError(400, `${path}.transitType only applies to the boardingPass style`);
+      if (!TRANSIT_TYPES.includes(entry.transitType as TransitType)) throw new ApiError(400, `${path}.transitType is invalid`);
+      transitType = entry.transitType as TransitType;
+    }
+    const fields = validateFields(entry.fields, `${path}.fields`);
+    assertFieldsFitStyle(fields, style, `${path}: `);
+    return transitType ? { style, fields, transitType } : { style, fields };
+  });
 }
 
 function validateImages(images: unknown): Record<string, Buffer> {
@@ -313,16 +364,21 @@ function validateAdvanced(spec: PassSpec): void {
 
 function validateModernStyleRequirements(
   spec: PassSpec,
+  additionalStyles: ValidatedAdditionalStyle[],
   images: Record<string, Buffer>
 ): void {
   const semantics = isRecord(spec.options) && isRecord(spec.options.semantics)
     ? spec.options.semantics
     : {};
 
-  // The poster face is drawn around full-bleed artwork; unlike
-  // posterEventTicket there is no legacy fallback rendering to hide behind,
-  // so require the asset instead of signing a pass that renders a bare color.
-  if (spec.style === "posterGeneric" && !hasImageAsset(images, "background")) {
+  // The poster face is drawn around full-bleed artwork. Wallet on iOS 27
+  // picks the poster dictionary whether it is the primary style or an
+  // additional one, so require the asset instead of signing a pass that
+  // renders a bare color.
+  const usesPosterGeneric =
+    spec.style === "posterGeneric" ||
+    additionalStyles.some((entry) => entry.style === "posterGeneric");
+  if (usesPosterGeneric && !hasImageAsset(images, "background")) {
     throw new ApiError(400, "posterGeneric requires background PNG artwork");
   }
 
@@ -588,6 +644,7 @@ function validateOptionObject(
 export interface ValidatedSpec {
   spec: PassSpec;
   fields: Partial<Record<FieldCategory, PassField[]>>;
+  additionalStyles: ValidatedAdditionalStyle[];
   images: Record<string, Buffer>;
 }
 
@@ -630,17 +687,10 @@ export function validateSpec(body: unknown): ValidatedSpec {
     POSTER_GENERIC_OPTION_RULES
   );
   const fields = validateFields(spec.fields);
-  if (fields.additionalInfo?.length && spec.style !== "eventTicket") {
-    throw new ApiError(400, "additionalInfo fields require the eventTicket style");
-  }
-  if (fields.footer?.length && spec.style !== "posterGeneric") {
-    throw new ApiError(400, "footer fields require the posterGeneric style");
-  }
-  if ((fields.footer?.length ?? 0) > 1) {
-    throw new ApiError(400, "posterGeneric renders a single footer field — provide at most one");
-  }
+  assertFieldsFitStyle(fields, spec.style);
+  const additionalStyles = validateAdditionalStyles(spec);
   const images = validateImages(spec.images);
-  validateModernStyleRequirements(spec, images);
+  validateModernStyleRequirements(spec, additionalStyles, images);
   if (
     spec.personalization &&
     !images["personalizationLogo@2x"] &&
@@ -648,5 +698,5 @@ export function validateSpec(body: unknown): ValidatedSpec {
   ) {
     throw new ApiError(400, "personalization requires personalizationLogo artwork");
   }
-  return { spec, fields, images };
+  return { spec, fields, additionalStyles, images };
 }

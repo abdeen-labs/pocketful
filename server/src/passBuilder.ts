@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { PKPass } from "passkit-generator";
 import type { Config } from "./config";
+import type { FieldCategory, PassField, PassStyle, TransitType } from "./types";
 import { toRgbString, type ValidatedSpec } from "./validate";
 
 /**
@@ -13,28 +14,44 @@ export interface UpdatableIdentity {
   authenticationToken: string;
 }
 
-/** Build and sign a .pkpass entirely in memory. */
-export function buildPass(
-  { spec, fields, images }: ValidatedSpec,
-  config: Config,
-  identity?: UpdatableIdentity
-): Buffer {
-  const styleBody: Record<string, unknown> = {
+/** The dictionary Apple expects under a pass style key. */
+function styleDictionary(
+  style: PassStyle,
+  fields: Partial<Record<FieldCategory, PassField[]>>,
+  transitType: TransitType | undefined
+): Record<string, unknown> {
+  const body: Record<string, unknown> = {
     headerFields: fields.header ?? [],
     primaryFields: fields.primary ?? [],
     secondaryFields: fields.secondary ?? [],
     auxiliaryFields: fields.auxiliary ?? [],
     backFields: fields.back ?? [],
   };
-  if (spec.style === "eventTicket") {
-    styleBody.additionalInfoFields = fields.additionalInfo ?? [];
+  if (style === "eventTicket") {
+    body.additionalInfoFields = fields.additionalInfo ?? [];
   }
-  if (spec.style === "boardingPass") {
-    styleBody.transitType = spec.transitType ?? "PKTransitTypeGeneric";
+  if (style === "boardingPass") {
+    body.transitType = transitType ?? "PKTransitTypeGeneric";
   }
-  if (spec.style === "posterGeneric") {
-    styleBody.footerFields = fields.footer ?? [];
+  if (style === "posterGeneric") {
+    body.footerFields = fields.footer ?? [];
   }
+  return body;
+}
+
+/**
+ * The unsigned pass.json for a validated spec. Every style in the spec gets
+ * its own dictionary; Wallet renders the newest one it understands.
+ */
+export function buildPassJson(
+  { spec, fields, additionalStyles }: ValidatedSpec,
+  config: Config,
+  identity?: UpdatableIdentity
+): Record<string, unknown> {
+  const styles = new Set<PassStyle>([
+    spec.style,
+    ...additionalStyles.map((entry) => entry.style),
+  ]);
 
   const passJson: Record<string, unknown> = {
     formatVersion: 1,
@@ -44,17 +61,20 @@ export function buildPass(
     serialNumber: spec.serialNumber || randomUUID(),
     description: spec.description,
     ...(spec.options ?? {}),
-    ...(spec.style === "eventTicket" ? spec.eventTicketOptions ?? {} : {}),
-    ...(spec.style === "boardingPass" ? spec.boardingPassOptions ?? {} : {}),
-    ...(spec.style === "posterGeneric" ? spec.posterGenericOptions ?? {} : {}),
+    ...(styles.has("eventTicket") ? spec.eventTicketOptions ?? {} : {}),
+    ...(styles.has("boardingPass") ? spec.boardingPassOptions ?? {} : {}),
+    ...(styles.has("posterGeneric") ? spec.posterGenericOptions ?? {} : {}),
     ...(spec.upcomingPassInformation
       ? { upcomingPassInformation: spec.upcomingPassInformation }
       : {}),
     ...(spec.featuredActions?.length
       ? { featuredActions: spec.featuredActions }
       : {}),
-    [spec.style]: styleBody,
+    [spec.style]: styleDictionary(spec.style, fields, spec.transitType),
   };
+  for (const entry of additionalStyles) {
+    passJson[entry.style] = styleDictionary(entry.style, entry.fields, entry.transitType);
+  }
 
   if (identity) {
     passJson.serialNumber = identity.serialNumber;
@@ -74,8 +94,18 @@ export function buildPass(
     if (value) passJson[key] = toRgbString(value);
   }
 
+  return passJson;
+}
+
+/** Build and sign a .pkpass entirely in memory. */
+export function buildPass(
+  validated: ValidatedSpec,
+  config: Config,
+  identity?: UpdatableIdentity
+): Buffer {
+  const { spec, images } = validated;
   const files: Record<string, Buffer> = {
-    "pass.json": Buffer.from(JSON.stringify(passJson)),
+    "pass.json": Buffer.from(JSON.stringify(buildPassJson(validated, config, identity))),
   };
   for (const [name, buffer] of Object.entries(images)) {
     files[`${name}.png`] = buffer;

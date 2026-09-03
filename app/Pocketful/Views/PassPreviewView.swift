@@ -7,15 +7,6 @@ import SwiftUI
 struct PassPreviewView: View {
     var state: EditorState
 
-    private static let styleLabels: [PassStyle: String] = [
-        .generic: "Generic pass",
-        .storeCard: "Store card",
-        .coupon: "Coupon",
-        .eventTicket: "Event ticket",
-        .boardingPass: "Boarding pass",
-        .posterGeneric: "Poster generic",
-    ]
-
     private func validHex(_ value: String, fallback: String) -> String {
         value.range(of: EditorState.hexColorPattern, options: .regularExpression) != nil ? value : fallback
     }
@@ -49,7 +40,7 @@ struct PassPreviewView: View {
                 .tracking(Tracking.micro)
                 .foregroundStyle(PocketfulTheme.dim)
             Spacer(minLength: 0)
-            Text(Self.styleLabels[state.style] ?? "")
+            Text(([state.style] + state.additionalStyles.map(\.style)).map(\.displayName).joined(separator: " + "))
                 .font(PocketfulFont.monoMedium(11))
                 .foregroundStyle(PocketfulTheme.textSoft)
         }

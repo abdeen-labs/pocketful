@@ -621,3 +621,111 @@ for (const { name, spec, fragment } of OPTION_REJECTIONS) {
     rejects(spec, 400, fragment);
   });
 }
+
+// Additional styles: extra style dictionaries so a posterGeneric pass stays
+// installable on iOS 26 and earlier. Each entry validates like the top-level
+// fields but against its own style.
+test("accepts additional styles alongside a posterGeneric pass", () => {
+  const result = validateSpec({
+    ...validSpec(),
+    style: "posterGeneric",
+    images: { icon: icon(), background: icon() },
+    fields: { footer: [{ value: "Family Pass" }] },
+    additionalStyles: [
+      { style: "storeCard", fields: { primary: [{ value: "Jane" }], back: [{ key: "terms", value: "Members only" }] } },
+      { style: "boardingPass", transitType: "PKTransitTypeAir" },
+    ],
+  });
+  assert.equal(result.additionalStyles.length, 2);
+  assert.equal(result.additionalStyles[0].style, "storeCard");
+  assert.equal(result.additionalStyles[0].fields.primary?.[0].key, "primary-1");
+  assert.equal(result.additionalStyles[0].fields.back?.[0].key, "terms");
+  assert.equal(result.additionalStyles[1].transitType, "PKTransitTypeAir");
+});
+
+test("accepts a posterGeneric additional style when background artwork is present", () => {
+  const result = validateSpec({
+    ...validSpec(),
+    style: "storeCard",
+    images: { icon: icon(), background: icon() },
+    additionalStyles: [{ style: "posterGeneric", fields: { footer: [{ value: "Gold" }] } }],
+  });
+  assert.equal(result.additionalStyles[0].fields.footer?.length, 1);
+});
+
+test("returns no additional styles when the spec omits them", () => {
+  assert.deepEqual(validateSpec(validSpec()).additionalStyles, []);
+});
+
+const ADDITIONAL_STYLE_REJECTIONS: { name: string; spec: unknown; fragment: string }[] = [
+  {
+    name: "a non-array additionalStyles",
+    spec: { ...validSpec(), additionalStyles: { style: "storeCard" } },
+    fragment: "additionalStyles must be an array",
+  },
+  {
+    name: "a non-object additional style entry",
+    spec: { ...validSpec(), additionalStyles: ["storeCard"] },
+    fragment: "additionalStyles\\[0\\] must be an object",
+  },
+  {
+    name: "an unknown additional style",
+    spec: { ...validSpec(), additionalStyles: [{ style: "membership" }] },
+    fragment: "additionalStyles\\[0\\].style must be one of",
+  },
+  {
+    name: "an additional style that duplicates the pass style",
+    spec: { ...validSpec(), additionalStyles: [{ style: "generic" }] },
+    fragment: "duplicates the pass style \"generic\"",
+  },
+  {
+    name: "the same additional style twice",
+    spec: { ...validSpec(), additionalStyles: [{ style: "coupon" }, { style: "coupon" }] },
+    fragment: "additionalStyles\\[1\\].style \"coupon\" appears more than once",
+  },
+  {
+    name: "footer fields on a non-posterGeneric additional style",
+    spec: { ...validSpec(), additionalStyles: [{ style: "coupon", fields: { footer: [field("x")] } }] },
+    fragment: "additionalStyles\\[0\\]: footer fields require the posterGeneric style",
+  },
+  {
+    name: "additionalInfo fields on a non-eventTicket additional style",
+    spec: { ...validSpec(), additionalStyles: [{ style: "coupon", fields: { additionalInfo: [field("x")] } }] },
+    fragment: "additionalStyles\\[0\\]: additionalInfo fields require the eventTicket style",
+  },
+  {
+    name: "two footer fields on a posterGeneric additional style",
+    spec: {
+      ...validSpec(),
+      images: { icon: icon(), background: icon() },
+      additionalStyles: [{ style: "posterGeneric", fields: { footer: [field("a"), field("b")] } }],
+    },
+    fragment: "single footer field",
+  },
+  {
+    name: "a posterGeneric additional style without background artwork",
+    spec: { ...validSpec(), additionalStyles: [{ style: "posterGeneric" }] },
+    fragment: "posterGeneric requires background PNG artwork",
+  },
+  {
+    name: "a transitType on a non-boardingPass additional style",
+    spec: { ...validSpec(), additionalStyles: [{ style: "coupon", transitType: "PKTransitTypeAir" }] },
+    fragment: "additionalStyles\\[0\\].transitType only applies to the boardingPass style",
+  },
+  {
+    name: "an invalid transitType on a boardingPass additional style",
+    spec: { ...validSpec(), additionalStyles: [{ style: "boardingPass", transitType: "PKTransitTypeRocket" }] },
+    fragment: "additionalStyles\\[0\\].transitType is invalid",
+  },
+  {
+    name: "a malformed field inside an additional style",
+    spec: { ...validSpec(), additionalStyles: [{ style: "coupon", fields: { primary: [field("")] } }] },
+    fragment: "additionalStyles\\[0\\].fields.primary\\[0\\].value must be text or a finite number",
+  },
+];
+
+for (const { name, spec, fragment } of ADDITIONAL_STYLE_REJECTIONS) {
+  test(`rejects ${name}`, () => {
+    rejects(spec, 400, fragment);
+  });
+}

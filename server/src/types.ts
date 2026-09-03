@@ -14,7 +14,7 @@ export type PassStyle =
   | "eventTicket"
   | "boardingPass"
   // iOS 27+; earlier systems cannot install a pass whose only style key is
-  // posterGeneric. This server deliberately emits no legacy fallback key.
+  // posterGeneric. Pair it with an `additionalStyles` entry they understand.
   | "posterGeneric";
 
 export type BarcodeFormat =
@@ -208,6 +208,19 @@ export interface PosterGenericOptions {
   suppressHeaderDarkening?: boolean;
 }
 
+/**
+ * A further style dictionary emitted next to `style`. Wallet renders the
+ * newest style it understands, so a posterGeneric pass can carry a generic or
+ * storeCard dictionary for iOS 26 and earlier. Each style owns its own
+ * fields; keys only need to be unique within one style.
+ */
+export interface AdditionalStyle {
+  style: PassStyle;
+  fields?: Partial<Record<FieldCategory, PassField[]>>;
+  /** boardingPass only; defaults to PKTransitTypeGeneric. */
+  transitType?: TransitType;
+}
+
 export interface BoardingPassOptions {
   changeSeatURL?: string;
   entertainmentURL?: string;
@@ -250,6 +263,8 @@ export interface PassSpec {
   /** iOS 27+; at most two, ignored by older systems. */
   featuredActions?: FeaturedAction[];
   fields?: Partial<Record<FieldCategory, PassField[]>>;
+  /** iOS 27+; extra style dictionaries, each distinct from `style` and from each other. */
+  additionalStyles?: AdditionalStyle[];
   barcodes?: BarcodeSpec[];
   transitType?: TransitType;
   preferredStyleSchemes?: PreferredStyleScheme[];

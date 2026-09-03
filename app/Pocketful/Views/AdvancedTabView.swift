@@ -50,7 +50,20 @@ struct AdvancedTabView: View {
                 }
             }
 
-            if state.style == .eventTicket {
+            if state.usesPosterGeneric {
+                PocketfulSection(title: "Poster generic") {
+                    PocketfulToggleRow("Suppress header darkening", description: "Removes the gradient Wallet draws behind the header on the poster face.", value: $state.posterSuppressHeaderDarkening)
+                }
+            }
+
+            PocketfulSection(title: "Featured actions", description: "Up to two tappable actions beneath the pass on iOS 27; older systems ignore them.") {
+                if !state.featuredActionsAllowed {
+                    PocketfulNotice("Wallet does not show featured actions on poster event tickets or enhanced boarding passes.", tone: .warning)
+                }
+                FeaturedActionsEditorView(actions: $state.featuredActions)
+            }
+
+            if state.presentStyles.contains(.eventTicket) {
                 PocketfulSection(title: "Event experience") {
                     PocketfulToggleRow("Use automatic colors", description: "Derive foreground and label colors from poster artwork.", value: $state.eventAutomaticColors)
                     PocketfulToggleRow("Suppress header darkening", value: $state.suppressHeaderDarkening)
@@ -75,7 +88,7 @@ struct AdvancedTabView: View {
                 }
             }
 
-            if state.style == .boardingPass {
+            if state.presentStyles.contains(.boardingPass) {
                 PocketfulSection(title: "Enhanced boarding") {
                     ForEach(EditorCatalog.boardingOptionFields) { field in
                         PocketfulInput(field.label, text: boardingOptionBinding(field.key), placeholder: field.placeholder, keyboard: field.keyboard)

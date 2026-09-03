@@ -69,7 +69,7 @@ struct PassDesignerView: View {
                 pendingTemplate = nil
             }
         } message: {
-            Text("This replaces the pass format, identity, colors, fields, barcode, relevant dates, semantic data, style-specific actions, and any bundled template artwork. Other artwork, NFC credentials, and server settings stay as they are.")
+            Text("This replaces the pass format, additional formats, identity, colors, fields, barcode, relevant dates, semantic data, style-specific actions, and any bundled template artwork. Other artwork, NFC credentials, and server settings stay as they are.")
         }
     }
 

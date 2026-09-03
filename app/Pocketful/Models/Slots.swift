@@ -17,7 +17,9 @@ struct ImageSlot: Identifiable, Hashable {
 }
 
 enum Slots {
-    static func standard(for style: PassStyle, posterEvent: Bool) -> [ImageSlot] {
+    /// `posterGeneric` is true when that style is the pass format or one of
+    /// its additional styles; both need the poster artwork.
+    static func standard(for style: PassStyle, posterEvent: Bool, posterGeneric: Bool) -> [ImageSlot] {
         let stripHeight: CGFloat = style == .eventTicket ? 98 : 144
         let hasStrip = style == .storeCard || style == .coupon || style == .eventTicket
 
@@ -39,7 +41,7 @@ enum Slots {
             ),
         ] : []
 
-        let posterGenericSlots: [ImageSlot] = style == .posterGeneric ? [
+        let posterGenericSlots: [ImageSlot] = posterGeneric ? [
             ImageSlot(
                 name: "primaryLogo", label: "Poster primary logo",
                 width: 126, height: 30, required: false, recommended: true,
@@ -72,9 +74,9 @@ enum Slots {
             ),
             ImageSlot(
                 name: "background", label: "Background",
-                width: 180, height: 220, required: style == .posterGeneric,
-                recommended: style == .eventTicket || style == .posterGeneric,
-                hint: style == .posterGeneric
+                width: 180, height: 220, required: posterGeneric,
+                recommended: style == .eventTicket || posterGeneric,
+                hint: posterGeneric
                     ? "Full-bleed poster artwork, Wallet crops to the face — the server requires it · keep the subject centered"
                     : "Full-pass background artwork · 180×220 pt"
             ),
@@ -87,9 +89,9 @@ enum Slots {
         ]
     }
 
-    static func localized(for style: PassStyle, languages: [String], posterEvent: Bool) -> [ImageSlot] {
+    static func localized(for style: PassStyle, languages: [String], posterEvent: Bool, posterGeneric: Bool) -> [ImageSlot] {
         languages.flatMap { language in
-            standard(for: style, posterEvent: posterEvent).map { slot in
+            standard(for: style, posterEvent: posterEvent, posterGeneric: posterGeneric).map { slot in
                 ImageSlot(
                     name: "\(language).lproj/\(slot.name)",
                     label: "\(slot.label) · \(language)",

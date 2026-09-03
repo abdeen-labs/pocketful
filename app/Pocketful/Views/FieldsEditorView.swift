@@ -4,11 +4,14 @@ import SwiftUI
 import UIKit
 
 struct FieldsEditorView: View {
-    @Bindable var state: EditorState
+    @Binding var fields: [EditableField]
+    /// The style whose dictionary these fields belong to; it decides which
+    /// categories are offered.
+    let style: PassStyle
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            if state.fields.isEmpty {
+            if fields.isEmpty {
                 VStack(spacing: 5) {
                     Text("No content fields yet")
                         .font(PocketfulFont.textSemiBold(15))
@@ -23,19 +26,19 @@ struct FieldsEditorView: View {
                 .background(PocketfulTheme.surface, in: RoundedRectangle(cornerRadius: Radii.plate))
             }
 
-            ForEach(Array($state.fields.enumerated()), id: \.element.id) { index, $field in
+            ForEach(Array($fields.enumerated()), id: \.element.id) { index, $field in
                 FieldCardView(
                     field: $field,
                     index: index,
-                    style: state.style,
+                    style: style,
                     onRemove: {
-                        state.fields.removeAll { $0.id == field.id }
+                        fields.removeAll { $0.id == field.id }
                     }
                 )
             }
 
             PocketfulButton("+ Add field", kind: .secondary) {
-                state.fields.append(EditableField())
+                fields.append(EditableField())
             }
         }
     }

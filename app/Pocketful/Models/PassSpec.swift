@@ -7,7 +7,8 @@ import Foundation
 
 nonisolated enum PassStyle: String, Codable, CaseIterable, Identifiable {
     case generic, storeCard, coupon, eventTicket, boardingPass
-    /// iOS 27+ poster layout; the server emits no legacy fallback key.
+    /// iOS 27+ poster layout; pair it with an additional style so iOS 26 and
+    /// earlier can still install the pass.
     case posterGeneric
     var id: String { rawValue }
 }
@@ -327,6 +328,17 @@ nonisolated struct FeaturedAction: Codable, Equatable {
     var url: String
 }
 
+/// A further style dictionary emitted next to `style`. Wallet renders the
+/// newest style it understands, so a posterGeneric pass can carry a generic or
+/// storeCard dictionary for older systems. Each style owns its own fields.
+nonisolated struct AdditionalStyle: Codable, Equatable {
+    var style: PassStyle
+    /// Keys are FieldCategory raw values, as in `PassSpec.fields`.
+    var fields: [String: [PassField]]? = nil
+    /// boardingPass only; the server defaults it to generic transit.
+    var transitType: TransitType? = nil
+}
+
 nonisolated struct PassSpec: Codable {
     var style: PassStyle
     var description: String
@@ -346,6 +358,8 @@ nonisolated struct PassSpec: Codable {
     /// Keys are FieldCategory raw values; a string-keyed dictionary so the
     /// JSON encodes as an object.
     var fields: [String: [PassField]]? = nil
+    /// iOS 27+; extra style dictionaries, each distinct from `style` and from each other.
+    var additionalStyles: [AdditionalStyle]? = nil
     var barcodes: [BarcodeSpec]? = nil
     var transitType: TransitType? = nil
     var preferredStyleSchemes: [PreferredStyleScheme]? = nil

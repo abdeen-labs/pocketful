@@ -30,6 +30,60 @@ struct EditableField: Identifiable, Equatable {
     var semanticsJson = ""
 }
 
+/// One extra style dictionary with its own field list. Categories that only
+/// exist for a specific style (event details, footer) follow the entry's own
+/// style, not the pass format.
+struct EditableAdditionalStyle: Identifiable, Equatable {
+    let id = UUID()
+    var style: PassStyle = .generic
+    var transitType: TransitType = .generic
+    var fields: [EditableField] = []
+}
+
+extension EditableAdditionalStyle {
+    mutating func select(style next: PassStyle) {
+        style = next
+        fields = fields.foldedForStyle(next)
+    }
+}
+
+extension Array where Element == EditableField {
+    /// Categories that only exist for one style fall back to the back of the
+    /// pass when the style they belong to changes.
+    func foldedForStyle(_ style: PassStyle) -> [EditableField] {
+        map { field in
+            var updated = field
+            if updated.category == .additionalInfo, style != .eventTicket { updated.category = .back }
+            if updated.category == .footer, style != .posterGeneric { updated.category = .back }
+            return updated
+        }
+    }
+}
+
+extension PassStyle {
+    var displayName: String {
+        switch self {
+        case .generic: "Generic"
+        case .storeCard: "Store card"
+        case .coupon: "Coupon"
+        case .eventTicket: "Event ticket"
+        case .boardingPass: "Boarding pass"
+        case .posterGeneric: "Poster generic"
+        }
+    }
+}
+
+struct EditableFeaturedAction: Identifiable, Equatable {
+    let id = UUID()
+    var identifier = ""
+    var type: FeaturedActionType = .viewSchedule
+    var url = ""
+
+    var hasContent: Bool {
+        !identifier.trimmed.isEmpty || !url.trimmed.isEmpty
+    }
+}
+
 struct EditableBarcode: Identifiable, Equatable {
     let id = UUID()
     var format: BarcodeFormat = .qr

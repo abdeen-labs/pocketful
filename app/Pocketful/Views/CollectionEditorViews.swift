@@ -6,7 +6,7 @@ import UIKit
 
 // MARK: - Shared card chrome
 
-private struct EditorCard<Content: View>: View {
+struct EditorCard<Content: View>: View {
     let index: Int
     let title: String
     let onRemove: () -> Void
@@ -37,7 +37,7 @@ private struct EditorCard<Content: View>: View {
     }
 }
 
-private struct EmptyHint: View {
+struct EmptyHint: View {
     let text: String
 
     init(_ text: String) {

@@ -159,11 +159,13 @@ cert variable is missing or isn't valid base64-of-PEM — check the deploy logs.
 
 The pass spec mirrors the pass-building surface of the installed
 `passkit-generator` version: formatted/date/number fields, multiple barcode
-fallbacks, locations, beacons, old and new relevant dates, expiration, NFC,
-pass and field semantics, app and web-service behavior, localized strings and
-media, personalization, poster event and enhanced boarding actions, and iOS 26
-upcoming-pass information. Signing identity and certificates intentionally stay
-server-owned rather than being accepted from the app.
+fallbacks, additional style dictionaries so an iOS 27 poster pass still installs
+on older systems, locations, beacons, old and new relevant dates, expiration,
+NFC, pass and field semantics, app and web-service behavior, localized strings
+and media, personalization, poster event and enhanced boarding actions, iOS 27
+featured actions, and iOS 26 upcoming-pass information. Signing identity and
+certificates intentionally stay server-owned rather than being accepted from
+the app.
 
 ### Run the server locally (optional)
 

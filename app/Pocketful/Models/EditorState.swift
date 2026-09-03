@@ -37,6 +37,9 @@ final class EditorState {
     var barcodes: [EditableBarcode] = [EditableBarcode()]
     var transitType: TransitType = .generic
     var preferredStyleSchemes: [PreferredStyleScheme] = []
+    var additionalStyles: [EditableAdditionalStyle] = []
+    var featuredActions: [EditableFeaturedAction] = []
+    var posterSuppressHeaderDarkening = false
 
     var images: [String: ProcessedImage] = [:]
     var busySlot: String? = nil
@@ -101,8 +104,29 @@ final class EditorState {
         style == .eventTicket && preferredStyleSchemes.contains(.posterEventTicket)
     }
 
+    /// Every style the pass carries: the format plus its additional formats.
+    var presentStyles: Set<PassStyle> {
+        Set([style] + additionalStyles.map(\.style))
+    }
+
+    var usesPosterGeneric: Bool {
+        presentStyles.contains(.posterGeneric)
+    }
+
+    /// The first format not already in the pass, for a newly added card.
+    var nextUnusedStyle: PassStyle {
+        PassStyle.allCases.first { !presentStyles.contains($0) } ?? .generic
+    }
+
+    /// Wallet ignores featured actions on these two layouts and the server
+    /// rejects them.
+    var featuredActionsAllowed: Bool {
+        !preferredStyleSchemes.contains(.posterEventTicket)
+            && !preferredStyleSchemes.contains(.semanticBoardingPass)
+    }
+
     var standardSlots: [ImageSlot] {
-        Slots.standard(for: style, posterEvent: posterEvent)
+        Slots.standard(for: style, posterEvent: posterEvent, posterGeneric: usesPosterGeneric)
     }
 
     var localizationLanguages: [String] {
@@ -112,7 +136,7 @@ final class EditorState {
     }
 
     var localizedSlots: [ImageSlot] {
-        Slots.localized(for: style, languages: localizationLanguages, posterEvent: posterEvent)
+        Slots.localized(for: style, languages: localizationLanguages, posterEvent: posterEvent, posterGeneric: usesPosterGeneric)
     }
 
     var recommendedSlots: [ImageSlot] {
@@ -129,7 +153,7 @@ final class EditorState {
 
     /// True when applying a template would overwrite meaningful edits.
     var hasContent: Bool {
-        !descriptionText.trimmed.isEmpty || !fields.isEmpty
+        !descriptionText.trimmed.isEmpty || !fields.isEmpty || !additionalStyles.isEmpty
             || barcodes.contains { !$0.message.trimmed.isEmpty }
     }
 
@@ -140,20 +164,7 @@ final class EditorState {
     func selectStyle(_ next: PassStyle) {
         style = next
         preferredStyleSchemes = []
-        if next != .eventTicket {
-            fields = fields.map { field in
-                var updated = field
-                if updated.category == .additionalInfo { updated.category = .back }
-                return updated
-            }
-        }
-        if next != .posterGeneric {
-            fields = fields.map { field in
-                var updated = field
-                if updated.category == .footer { updated.category = .back }
-                return updated
-            }
-        }
+        fields = fields.foldedForStyle(next)
     }
 
     /// Ports applyTemplate: replaces format, identity, colors, fields,
@@ -202,6 +213,7 @@ final class EditorState {
         stripColor = template.colors.strip ?? ""
         footerColor = template.colors.footer ?? ""
         fields = Templates.buildFields(template)
+        additionalStyles = []
         barcodes = Templates.buildBarcodes(template)
         relevantDates = Templates.buildRelevantDates(template)
         legacyRelevantDate = ""
@@ -233,25 +245,9 @@ final class EditorState {
 
     // MARK: - Spec assembly (faithful port of createSpec)
 
-    func createSpec() throws -> PassSpec {
-        if serverUrl.trimmed.isEmpty { throw PassError("Set the pass server URL in Advanced → Server.") }
-        if descriptionText.trimmed.isEmpty { throw PassError("Add the Wallet description in Design → Identity.") }
-        if images["icon"] == nil { throw PassError("Choose the required icon artwork in Design → Artwork.") }
-        let colorChecks: [(name: String, value: String, required: Bool)] = [
-            ("Background", bgColor, true),
-            ("Foreground", fgColor, true),
-            ("Label", labelColor, true),
-            ("Strip", stripColor, false),
-            ("Footer", footerColor, false),
-        ]
-        for check in colorChecks {
-            let value = check.value.trimmed
-            if (check.required || !value.isEmpty),
-               value.range(of: Self.hexColorPattern, options: .regularExpression) == nil {
-                throw PassError("\(check.name) color must be a hex value like #131822.")
-            }
-        }
-
+    /// Parses one editable field list into spec categories, judged against
+    /// the style whose dictionary the fields belong to.
+    private static func parseFields(_ fields: [EditableField], style: PassStyle) throws -> [String: [PassField]] {
         var specFields: [String: [PassField]] = [:]
         for field in fields {
             if field.value.trimmed.isEmpty { continue }
@@ -293,6 +289,56 @@ final class EditorState {
             }
             list.append(parsed)
             specFields[field.category.rawValue] = list
+        }
+        return specFields
+    }
+
+    func createSpec() throws -> PassSpec {
+        if serverUrl.trimmed.isEmpty { throw PassError("Set the pass server URL in Advanced → Server.") }
+        if descriptionText.trimmed.isEmpty { throw PassError("Add the Wallet description in Design → Identity.") }
+        if images["icon"] == nil { throw PassError("Choose the required icon artwork in Design → Artwork.") }
+        let colorChecks: [(name: String, value: String, required: Bool)] = [
+            ("Background", bgColor, true),
+            ("Foreground", fgColor, true),
+            ("Label", labelColor, true),
+            ("Strip", stripColor, false),
+            ("Footer", footerColor, false),
+        ]
+        for check in colorChecks {
+            let value = check.value.trimmed
+            if (check.required || !value.isEmpty),
+               value.range(of: Self.hexColorPattern, options: .regularExpression) == nil {
+                throw PassError("\(check.name) color must be a hex value like #131822.")
+            }
+        }
+
+        let specFields = try Self.parseFields(fields, style: style)
+
+        var parsedAdditionalStyles: [AdditionalStyle] = []
+        var seenStyles: Set<PassStyle> = [style]
+        for (index, entry) in additionalStyles.enumerated() {
+            if !seenStyles.insert(entry.style).inserted {
+                throw PassError("Additional format \(index + 1) repeats the \(entry.style.displayName) format. Each format may appear once per pass.")
+            }
+            var parsed = AdditionalStyle(style: entry.style)
+            let entryFields = try Self.parseFields(entry.fields, style: entry.style)
+            if !entryFields.isEmpty { parsed.fields = entryFields }
+            if entry.style == .boardingPass { parsed.transitType = entry.transitType }
+            parsedAdditionalStyles.append(parsed)
+        }
+
+        var parsedFeaturedActions: [FeaturedAction] = []
+        for (index, action) in featuredActions.filter({ $0.hasContent }).enumerated() {
+            if action.identifier.trimmed.isEmpty { throw PassError("Featured action \(index + 1) needs an identifier.") }
+            let url = action.url.trimmed
+            guard let parsedURL = URL(string: url), parsedURL.scheme != nil else {
+                throw PassError("Featured action \(index + 1) needs an absolute URL.")
+            }
+            parsedFeaturedActions.append(FeaturedAction(identifier: action.identifier.trimmed, type: action.type, url: url))
+        }
+        if parsedFeaturedActions.count > 2 { throw PassError("Wallet shows at most two featured actions.") }
+        if !parsedFeaturedActions.isEmpty, !featuredActionsAllowed {
+            throw PassError("Wallet does not show featured actions on poster event tickets or enhanced boarding passes. Remove them or choose another layout.")
         }
 
         let parsedBarcodes: [BarcodeSpec] = barcodes
@@ -439,9 +485,14 @@ final class EditorState {
             footerBackgroundColor: footerColor.trimmed.isEmpty ? nil : footerColor.trimmed
         )
         if !options.isEmpty { spec.options = options }
-        if style == .eventTicket, !parsedEventOptions.isEmpty { spec.eventTicketOptions = parsedEventOptions }
-        if style == .boardingPass, !parsedBoardingOptions.isEmpty { spec.boardingPassOptions = parsedBoardingOptions }
+        if presentStyles.contains(.eventTicket), !parsedEventOptions.isEmpty { spec.eventTicketOptions = parsedEventOptions }
+        if presentStyles.contains(.boardingPass), !parsedBoardingOptions.isEmpty { spec.boardingPassOptions = parsedBoardingOptions }
+        if usesPosterGeneric, posterSuppressHeaderDarkening {
+            spec.posterGenericOptions = PosterGenericOptions(suppressHeaderDarkening: true)
+        }
+        if !parsedFeaturedActions.isEmpty { spec.featuredActions = parsedFeaturedActions }
         if !specFields.isEmpty { spec.fields = specFields }
+        if !parsedAdditionalStyles.isEmpty { spec.additionalStyles = parsedAdditionalStyles }
         if !parsedBarcodes.isEmpty { spec.barcodes = parsedBarcodes }
         if style == .boardingPass { spec.transitType = transitType }
         if !preferredStyleSchemes.isEmpty { spec.preferredStyleSchemes = preferredStyleSchemes }
@@ -475,6 +526,10 @@ final class EditorState {
     // MARK: - Modern style requirements (faithful port)
 
     private func assertModernStyleRequirements(semantics: [String: JSONValue], specImages: [String: String]) throws {
+        if usesPosterGeneric, !Self.hasImageAsset(specImages, name: "background") {
+            throw PassError("Poster generic passes require background artwork in Design → Artwork.")
+        }
+
         if preferredStyleSchemes.contains(.posterEventTicket) {
             if style != .eventTicket { throw PassError("Poster layout requires the event-ticket format.") }
             if !Self.hasImageAsset(specImages, name: "artwork") {
