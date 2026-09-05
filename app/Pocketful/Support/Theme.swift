@@ -1,4 +1,4 @@
-// Pocketful UI roles grounded in Abdeen Labs Redline v4.0.
+// Pocketful UI roles grounded in the Abdeen Labs Redline palette.
 // Pocketful owns its product typography and layout.
 
 import Foundation
@@ -77,8 +77,10 @@ enum PocketfulTheme {
     /// Ink on a filled accent or alarm field.
     static let fillInk = RedlinePalette.carbon900
 
-    // Signals — identity is a solid line; a warning is dashed, ticked, or a
-    // highlighter chip; an alarm is hatched, struck, pulsed, or a filled field.
+    // Signals — identity is a solid line; a warning is a dashed frame, a dashed
+    // leading edge, corner ticks, a legend frame, or a highlighter chip, one form
+    // per surface; an alarm is hatched, struck, pulsed, or a filled field.
+    // The signal colour carries the label; the message stays on `text`.
     static let accent = RedlinePalette.accent
     static let link = RedlinePalette.accent
     static let press = RedlinePalette.accentDeep
