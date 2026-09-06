@@ -479,13 +479,13 @@ struct PocketfulNotice: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(12)
         .background(PocketfulTheme.surface, in: RoundedRectangle(cornerRadius: Radii.control))
-        .overlay(
-            RoundedRectangle(cornerRadius: Radii.control)
-                .stroke(PocketfulTheme.border, lineWidth: 0.5)
-        )
-        .overlay(alignment: .leading) {
+        .overlay {
             if tone == .warning {
-                DashedLeadingEdge(color: PocketfulTheme.warning, inset: Radii.control)
+                RoundedRectangle(cornerRadius: Radii.control)
+                    .strokeBorder(PocketfulTheme.warning, style: StrokeStyle(lineWidth: 2, dash: [6, 4]))
+            } else {
+                RoundedRectangle(cornerRadius: Radii.control)
+                    .stroke(PocketfulTheme.border, lineWidth: 0.5)
             }
         }
     }
@@ -500,25 +500,6 @@ struct WarningMarker: View {
             .rotationEffect(.degrees(45))
             .frame(width: 9, height: 9)
             .accessibilityHidden(true)
-    }
-}
-
-/// A 3pt dashed rule along the leading edge — one of the warning frames.
-struct DashedLeadingEdge: View {
-    var color: Color
-    var lineWidth: CGFloat = 3
-    var inset: CGFloat = 0
-
-    var body: some View {
-        GeometryReader { geo in
-            Path { path in
-                path.move(to: CGPoint(x: lineWidth / 2, y: inset))
-                path.addLine(to: CGPoint(x: lineWidth / 2, y: geo.size.height - inset))
-            }
-            .stroke(color, style: StrokeStyle(lineWidth: lineWidth, dash: [lineWidth * 3, lineWidth * 2]))
-        }
-        .frame(width: lineWidth)
-        .accessibilityHidden(true)
     }
 }
 
@@ -600,7 +581,7 @@ struct PocketfulButton: View {
             ZStack {
                 if loading {
                     ProgressView()
-                        .tint(filled ? PocketfulTheme.fillInk : PocketfulTheme.text)
+                        .tint(filled ? textColor : PocketfulTheme.text)
                 } else {
                     Text(title)
                         .font(PocketfulFont.monoMedium(13))
@@ -621,15 +602,15 @@ struct PocketfulButton: View {
         .disabled(disabled || loading)
     }
 
-    /// Primary sits on a scarlet field; danger on an alarm field. Both take carbon ink.
+    /// Primary sits on the ground's ink; danger is the one filled scarlet control.
     private var filled: Bool {
         kind == .primary || kind == .danger
     }
 
     private var background: Color {
         switch kind {
-        case .primary: return PocketfulTheme.accent
-        case .danger: return PocketfulTheme.alarm
+        case .primary: return PocketfulTheme.primaryFill
+        case .danger: return PocketfulTheme.destructive
         case .secondary: return PocketfulTheme.surface
         case .ghost: return .clear
         }
@@ -644,7 +625,8 @@ struct PocketfulButton: View {
 
     private var textColor: Color {
         switch kind {
-        case .primary, .danger: return PocketfulTheme.fillInk
+        case .primary: return PocketfulTheme.primaryInk
+        case .danger: return PocketfulTheme.fillInk
         case .secondary, .ghost: return PocketfulTheme.textSoft
         }
     }

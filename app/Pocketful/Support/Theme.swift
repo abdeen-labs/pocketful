@@ -41,18 +41,14 @@ enum RedlinePalette {
     static let graphite500 = Color(hex: "#747D90")
     static let graphite400 = Color(hex: "#939FBD")
 
-    // Chalk — dark-ground text
+    // Chalk — dark-ground text and the ink on a filled scarlet field
     static let chalk100 = Color(hex: "#F3F7FF")
     static let chalk300 = Color(hex: "#DBE2F4")
-
-    // Carbon — ink on a filled scarlet or alarm field
-    static let carbon900 = Color(hex: "#0A0F1C")
 
     // Accent and signals
     static let accentDeep = Color(hex: "#D4212C")
     static let cobalt400 = Color(hex: "#5AA7FF")
     static let warn400 = Color(hex: "#F5FF00")
-    static let alarm500 = Color(hex: "#FF2BD6")
 }
 
 /// Role tokens — components consume these, never a ramp step.
@@ -74,19 +70,27 @@ enum PocketfulTheme {
     static let dim = RedlinePalette.graphite400
     /// Holds AA on `bg` only; ink on any surface above the ground uses `dim`.
     static let faint = RedlinePalette.graphite500
-    /// Ink on a filled accent or alarm field.
-    static let fillInk = RedlinePalette.carbon900
+    /// Ink on a filled scarlet field — an alarm chip or a destructive control (4.83:1).
+    static let fillInk = RedlinePalette.chalk100
 
-    // Signals — identity is a solid line; a warning is a dashed frame, a dashed
-    // leading edge, corner ticks, a legend frame, or a highlighter chip, one form
-    // per surface; an alarm is hatched, struck, pulsed, or a filled field.
-    // The signal colour carries the label; the message stays on `text`.
+    // Controls — a primary action takes the ground's ink as its field; the only
+    // filled scarlet control is a destructive action, under `fillInk`.
+    static let primaryFill = RedlinePalette.chalk100
+    static let primaryInk = RedlinePalette.void
+    static let destructive = RedlinePalette.accentDeep
+
+    // Signals — identity is a solid line and never fills a control; a warning is
+    // a dashed frame, corner ticks, a legend frame, or a highlighter chip, one form
+    // per surface; an alarm is a dashed frame, a struck rule, a pulse while active,
+    // or a highlighter chip, never a hatch or a stripe. The signal colour carries
+    // the label; the message stays on `text`.
     static let accent = RedlinePalette.accent
     static let link = RedlinePalette.accent
     static let press = RedlinePalette.accentDeep
     static let success = RedlinePalette.cobalt400
     static let warning = RedlinePalette.warn400
-    static let alarm = RedlinePalette.alarm500
+    /// Alarm step and label on the dark ground; a light ground takes accent-deep and accent-ink.
+    static let alarm = RedlinePalette.accent
 
     // Pass previews need literal product artwork colors.
     static let white = Color.white

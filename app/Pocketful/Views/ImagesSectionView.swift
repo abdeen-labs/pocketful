@@ -81,7 +81,7 @@ private struct ImageSlotRow: View {
                 .disabled(state.busySlot != nil)
 
                 if picked != nil {
-                    PocketfulButton("Clear", kind: .danger) {
+                    PocketfulButton("Remove artwork", kind: .danger) {
                         state.images[slot.name] = nil
                     }
                 }
