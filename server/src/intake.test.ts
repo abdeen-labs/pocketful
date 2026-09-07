@@ -57,6 +57,11 @@ test("health stays open", async () => {
   assert.equal(res.status, 200);
 });
 
+test("responses do not name the framework", async () => {
+  const res = await fetch(`${base}/healthz`);
+  assert.equal(res.headers.get("x-powered-by"), null);
+});
+
 test("docs are served at the root without authentication", async () => {
   const res = await fetch(`${base}/`);
   assert.equal(res.status, 200);

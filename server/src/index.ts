@@ -13,6 +13,7 @@ import { walletWebServiceRouter } from "./webService";
 /** The full app minus startup: importable by tests without a listener or env. */
 export function createApp(config: Config): express.Express {
   const app = express();
+  app.disable("x-powered-by");
   const passes = createPassService(config);
   const docsPath = path.join(__dirname, "../public/index.html");
   // Railway terminates TLS at its proxy; trust it so req.protocol is https.
