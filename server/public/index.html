@@ -989,46 +989,45 @@ Content-Type: application/json</code></pre>
           <h2>MCP server</h2>
           <p class="section-intro">
             Let an AI agent create, inspect, and update passes through your Pocketful
-            server. The MCP server is a local stdio bridge: signing credentials remain
-            on your server and pass artwork can be read directly from local PNG files.
+            server. The MCP endpoint is part of the deployed server, so it works from
+            any machine: signing credentials never leave the server, and the endpoint
+            takes the same bearer token as the REST API.
           </p>
 
-          <h3>1. Install dependencies</h3>
-          <div class="code-block">
-            <span class="code-label">Shell</span>
-            <pre><code>cd /path/to/pocketful/mcp
-bun install</code></pre>
-          </div>
-
-          <h3>2. Add Pocketful to your MCP client</h3>
+          <h3>Add Pocketful to your MCP client</h3>
           <p>
-            Use the absolute path to <code>mcp/src/index.ts</code>. The server runs
-            directly with Bun and needs no build step.
+            The endpoint speaks Streamable HTTP at <code>/mcp</code>. Send your
+            <code>API_TOKEN</code> as a bearer token.
           </p>
+          <div class="code-block">
+            <span class="code-label">Claude Code</span>
+            <pre><code>claude mcp add --transport http pocketful https://your-pocketful-server.example/mcp \
+  --header "Authorization: Bearer YOUR_API_TOKEN"</code></pre>
+          </div>
           <div class="code-block">
             <span class="code-label">MCP config</span>
             <pre><code>{
   <span class="token-key">"mcpServers"</span>: {
     <span class="token-key">"pocketful"</span>: {
-      <span class="token-key">"command"</span>: <span class="token-value">"bun"</span>,
-      <span class="token-key">"args"</span>: [<span class="token-value">"/absolute/path/to/pocketful/mcp/src/index.ts"</span>],
-      <span class="token-key">"env"</span>: {
-        <span class="token-key">"POCKETFUL_SERVER_URL"</span>: <span class="token-value">"https://your-pocketful-server.example"</span>,
-        <span class="token-key">"POCKETFUL_API_TOKEN"</span>: <span class="token-value">"YOUR_API_TOKEN"</span>
+      <span class="token-key">"type"</span>: <span class="token-value">"http"</span>,
+      <span class="token-key">"url"</span>: <span class="token-value">"https://your-pocketful-server.example/mcp"</span>,
+      <span class="token-key">"headers"</span>: {
+        <span class="token-key">"Authorization"</span>: <span class="token-value">"Bearer YOUR_API_TOKEN"</span>
       }
     }
   }
 }</code></pre>
           </div>
           <div class="note">
-            <strong>Client syntax varies.</strong> If your client uses a CLI instead of
-            JSON, pass the same command, argument, and environment variables. The
+            <strong>Client syntax varies.</strong> Any client that supports Streamable
+            HTTP with custom headers works: point it at <code>/mcp</code> and send the
+            bearer token. The
             <a
               class="inline-link"
               href="https://github.com/abdeen-labs/pocketful/blob/main/INSTRUCTIONS.md#part-5--let-an-ai-agent-make-passes-optional"
               >full setup guide</a
             >
-            includes a ready-to-run Claude Code command.
+            has the details.
           </div>
 
           <h3>Available tools</h3>
@@ -1065,9 +1064,10 @@ bun install</code></pre>
             </div>
           </div>
           <div class="note">
-            <strong>Artwork is optional.</strong> Pass local PNG paths through
-            <code>image_files</code>; if no icon is supplied, Pocketful uses its bundled
-            fallback. For updates, omit <code>images</code> to reuse the stored artwork.
+            <strong>Artwork is optional.</strong> If no icon is supplied, Pocketful uses
+            its bundled fallback. Other artwork goes into the spec's <code>images</code>
+            map as base64 PNG — the server cannot read files on the agent's machine. For
+            updates, omit <code>images</code> to reuse the stored artwork.
           </div>
         </section>
 

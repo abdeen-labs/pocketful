@@ -29,7 +29,7 @@ Pocketful is an Abdeen Labs internal tool. The source is public.
 - Modern poster event tickets, enhanced boarding passes, semantics, and pass actions
 - Short-lived signed passes produced by a server that keeps your Apple certificates private
 - Updatable passes: the server implements Apple's Wallet web service protocol and pushes new versions over the air to passes already in Wallet
-- Agent-made passes: an MCP server lets an AI agent (Claude, etc.) create and update passes from a prompt
+- Agent-made passes: the server exposes an MCP endpoint, so an AI agent (Claude, etc.) can create and update passes from a prompt on any machine
 
 ## How it works
 
@@ -44,8 +44,7 @@ Signing stays on the server because [`passkit-generator`](https://github.com/ale
 | Path | Purpose |
 | --- | --- |
 | [`app/`](app/) | Native SwiftUI pass designer — an Xcode project with no third-party dependencies |
-| [`server/`](server/) | Node.js, Express, and TypeScript API that validates, signs, serves, and OTA-updates passes |
-| [`mcp/`](mcp/) | MCP server exposing pass creation and updates as tools for AI agents |
+| [`server/`](server/) | Node.js, Express, and TypeScript API that validates, signs, serves, and OTA-updates passes, and exposes the same operations to AI agents over MCP |
 | [`docs/`](docs/) | Abdeen Labs brand assets used by this README |
 | [`INSTRUCTIONS.md`](INSTRUCTIONS.md) | Complete certificate, deployment, and iPhone build guide |
 
@@ -85,6 +84,7 @@ The pass specification is defined in [`server/src/types.ts`](server/src/types.ts
 - `GET /api/passes/:id` returns the signed `.pkpass` until it expires.
 - `PUT /api/passes/:serial` replaces an updatable pass's spec, re-signs it, and pushes the change to registered devices via APNs.
 - `GET /api/passes`, `GET /api/passes/:serial/spec`, `POST /api/passes/:serial/download`, and `DELETE /api/passes/:serial` manage updatable passes.
+- `POST /mcp` serves the same operations to AI agents over MCP (Streamable HTTP), behind the same bearer token.
 - `POST|DELETE /v1/devices/…`, `GET /v1/devices/…`, `GET /v1/passes/…`, and `POST /v1/log` implement [Apple's Wallet web service protocol](https://developer.apple.com/documentation/walletpasses/adding-a-web-service-to-update-passes) — iOS calls these on its own; you never do.
 
 One-shot passes are held only in memory and expire after 15 minutes by default. Updatable passes persist in SQLite (`DATA_DIR`, a mounted volume on Railway). The management API always requires an `API_TOKEN` bearer token. See [`INSTRUCTIONS.md`](INSTRUCTIONS.md) for the environment variables and troubleshooting notes.

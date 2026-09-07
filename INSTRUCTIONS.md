@@ -8,8 +8,8 @@ service involved is the signing server you deploy.
 
 ```
 app/      Native SwiftUI iPhone app — the pass designer UI
-server/   Node + Express — signs .pkpass files with passkit-generator, deployed on Railway
-mcp/      MCP server — exposes pass creation and updates to AI agents (Part 5)
+server/   Node + Express — signs .pkpass files with passkit-generator and serves the
+          MCP endpoint for AI agents (Part 5); deployed on Railway
 ```
 
 **How it works**
@@ -154,6 +154,8 @@ cert variable is missing or isn't valid base64-of-PEM — check the deploy logs.
 - `GET /api/passes/:serial/spec` — the stored spec, for read-modify-write updates.
 - `POST /api/passes/:serial/download` — mint a fresh short-lived download URL.
 - `DELETE /api/passes/:serial` — forget an updatable pass and its registrations.
+- `POST /mcp` — the same operations as MCP tools for AI agents (Part 5), behind
+  the same bearer token.
 - `/v1/…` — Apple's Wallet web service protocol (device registration, change
   polling, latest-pass fetch, logging). iOS calls these itself.
 
@@ -256,28 +258,26 @@ returns the stored spec if you want to modify rather than rebuild it.
 
 ## Part 5 — Let an AI agent make passes (optional)
 
-`mcp/` is an [MCP](https://modelcontextprotocol.io) server that exposes the
-signing server to AI agents as tools: `create_pass`, `update_pass`,
-`get_pass_spec`, `list_passes`, `mint_pass_download`, and `delete_pass`. It
-runs anywhere Bun runs and needs no build step:
-
-```bash
-cd mcp && bun install
-```
+The deployed server also speaks [MCP](https://modelcontextprotocol.io) over
+Streamable HTTP at `https://pass.abdeen.dev/mcp`, exposing pass operations to
+AI agents as tools: `create_pass`, `update_pass`, `get_pass_spec`,
+`list_passes`, `mint_pass_download`, and `delete_pass`. There is nothing extra
+to deploy or run: the endpoint is part of the Railway service, guarded by the
+same `API_TOKEN` bearer token as `/api/*`, and reachable from any machine.
 
 Register it with Claude Code:
 
 ```bash
-claude mcp add pocketful \
-  --env POCKETFUL_SERVER_URL=https://pass.abdeen.dev \
-  --env POCKETFUL_API_TOKEN=<your API_TOKEN> \
-  -- bun /path/to/pocketful/mcp/src/index.ts
+claude mcp add --transport http pocketful https://pass.abdeen.dev/mcp \
+  --header "Authorization: Bearer <your API_TOKEN>"
 ```
 
-(Or add the same command/env to any other MCP client.) Then ask the agent for
-a pass — "make me an updatable loyalty card, 100 points, dark blue" — and open
-the returned URL on your iPhone. If the agent supplies no icon, a bundled
-default is used; agents can also pass local PNG paths via `image_files`.
+Any other MCP client that supports Streamable HTTP with a custom header works
+the same way: point it at `/mcp` and send `Authorization: Bearer <API_TOKEN>`.
+Then ask the agent for a pass — "make me an updatable loyalty card, 100 points,
+dark blue" — and open the returned URL on your iPhone. If the agent supplies no
+icon, a bundled default is used; other artwork goes into the spec's `images`
+map as base64 PNG, since the server cannot read files on the agent's machine.
 Because the pass is updatable, "set my loyalty card to 450 points" later
 pushes the change straight to Wallet.
 
@@ -307,7 +307,7 @@ pushes the change straight to Wallet.
 - The server keeps one-shot signed passes only in memory. A redeploy or restart
   drops pending ids; that's fine, just create the pass again. Updatable passes
   persist in SQLite under `DATA_DIR` — on Railway, keep that on a volume.
-- The server and MCP use Bun locally. Railway builds `server/` from its
+- The server uses Bun locally. Railway builds `server/` from its
   `Dockerfile`, so the deploy does not depend on lockfile-based builder
   detection.
 

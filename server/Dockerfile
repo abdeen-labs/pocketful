@@ -16,6 +16,7 @@ RUN bun install --frozen-lockfile
 COPY tsconfig.json ./
 COPY src ./src
 COPY public ./public
+COPY assets ./assets
 RUN bun run build
 RUN rm -rf node_modules && bun install --frozen-lockfile --production
 
@@ -31,6 +32,7 @@ WORKDIR /app
 COPY --from=build --chown=node:node /app/node_modules ./node_modules
 COPY --from=build --chown=node:node /app/dist ./dist
 COPY --from=build --chown=node:node /app/public ./public
+COPY --from=build --chown=node:node /app/assets ./assets
 COPY --from=build --chown=node:node /app/package.json ./package.json
 RUN mkdir -p /data && chown node:node /data
 USER node

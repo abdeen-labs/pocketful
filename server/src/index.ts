@@ -1,26 +1,19 @@
-import { randomBytes, randomUUID } from "node:crypto";
 import path from "node:path";
 import express from "express";
 import rateLimit from "express-rate-limit";
-import { pushPassUpdate, type PushResult } from "./apns";
 import { loadConfig, type Config } from "./config";
-import {
-  deletePassRecord,
-  getPassRecord,
-  initDb,
-  insertPass,
-  listPassSummaries,
-  updatePassSpec,
-} from "./db";
-import { buildPass, passFilename } from "./passBuilder";
-import { deletePassesForSerial, getPass, putPass } from "./store";
-import { rebuildStoredPass, secretsMatch } from "./updatable";
-import { ApiError, MAX_TOTAL_IMAGE_BYTES, validateSpec } from "./validate";
+import { initDb } from "./db";
+import { handleMcpRequest } from "./mcp";
+import { createPassService } from "./passService";
+import { getPass } from "./store";
+import { secretsMatch } from "./updatable";
+import { ApiError, MAX_TOTAL_IMAGE_BYTES } from "./validate";
 import { walletWebServiceRouter } from "./webService";
 
 /** The full app minus startup: importable by tests without a listener or env. */
 export function createApp(config: Config): express.Express {
   const app = express();
+  const passes = createPassService(config);
   const docsPath = path.join(__dirname, "../public/index.html");
   // Railway terminates TLS at its proxy; trust it so req.protocol is https.
   // NOTE: `trust proxy: true` means req.ip comes from X-Forwarded-For, which a
@@ -34,8 +27,9 @@ export function createApp(config: Config): express.Express {
     }
   }
 
+  /** Scheme and host the caller used; download links are built from it. */
   function requestOrigin(req: express.Request): string {
-    return config.publicBaseUrl ?? `${req.protocol}://${req.get("host")}`;
+    return `${req.protocol}://${req.get("host")}`;
   }
 
   // Not on /healthz — the Docker HEALTHCHECK polls it every 30 seconds and
@@ -48,8 +42,10 @@ export function createApp(config: Config): express.Express {
   });
   app.use("/v1", limiter);
   app.use("/api", limiter);
+  app.use("/mcp", limiter);
 
-  // Authenticate before any body is buffered: /api/passes accepts megabytes.
+  // Authenticate before any body is buffered: /api/passes and /mcp accept
+  // megabytes.
   app.use("/api", (req, _res, next) => {
     // The signed-pass download link is authenticated by its unguessable id —
     // exactly one path segment after /passes. The bare list route and the
@@ -60,9 +56,14 @@ export function createApp(config: Config): express.Express {
     requireApiToken(req);
     next();
   });
+  app.use("/mcp", (req, _res, next) => {
+    requireApiToken(req);
+    next();
+  });
 
-  // Only the two pass-authoring routes carry base64 artwork; everything else
-  // (device registration, log callbacks, health) sends a few hundred bytes.
+  // Only the pass-authoring routes and the MCP endpoint carry base64 artwork;
+  // everything else (device registration, log callbacks, health) sends a few
+  // hundred bytes.
   const smallJson = express.json({ limit: "100kb" });
   // 24 MB of decoded PNG data expands to roughly 32 MB when base64 encoded;
   // deriving the limit from the validator's cap means the two cannot drift.
@@ -70,7 +71,12 @@ export function createApp(config: Config): express.Express {
     limit: Math.ceil((MAX_TOTAL_IMAGE_BYTES * 4) / 3) + 1024 * 1024,
   });
   app.use((req, res, next) => {
-    if (req.method === "POST" && req.path === "/api/passes") return next();
+    if (
+      req.method === "POST" &&
+      (req.path === "/api/passes" || req.path === "/mcp")
+    ) {
+      return next();
+    }
     if (req.method === "PUT" && req.path.startsWith("/api/passes/")) {
       return next();
     }
@@ -96,139 +102,19 @@ export function createApp(config: Config): express.Express {
 
   app.post("/api/passes", passJson, (req, res) => {
     requireApiToken(req);
-    const validated = validateSpec(req.body);
-    const { spec } = validated;
-
-    let buffer: Buffer;
-    let serialNumber: string | undefined;
-
-    if (spec.updatable) {
-      serialNumber = spec.serialNumber || randomUUID();
-      if (getPassRecord(serialNumber)) {
-        throw new ApiError(
-          409,
-          `An updatable pass with serial "${serialNumber}" already exists — ` +
-            `use PUT /api/passes/${serialNumber} to update it`
-        );
-      }
-      const identity = {
-        serialNumber,
-        webServiceURL: requestOrigin(req),
-        authenticationToken: randomBytes(16).toString("hex"),
-      };
-      try {
-        buffer = buildPass(validated, config, identity);
-      } catch (err) {
-        throw new ApiError(
-          422,
-          `Failed to build pass: ${err instanceof Error ? err.message : String(err)}`
-        );
-      }
-      insertPass({
-        serialNumber,
-        authToken: identity.authenticationToken,
-        webServiceURL: identity.webServiceURL,
-        specJson: JSON.stringify(req.body),
-        description: spec.description,
-      });
-    } else {
-      try {
-        buffer = buildPass(validated, config);
-      } catch (err) {
-        // Signing/serialization failures are almost always a spec or cert problem;
-        // surface the library's message so the app can show it.
-        throw new ApiError(
-          422,
-          `Failed to build pass: ${err instanceof Error ? err.message : String(err)}`
-        );
-      }
-    }
-
-    const filename = passFilename(spec.description);
-    const { id, expiresAt } = putPass(
-      buffer,
-      filename,
-      config.passTtlSeconds,
-      config.passStoreMaxBytes,
-      serialNumber
-    );
-
-    res.status(201).json({
-      id,
-      url: `${req.protocol}://${req.get("host")}/api/passes/${id}`,
-      expiresAt: new Date(expiresAt).toISOString(),
-      ...(serialNumber ? { serialNumber, updatable: true } : {}),
-    });
+    res.status(201).json(passes.create(req.body, requestOrigin(req)));
   });
 
   /** Registered (updatable) passes. The :id download route below serves ephemeral ids. */
   app.get("/api/passes", (req, res) => {
     requireApiToken(req);
-    res.json({ passes: listPassSummaries() });
+    res.json(passes.list());
   });
 
   app.put("/api/passes/:serialNumber", passJson, async (req, res, next) => {
     try {
       requireApiToken(req);
-      const record = getPassRecord(req.params.serialNumber);
-      if (!record) {
-        throw new ApiError(404, "No updatable pass with that serial number");
-      }
-      const validated = validateSpec(req.body);
-      if (
-        validated.spec.serialNumber &&
-        validated.spec.serialNumber !== record.serialNumber
-      ) {
-        throw new ApiError(400, "serialNumber cannot change on update");
-      }
-
-      const webServiceURL = config.publicBaseUrl ?? record.webServiceURL;
-      try {
-        buildPass(validated, config, {
-          serialNumber: record.serialNumber,
-          webServiceURL,
-          authenticationToken: record.authToken,
-        });
-      } catch (err) {
-        throw new ApiError(
-          422,
-          `Failed to build pass: ${err instanceof Error ? err.message : String(err)}`
-        );
-      }
-
-      const result = updatePassSpec(
-        record.serialNumber,
-        JSON.stringify(req.body),
-        validated.spec.description,
-        webServiceURL
-      );
-      if (!result) {
-        throw new ApiError(404, "No updatable pass with that serial number");
-      }
-      let push: PushResult;
-      try {
-        push = await pushPassUpdate(config, record.serialNumber);
-      } catch (err) {
-        // The spec is already committed; a push failure must not read as a
-        // failed update. Surface it in the response instead.
-        console.error(
-          `APNs push failed for ${record.serialNumber}:`,
-          err instanceof Error ? err.message : err
-        );
-        push = {
-          sent: 0,
-          failed: 0,
-          pruned: 0,
-          error:
-            "Push failed — the pass was updated but devices were not notified",
-        };
-      }
-      res.json({
-        serialNumber: record.serialNumber,
-        updatedAt: new Date(result.updatedAt).toISOString(),
-        revision: result.revision,
-        push,
-      });
+      res.json(await passes.update(req.params.serialNumber, req.body));
     } catch (err) {
       next(err);
     }
@@ -236,58 +122,21 @@ export function createApp(config: Config): express.Express {
 
   app.delete("/api/passes/:serialNumber", (req, res) => {
     requireApiToken(req);
-    if (!deletePassRecord(req.params.serialNumber)) {
-      throw new ApiError(404, "No updatable pass with that serial number");
-    }
-    // A minted download link must die with the pass, not linger for its TTL.
-    deletePassesForSerial(req.params.serialNumber);
-    res.json({ ok: true });
+    res.json(passes.remove(req.params.serialNumber));
   });
 
   /** The stored spec for an updatable pass, for read-modify-write updates. */
   app.get("/api/passes/:serialNumber/spec", (req, res) => {
     requireApiToken(req);
-    const record = getPassRecord(req.params.serialNumber);
-    if (!record) {
-      throw new ApiError(404, "No updatable pass with that serial number");
-    }
-    res.json({
-      serialNumber: record.serialNumber,
-      updatedAt: new Date(record.updatedAt).toISOString(),
-      spec: JSON.parse(record.specJson),
-    });
+    res.json(passes.getSpec(req.params.serialNumber));
   });
 
   /** Mint a fresh short-lived download link for a stored updatable pass. */
   app.post("/api/passes/:serialNumber/download", (req, res) => {
     requireApiToken(req);
-    const record = getPassRecord(req.params.serialNumber);
-    if (!record) {
-      throw new ApiError(404, "No updatable pass with that serial number");
-    }
-    let buffer: Buffer;
-    try {
-      buffer = rebuildStoredPass(record, config);
-    } catch (err) {
-      throw new ApiError(
-        422,
-        `Failed to build pass: ${err instanceof Error ? err.message : String(err)}`
-      );
-    }
-    const filename = passFilename(record.description);
-    const { id, expiresAt } = putPass(
-      buffer,
-      filename,
-      config.passTtlSeconds,
-      config.passStoreMaxBytes,
-      record.serialNumber
-    );
-    res.status(201).json({
-      id,
-      url: `${req.protocol}://${req.get("host")}/api/passes/${id}`,
-      expiresAt: new Date(expiresAt).toISOString(),
-      serialNumber: record.serialNumber,
-    });
+    res
+      .status(201)
+      .json(passes.mintDownload(req.params.serialNumber, requestOrigin(req)));
   });
 
   app.get("/api/passes/:id", (req, res) => {
@@ -306,6 +155,28 @@ export function createApp(config: Config): express.Express {
       })
       .send(entry.buffer);
   });
+
+  // MCP over Streamable HTTP, stateless: the same operations as the routes
+  // above, behind the same token. GET (server-initiated stream) and DELETE
+  // (session teardown) have no meaning without sessions.
+  app.post("/mcp", passJson, (req, res, next) => {
+    handleMcpRequest(passes, requestOrigin(req), req, res).catch((err) => {
+      if (res.headersSent) {
+        res.end();
+        return;
+      }
+      next(err);
+    });
+  });
+  const methodNotAllowed = (_req: express.Request, res: express.Response) => {
+    res.status(405).json({
+      jsonrpc: "2.0",
+      error: { code: -32000, message: "Method not allowed." },
+      id: null,
+    });
+  };
+  app.get("/mcp", methodNotAllowed);
+  app.delete("/mcp", methodNotAllowed);
 
   app.use(walletWebServiceRouter(config));
 
