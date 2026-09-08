@@ -13,46 +13,45 @@
 # Pocketful
 
 <p align="center">
-  <img src="docs/assets/pocketful-icon.png" width="112" alt="Pocketful app icon">
+  <img src="docs/assets/pocketful-icon.png" width="112" alt="Pocketful icon">
 </p>
 
-Pocketful is a self-hosted Apple Wallet pass designer for iPhone. Build a pass visually, sign it with your own server, and open Apple's native add-to-Wallet sheet. The only service involved is the signing server you deploy yourself.
+Pocketful is a self-hosted Apple Wallet pass signing server for one person. Describe a pass to an AI agent — Claude Code, Claude Desktop, anything that speaks MCP — and the server validates the spec, sizes the artwork, signs a `.pkpass` with your own certificates, and hands back a short-lived download URL. With Hark configured, the pass reaches your iPhone as a notification; tap it and Wallet's add sheet opens. The only service involved is the one you deploy yourself.
 
 Pocketful is an Abdeen Labs internal tool. The source is public.
 
 ## What you can build
 
-- Generic passes, store cards, coupons, event tickets, and boarding passes
-- Passes from 11 curated templates or a blank design
-- Custom colors, artwork, rich fields, multiple barcode formats, and live previews
+- Generic passes, store cards, coupons, event tickets, boarding passes, and iOS 27 poster layouts
+- Agent-made passes: an AI agent turns a prompt into a spec and calls the server's MCP endpoint from any machine
+- Custom colors, rich fields, multiple barcode formats, semantics, featured actions, and additional style dictionaries for older iOS
 - Location, beacon, relevant-date, localization, personalization, and NFC metadata
-- Modern poster event tickets, enhanced boarding passes, semantics, and pass actions
+- Server-side artwork sizing: one source image per slot, center-cropped and rendered at 1x, 2x, and 3x by the server
 - Short-lived signed passes produced by a server that keeps your Apple certificates private
-- Updatable passes: the server implements Apple's Wallet web service protocol and pushes new versions over the air to passes already in Wallet
-- Agent-made passes: the server exposes an MCP endpoint, so an AI agent (Claude, etc.) can create and update passes from a prompt on any machine
+- Hark delivery: every minted pass lands on your iPhone as a notification whose tap opens Add to Wallet
+- Updatable passes: the server implements Apple's Wallet web service protocol and pushes revised versions over the air to passes already in Wallet
 
 ## How it works
 
-1. The app turns your design and on-device artwork into a JSON pass specification.
-2. The Express service validates the specification, builds and signs a `.pkpass` in memory, and returns a short-lived download URL.
-3. The app downloads the signed pass and presents it with PassKit's native Wallet sheet.
+1. An agent (or a script) sends a JSON pass specification to the server — over MCP at `/mcp`, or REST at `POST /api/passes`. Artwork travels inline as base64 source images.
+2. The Express service validates the specification, crops and renders each image at every Wallet scale, builds and signs a `.pkpass` in memory, and returns a short-lived download URL.
+3. With Hark configured, the server pushes that URL to your iPhone as a notification; tapping it opens Hark's Add to Wallet sheet. Without Hark, open the URL on the iPhone.
 
-Signing stays on the server because [`passkit-generator`](https://github.com/alexandercerutti/passkit-generator) runs on Node.js and because signing credentials should never ship inside the app.
+Signing stays on the server because [`passkit-generator`](https://github.com/alexandercerutti/passkit-generator) runs on Node.js and because the signing certificates belong in exactly one place.
 
 ## Repository layout
 
 | Path | Purpose |
 | --- | --- |
-| [`app/`](app/) | Native SwiftUI pass designer — an Xcode project with no third-party dependencies |
-| [`server/`](server/) | Node.js, Express, and TypeScript API that validates, signs, serves, and OTA-updates passes, and exposes the same operations to AI agents over MCP |
+| [`server/`](server/) | Node.js, Express, and TypeScript API that validates, signs, serves, delivers, and OTA-updates passes, and exposes the same operations to AI agents over MCP |
 | [`docs/`](docs/) | Abdeen Labs brand assets used by this README |
-| [`INSTRUCTIONS.md`](INSTRUCTIONS.md) | Complete certificate, deployment, and iPhone build guide |
+| [`INSTRUCTIONS.md`](INSTRUCTIONS.md) | Complete certificate, deployment, agent, Hark, and OTA guide |
 
 ## Getting started
 
-You will need macOS with Xcode 27 or newer, an iPhone running iOS 27 for the complete Wallet flow, a paid Apple Developer account, and Bun for the server tooling.
+You will need a paid Apple Developer account, an iPhone to receive passes, Bun for the server tooling, and an MCP client such as Claude Code.
 
-Start with the [complete setup guide](INSTRUCTIONS.md). It walks through creating a Pass Type ID, exporting the required Apple certificates, deploying the signing service, and building the app locally.
+Start with the [complete setup guide](INSTRUCTIONS.md). It walks through creating a Pass Type ID, exporting the required Apple certificates, deploying the signing service, and connecting an agent.
 
 Once the signing environment is configured, run the server:
 
@@ -62,36 +61,42 @@ bun install
 bun run dev
 ```
 
-Then build the app for your iPhone: open `app/Pocketful/Pocketful.xcodeproj` in Xcode, select your signing team under Signing & Capabilities, and run on your device.
+Then register the deployed endpoint with Claude Code:
 
-The app defaults to `https://pass.abdeen.dev`. Point it at your own deployment in **Advanced → Server** inside the app — the URL and API token persist on the device.
+```bash
+claude mcp add --transport http pocketful https://pass.abdeen.dev/mcp \
+  --header "Authorization: Bearer <API_TOKEN>"
+```
+
+Ask the agent for a pass. It calls `create_pass`, the server signs the result, and the download link arrives on your iPhone through Hark or as a URL to open there.
 
 ## Development
 
-| Area | Command | Description |
-| --- | --- | --- |
-| App | `open app/Pocketful/Pocketful.xcodeproj` | Open the app in Xcode; build and run from there |
-| Server | `bun run dev` | Run the API with TypeScript watch mode |
-| Server | `bun run build` | Compile the API to `server/dist` |
-| Server | `bun run start` | Run the compiled API |
+| Command | Description |
+| --- | --- |
+| `bun run dev` | Run the API with TypeScript watch mode |
+| `bun run test` | Run the test suite |
+| `bun run typecheck` | Type-check without emitting |
+| `bun run build` | Compile the API to `server/dist` |
+| `bun run start` | Run the compiled API |
 
-The pass specification is defined in [`server/src/types.ts`](server/src/types.ts) and mirrored by hand in the app's [`PassSpec.swift`](app/Pocketful/Pocketful/Models/PassSpec.swift) — update them together.
+The pass specification is defined in [`server/src/types.ts`](server/src/types.ts). The agent-facing summary of it lives in [`server/src/mcp.ts`](server/src/mcp.ts) and the artwork slots in [`server/src/slots.ts`](server/src/slots.ts) — keep the three in agreement.
 
 ## API at a glance
 
 - `GET /healthz` checks service health.
-- `POST /api/passes` validates and signs a pass specification, then returns its ID, download URL, and expiration time. With `"updatable": true` the server also keeps the spec and returns a stable `serialNumber`.
-- `GET /api/passes/:id` returns the signed `.pkpass` until it expires.
+- `POST /api/passes` validates and signs a pass specification, then returns `{ id, url, expiresAt }`. With `"updatable": true` the server also keeps the spec and returns a stable `serialNumber`. With Hark configured, the response carries a `hark` delivery result.
+- `GET /api/passes/:id` returns the signed `.pkpass` until it expires. It takes no token: the random id is the credential.
 - `PUT /api/passes/:serial` replaces an updatable pass's spec, re-signs it, and pushes the change to registered devices via APNs.
 - `GET /api/passes`, `GET /api/passes/:serial/spec`, `POST /api/passes/:serial/download`, and `DELETE /api/passes/:serial` manage updatable passes.
 - `POST /mcp` serves the same operations to AI agents over MCP (Streamable HTTP), behind the same bearer token.
 - `POST|DELETE /v1/devices/…`, `GET /v1/devices/…`, `GET /v1/passes/…`, and `POST /v1/log` implement [Apple's Wallet web service protocol](https://developer.apple.com/documentation/walletpasses/adding-a-web-service-to-update-passes) — iOS calls these on its own; you never do.
 
-One-shot passes are held only in memory and expire after 15 minutes by default. Updatable passes persist in SQLite (`DATA_DIR`, a mounted volume on Railway). The management API always requires an `API_TOKEN` bearer token. See [`INSTRUCTIONS.md`](INSTRUCTIONS.md) for the environment variables and troubleshooting notes.
+One-shot passes are held only in memory and expire after 15 minutes by default. Updatable passes persist in SQLite (`DATA_DIR`, a mounted volume on Railway). The management API and the MCP endpoint always require the `API_TOKEN` bearer token. See [`INSTRUCTIONS.md`](INSTRUCTIONS.md) for the environment variables and troubleshooting notes.
 
 ## Privacy
 
-No account is required. Designs and artwork stay on your device while you edit. Creating a pass sends the specification to one place — the signing server you configure — where it is signed in memory and dropped after the download window. Passes you mark as updatable are the exception: the server keeps their specification so it can re-sign and push new versions. Signing certificates stay on the server and never enter the app.
+No account is required. A pass specification goes to one place — the signing server you deploy — where it is signed in memory and dropped after the download window. Passes marked updatable are the exception: the server keeps their specification so it can re-sign and push revised versions. With Hark configured, the download URL also passes through your own Hark deployment and nothing else. Signing certificates stay on the server.
 
 <div align="center">
 

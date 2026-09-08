@@ -9,6 +9,7 @@ import {
   updatePassSpec,
   type PassSummary,
 } from "./db";
+import { deliverPass, type HarkDelivery } from "./hark";
 import { buildPass, passFilename } from "./passBuilder";
 import { deletePassesForSerial, putPass } from "./store";
 import { rebuildStoredPass } from "./updatable";
@@ -18,6 +19,8 @@ export interface DownloadLink {
   id: string;
   url: string;
   expiresAt: string;
+  /** Present only when HARK_URL/HARK_TOKEN are configured. */
+  hark?: HarkDelivery;
 }
 
 export interface CreatedPass extends DownloadLink {
@@ -50,18 +53,19 @@ export interface StoredSpec {
  * the life of the pass.
  */
 export interface PassService {
-  create(body: unknown, origin: string): CreatedPass;
+  create(body: unknown, origin: string): Promise<CreatedPass>;
   list(): { passes: PassSummary[] };
   update(serialNumber: string, body: unknown): Promise<UpdatedPass>;
   remove(serialNumber: string): { ok: true };
   getSpec(serialNumber: string): StoredSpec;
-  mintDownload(serialNumber: string, origin: string): MintedDownload;
+  mintDownload(serialNumber: string, origin: string): Promise<MintedDownload>;
 }
 
-function signOrThrow(build: () => Buffer): Buffer {
+async function signOrThrow(build: () => Promise<Buffer>): Promise<Buffer> {
   try {
-    return build();
+    return await build();
   } catch (err) {
+    if (err instanceof ApiError) throw err;
     // Signing/serialization failures are almost always a spec or cert problem;
     // surface the library's message so the caller can show it.
     throw new ApiError(
@@ -76,12 +80,13 @@ function notFound(): ApiError {
 }
 
 export function createPassService(config: Config): PassService {
-  function storeDownload(
+  /** Store the signed pass and, when Hark is configured, send the link to the iPhone. */
+  async function storeDownload(
     buffer: Buffer,
     description: string,
     origin: string,
     serialNumber?: string
-  ): DownloadLink {
+  ): Promise<DownloadLink> {
     const { id, expiresAt } = putPass(
       buffer,
       passFilename(description),
@@ -89,20 +94,22 @@ export function createPassService(config: Config): PassService {
       config.passStoreMaxBytes,
       serialNumber
     );
-    return {
+    const link: DownloadLink = {
       id,
       url: `${origin}/api/passes/${id}`,
       expiresAt: new Date(expiresAt).toISOString(),
     };
+    const hark = await deliverPass(config.hark, description, link.url);
+    return hark ? { ...link, hark } : link;
   }
 
   return {
-    create(body, origin) {
-      const validated = validateSpec(body);
+    async create(body, origin) {
+      const validated = await validateSpec(body);
       const { spec } = validated;
 
       if (!spec.updatable) {
-        const buffer = signOrThrow(() => buildPass(validated, config));
+        const buffer = await signOrThrow(() => buildPass(validated, config));
         return storeDownload(buffer, spec.description, origin);
       }
 
@@ -119,7 +126,7 @@ export function createPassService(config: Config): PassService {
         webServiceURL: config.publicBaseUrl ?? origin,
         authenticationToken: randomBytes(16).toString("hex"),
       };
-      const buffer = signOrThrow(() => buildPass(validated, config, identity));
+      const buffer = await signOrThrow(() => buildPass(validated, config, identity));
       insertPass({
         serialNumber,
         authToken: identity.authenticationToken,
@@ -128,7 +135,7 @@ export function createPassService(config: Config): PassService {
         description: spec.description,
       });
       return {
-        ...storeDownload(buffer, spec.description, origin, serialNumber),
+        ...(await storeDownload(buffer, spec.description, origin, serialNumber)),
         serialNumber,
         updatable: true,
       };
@@ -141,7 +148,7 @@ export function createPassService(config: Config): PassService {
     async update(serialNumber, body) {
       const record = getPassRecord(serialNumber);
       if (!record) throw notFound();
-      const validated = validateSpec(body);
+      const validated = await validateSpec(body);
       if (
         validated.spec.serialNumber &&
         validated.spec.serialNumber !== record.serialNumber
@@ -150,7 +157,7 @@ export function createPassService(config: Config): PassService {
       }
 
       const webServiceURL = config.publicBaseUrl ?? record.webServiceURL;
-      signOrThrow(() =>
+      await signOrThrow(() =>
         buildPass(validated, config, {
           serialNumber: record.serialNumber,
           webServiceURL,
@@ -209,12 +216,12 @@ export function createPassService(config: Config): PassService {
       };
     },
 
-    mintDownload(serialNumber, origin) {
+    async mintDownload(serialNumber, origin) {
       const record = getPassRecord(serialNumber);
       if (!record) throw notFound();
-      const buffer = signOrThrow(() => rebuildStoredPass(record, config));
+      const buffer = await signOrThrow(() => rebuildStoredPass(record, config));
       return {
-        ...storeDownload(buffer, record.description, origin, record.serialNumber),
+        ...(await storeDownload(buffer, record.description, origin, record.serialNumber)),
         serialNumber: record.serialNumber,
       };
     },

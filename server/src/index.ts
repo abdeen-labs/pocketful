@@ -66,7 +66,7 @@ export function createApp(config: Config): express.Express {
   // everything else (device registration, log callbacks, health) sends a few
   // hundred bytes.
   const smallJson = express.json({ limit: "100kb" });
-  // 24 MB of decoded PNG data expands to roughly 32 MB when base64 encoded;
+  // 24 MB of image data expands to roughly 32 MB when base64 encoded;
   // deriving the limit from the validator's cap means the two cannot drift.
   const passJson = express.json({
     limit: Math.ceil((MAX_TOTAL_IMAGE_BYTES * 4) / 3) + 1024 * 1024,
@@ -101,9 +101,13 @@ export function createApp(config: Config): express.Express {
       .sendFile(docsPath);
   });
 
-  app.post("/api/passes", passJson, (req, res) => {
-    requireApiToken(req);
-    res.status(201).json(passes.create(req.body, requestOrigin(req)));
+  app.post("/api/passes", passJson, async (req, res, next) => {
+    try {
+      requireApiToken(req);
+      res.status(201).json(await passes.create(req.body, requestOrigin(req)));
+    } catch (err) {
+      next(err);
+    }
   });
 
   /** Registered (updatable) passes. The :id download route below serves ephemeral ids. */
@@ -133,11 +137,15 @@ export function createApp(config: Config): express.Express {
   });
 
   /** Mint a fresh short-lived download link for a stored updatable pass. */
-  app.post("/api/passes/:serialNumber/download", (req, res) => {
-    requireApiToken(req);
-    res
-      .status(201)
-      .json(passes.mintDownload(req.params.serialNumber, requestOrigin(req)));
+  app.post("/api/passes/:serialNumber/download", async (req, res, next) => {
+    try {
+      requireApiToken(req);
+      res
+        .status(201)
+        .json(await passes.mintDownload(req.params.serialNumber, requestOrigin(req)));
+    } catch (err) {
+      next(err);
+    }
   });
 
   app.get("/api/passes/:id", (req, res) => {
@@ -145,7 +153,7 @@ export function createApp(config: Config): express.Express {
     if (!entry) {
       throw new ApiError(
         404,
-        "Pass not found or expired — create it again from the app"
+        "Pass not found or expired — create the pass again or mint a new download link"
       );
     }
     res
@@ -225,6 +233,12 @@ if (require.main === module) {
     console.warn(
       "APNs is not configured (APNS_KEY_ID/APNS_KEY_BASE64) — updatable passes " +
         "will update only when iOS refreshes them on its own."
+    );
+  }
+  if (config.hark) {
+    console.log(
+      `Hark delivery is enabled (HARK_URL=${config.hark.url}) — every minted pass ` +
+        "is sent to the iPhone as a notification."
     );
   }
   const app = createApp(config);

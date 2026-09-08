@@ -1,5 +1,4 @@
-// Pass spec sent by the app. Mirrored in app/src/types.ts — keep in sync by hand,
-// there is deliberately no shared package (Railway builds server/ standalone).
+// The pass spec accepted by POST /api/passes and the MCP create_pass tool.
 
 export type JsonPrimitive = string | number | boolean | null;
 export type JsonValue = JsonPrimitive | JsonObject | JsonValue[];
@@ -279,6 +278,10 @@ export interface PassSpec {
   personalization?: PersonalizationSpec;
   /** iOS 26 poster-event entries; validated by passkit-generator. */
   upcomingPassInformation?: JsonObject[];
-  /** image path without .png -> base64 PNG. Paths may include an xx.lproj folder. */
+  /**
+   * One base64 source image per artwork slot (icon, logo, strip, ...),
+   * optionally inside an xx.lproj folder. The server crops each to the slot's
+   * aspect and emits the 1x/2x/3x PNGs itself.
+   */
   images: Record<string, string>;
 }

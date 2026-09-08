@@ -1,3 +1,5 @@
+import { probeImage } from "./images";
+import { SLOT_NAMES } from "./slots";
 import type {
   BarcodeFormat,
   FeaturedActionType,
@@ -79,9 +81,11 @@ const PERSONALIZATION_FIELDS: PersonalizationField[] = [
   "PKPassPersonalizationFieldPhoneNumber",
 ];
 
-// Wallet's standard PNG assets, optionally inside a localization directory.
-const IMAGE_NAME = /^(?:(?:[a-zA-Z]{2,3}(?:-[a-zA-Z0-9]{2,8})?)\.lproj\/)?(?:icon|logo|primaryLogo|secondaryLogo|artwork|strip|thumbnail|background|footer|personalizationLogo)(?:@[23]x)?$/;
-const PNG_MAGIC = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+// One source image per Wallet artwork slot, optionally inside a localization directory.
+const IMAGE_PATH = new RegExp(
+  `^(?:[a-zA-Z]{2,3}(?:-[a-zA-Z0-9]{2,8})?\\.lproj/)?(?:${SLOT_NAMES.join("|")})$`
+);
+const SCALED_IMAGE_PATH = /^(.*)@\d+x$/;
 const MAX_IMAGE_MEGABYTES = 4;
 const MAX_IMAGE_BYTES = MAX_IMAGE_MEGABYTES * 1024 * 1024;
 export const MAX_TOTAL_IMAGE_BYTES = 24 * 1024 * 1024;
@@ -214,21 +218,25 @@ function validateAdditionalStyles(spec: PassSpec): ValidatedAdditionalStyle[] {
   });
 }
 
-function validateImages(images: unknown): Record<string, Buffer> {
+async function validateImages(images: unknown): Promise<Record<string, Buffer>> {
   if (!isRecord(images) || Object.keys(images).length === 0) {
-    throw new ApiError(400, "images must map Wallet image names to base64 PNG data");
+    throw new ApiError(400, "images must map Wallet artwork slot names to base64 image data");
   }
   const out: Record<string, Buffer> = {};
   let total = 0;
   for (const [name, data] of Object.entries(images)) {
-    if (!IMAGE_NAME.test(name)) {
-      throw new ApiError(400, `Unknown image path "${name}" — use a standard Wallet PNG asset name`);
+    const scaled = SCALED_IMAGE_PATH.exec(name);
+    if (scaled) {
+      throw new ApiError(
+        400,
+        `images.${name}: provide one image per slot ("${scaled[1]}") — the server produces every scale`
+      );
+    }
+    if (!IMAGE_PATH.test(name)) {
+      throw new ApiError(400, `Unknown image path "${name}" — use a Wallet artwork slot name (${SLOT_NAMES.join(", ")})`);
     }
     if (typeof data !== "string" || !data) throw new ApiError(400, `images.${name} must be a base64 string`);
     const buffer = Buffer.from(data, "base64");
-    if (buffer.length < PNG_MAGIC.length || !buffer.subarray(0, 8).equals(PNG_MAGIC)) {
-      throw new ApiError(400, `images.${name} is not a PNG`);
-    }
     if (buffer.length > MAX_IMAGE_BYTES) {
       throw new ApiError(400, `images.${name} exceeds ${MAX_IMAGE_MEGABYTES} MB`);
     }
@@ -236,8 +244,18 @@ function validateImages(images: unknown): Record<string, Buffer> {
     out[name] = buffer;
   }
   if (total > MAX_TOTAL_IMAGE_BYTES) throw new ApiError(400, "Combined image size exceeds 24 MB");
-  if (!out.icon && !out["icon@2x"] && !out["icon@3x"]) {
+  if (!out.icon) {
     throw new ApiError(400, 'images must include "icon" — Wallet rejects passes without one');
+  }
+  for (const [name, buffer] of Object.entries(out)) {
+    try {
+      await probeImage(buffer);
+    } catch (err) {
+      throw new ApiError(
+        400,
+        `images.${name} could not be decoded (${err instanceof Error ? err.message : String(err)}) — send a PNG, JPEG, or WebP`
+      );
+    }
   }
   return out;
 }
@@ -378,16 +396,16 @@ function validateModernStyleRequirements(
   const usesPosterGeneric =
     spec.style === "posterGeneric" ||
     additionalStyles.some((entry) => entry.style === "posterGeneric");
-  if (usesPosterGeneric && !hasImageAsset(images, "background")) {
-    throw new ApiError(400, "posterGeneric requires background PNG artwork");
+  if (usesPosterGeneric && !images.background) {
+    throw new ApiError(400, "posterGeneric requires background artwork");
   }
 
   if (spec.preferredStyleSchemes?.includes("posterEventTicket")) {
     if (spec.style !== "eventTicket") {
       throw new ApiError(400, "posterEventTicket requires the eventTicket style");
     }
-    if (!hasImageAsset(images, "artwork")) {
-      throw new ApiError(400, "posterEventTicket requires artwork PNG assets");
+    if (!images.artwork) {
+      throw new ApiError(400, "posterEventTicket requires artwork");
     }
     // Wallet logs `Failed to validate "posterEventTicket" scheme for pass: Pass
     // does not contain VAS or Barcode information.` and silently renders the
@@ -447,10 +465,6 @@ function validateModernStyleRequirements(
       "semanticBoardingPass"
     );
   }
-}
-
-function hasImageAsset(images: Record<string, Buffer>, name: string): boolean {
-  return Boolean(images[name] || images[`${name}@2x`] || images[`${name}@3x`]);
 }
 
 function assertSemanticKeys(
@@ -645,10 +659,11 @@ export interface ValidatedSpec {
   spec: PassSpec;
   fields: Partial<Record<FieldCategory, PassField[]>>;
   additionalStyles: ValidatedAdditionalStyle[];
+  /** Decodable source image per slot path, exactly as sent. */
   images: Record<string, Buffer>;
 }
 
-export function validateSpec(body: unknown): ValidatedSpec {
+export async function validateSpec(body: unknown): Promise<ValidatedSpec> {
   if (!isRecord(body)) throw new ApiError(400, "Request body must be a JSON object");
   const spec = body as unknown as PassSpec;
   if (!STYLES.includes(spec.style)) throw new ApiError(400, `style must be one of ${STYLES.join(", ")}`);
@@ -689,13 +704,9 @@ export function validateSpec(body: unknown): ValidatedSpec {
   const fields = validateFields(spec.fields);
   assertFieldsFitStyle(fields, spec.style);
   const additionalStyles = validateAdditionalStyles(spec);
-  const images = validateImages(spec.images);
+  const images = await validateImages(spec.images);
   validateModernStyleRequirements(spec, additionalStyles, images);
-  if (
-    spec.personalization &&
-    !images["personalizationLogo@2x"] &&
-    !images["personalizationLogo@3x"]
-  ) {
+  if (spec.personalization && !images.personalizationLogo) {
     throw new ApiError(400, "personalization requires personalizationLogo artwork");
   }
   return { spec, fields, additionalStyles, images };

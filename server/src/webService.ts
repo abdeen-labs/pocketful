@@ -10,7 +10,7 @@ import {
 import { rebuildStoredPass, secretsMatch } from "./updatable";
 import { ApiError } from "./validate";
 
-// Apple Wallet web service protocol. Called by iOS itself, not by the app:
+// Apple Wallet web service protocol, called by iOS itself:
 // https://developer.apple.com/documentation/walletpasses/adding-a-web-service-to-update-passes
 // Every response shape and status code here is dictated by that spec.
 
@@ -87,37 +87,39 @@ export function walletWebServiceRouter(config: Config): Router {
     }
   );
 
-  router.get("/v1/passes/:passTypeIdentifier/:serialNumber", (req, res) => {
-    const record = authenticatedPass(req, config);
-    // Freshness is keyed on a monotonic revision, not on Last-Modified:
-    // HTTP dates carry only second precision, so two updates inside one second
-    // would otherwise be indistinguishable and the second would never ship.
-    const etag = `"${record.serialNumber}-${record.revision}"`;
-    if (req.get("if-none-match") === etag) {
-      res.status(304).set({ ETag: etag }).send();
-      return;
-    }
-    // If-Modified-Since is deliberately ignored: every served pass carries an
-    // ETag, and HTTP dates only have second precision — a timestamp comparison
-    // here is how same-second updates used to get lost as false 304s.
-    let buffer: Buffer;
-    try {
-      buffer = rebuildStoredPass(record, config);
-    } catch (err) {
-      console.error(
-        `Failed to rebuild pass ${record.serialNumber}:`,
-        err instanceof Error ? err.message : err
-      );
-      throw new ApiError(500, "Failed to rebuild pass");
-    }
-    res
-      .set({
-        "Content-Type": "application/vnd.apple.pkpass",
-        ETag: etag,
-        "Last-Modified": new Date(record.updatedAt).toUTCString(),
-        "Cache-Control": "no-store",
-      })
-      .send(buffer);
+  router.get("/v1/passes/:passTypeIdentifier/:serialNumber", (req, res, next) => {
+    (async () => {
+      const record = authenticatedPass(req, config);
+      // Freshness is keyed on a monotonic revision, not on Last-Modified:
+      // HTTP dates carry only second precision, so two updates inside one second
+      // would otherwise be indistinguishable and the second would never ship.
+      const etag = `"${record.serialNumber}-${record.revision}"`;
+      if (req.get("if-none-match") === etag) {
+        res.status(304).set({ ETag: etag }).send();
+        return;
+      }
+      // If-Modified-Since is deliberately ignored: every served pass carries an
+      // ETag, and HTTP dates only have second precision — a timestamp comparison
+      // here is how same-second updates used to get lost as false 304s.
+      let buffer: Buffer;
+      try {
+        buffer = await rebuildStoredPass(record, config);
+      } catch (err) {
+        console.error(
+          `Failed to rebuild pass ${record.serialNumber}:`,
+          err instanceof Error ? err.message : err
+        );
+        throw new ApiError(500, "Failed to rebuild pass");
+      }
+      res
+        .set({
+          "Content-Type": "application/vnd.apple.pkpass",
+          ETag: etag,
+          "Last-Modified": new Date(record.updatedAt).toUTCString(),
+          "Cache-Control": "no-store",
+        })
+        .send(buffer);
+    })().catch(next);
   });
 
   // Apple's device log callback. Unauthenticated by protocol design, so treat

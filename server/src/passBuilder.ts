@@ -1,8 +1,10 @@
 import { randomUUID } from "node:crypto";
 import { PKPass } from "passkit-generator";
 import type { Config } from "./config";
+import { renderSlot } from "./images";
+import { SCALES, slotSize, type SlotName } from "./slots";
 import type { FieldCategory, PassField, PassStyle, TransitType } from "./types";
-import { toRgbString, type ValidatedSpec } from "./validate";
+import { ApiError, toRgbString, type ValidatedSpec } from "./validate";
 
 /**
  * Identity of a server-managed updatable pass. Wins over anything in the
@@ -97,24 +99,62 @@ export function buildPassJson(
   return passJson;
 }
 
-/** Build and sign a .pkpass entirely in memory. */
-export function buildPass(
+/**
+ * The 1x/2x/3x PNG files for every source image, keyed by their path inside
+ * the bundle (`icon.png`, `icon@2x.png`, `de.lproj/logo@3x.png`, ...).
+ */
+export async function renderImages(
+  images: Record<string, Buffer>,
+  style: PassStyle
+): Promise<Record<string, Buffer>> {
+  const files: Record<string, Buffer> = {};
+  await Promise.all(
+    Object.entries(images).map(async ([path, source]) => {
+      const slot = path.slice(path.lastIndexOf("/") + 1) as SlotName;
+      let renditions: Buffer[];
+      try {
+        renditions = await renderSlot(source, slotSize(slot, style));
+      } catch (err) {
+        throw new ApiError(
+          400,
+          `images.${path} could not be rendered (${err instanceof Error ? err.message : String(err)})`
+        );
+      }
+      SCALES.forEach((scale, index) => {
+        files[`${path}${scale === 1 ? "" : `@${scale}x`}.png`] = renditions[index];
+      });
+    })
+  );
+  return files;
+}
+
+/** Every file that goes into the bundle before signing. */
+export async function buildPassFiles(
   validated: ValidatedSpec,
   config: Config,
   identity?: UpdatableIdentity
-): Buffer {
+): Promise<Record<string, Buffer>> {
   const { spec, images } = validated;
   const files: Record<string, Buffer> = {
     "pass.json": Buffer.from(JSON.stringify(buildPassJson(validated, config, identity))),
+    ...(await renderImages(images, spec.style)),
   };
-  for (const [name, buffer] of Object.entries(images)) {
-    files[`${name}.png`] = buffer;
-  }
   if (spec.personalization) {
     files["personalization.json"] = Buffer.from(
       JSON.stringify(spec.personalization)
     );
   }
+  return files;
+}
+
+/** Build and sign a .pkpass entirely in memory. */
+export async function buildPass(
+  validated: ValidatedSpec,
+  config: Config,
+  identity?: UpdatableIdentity
+): Promise<Buffer> {
+  const { spec } = validated;
+  const files = await buildPassFiles(validated, config, identity);
 
   const pass = new PKPass(files, {
     wwdr: config.certs.wwdr,

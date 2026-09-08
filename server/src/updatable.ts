@@ -9,8 +9,8 @@ import { validateSpec } from "./validate";
  * over the URL stamped at creation so a domain move migrates devices on their
  * next refresh.
  */
-export function rebuildStoredPass(record: PassRecord, config: Config): Buffer {
-  const validated = validateSpec(JSON.parse(record.specJson));
+export async function rebuildStoredPass(record: PassRecord, config: Config): Promise<Buffer> {
+  const validated = await validateSpec(JSON.parse(record.specJson));
   return buildPass(validated, config, {
     serialNumber: record.serialNumber,
     webServiceURL: config.publicBaseUrl ?? record.webServiceURL,

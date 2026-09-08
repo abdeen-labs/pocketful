@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta
       name="description"
-      content="Pocketful documentation: self-host and create Apple Wallet passes from your iPhone."
+      content="Pocketful documentation: a self-hosted Apple Wallet pass signing server that AI agents create passes through."
     />
     <meta name="theme-color" content="#06080d" />
     <title>Pocketful docs</title>
@@ -751,6 +751,7 @@
         <div class="nav-group">
           <p class="nav-label">Agents</p>
           <a href="#mcp">MCP server</a>
+          <a href="#hark">Hark delivery</a>
         </div>
         <div class="nav-group">
           <p class="nav-label">More</p>
@@ -763,9 +764,9 @@
           <p class="eyebrow">Self-hosted Apple Wallet tooling</p>
           <h1 aria-label="Build passes. Keep the keys.">Build passes. <span>Keep the keys.</span></h1>
           <p class="lede">
-            Pocketful is an iPhone pass designer backed by your own signing server.
-            Your certificates stay private, your designs stay yours, and Wallet gets
-            a real signed pass.
+            Pocketful is a pass signing server for one person. An AI agent describes
+            the pass, your server signs it with your own certificates, and your
+            iPhone gets a real signed pass.
           </p>
           <div class="hero-links">
             <a class="button primary" href="#quick-start">
@@ -788,24 +789,24 @@
         <section id="overview">
           <h2>How it works</h2>
           <p class="section-intro">
-            The app handles design. The server handles identity. Apple Wallet handles
-            the final handoff.
+            The agent handles design. The server handles identity. Apple Wallet
+            handles the final handoff.
           </p>
           <div class="flow" aria-label="Pocketful pass creation flow">
             <div class="flow-item">
               <span class="step">01</span>
-              <strong>Design on iPhone</strong>
-              <p>Choose a pass style, fields, colors, barcode, and artwork.</p>
+              <strong>Describe the pass</strong>
+              <p>An agent turns your prompt into a spec — style, fields, colors, barcode, artwork — and calls <code>create_pass</code> over MCP.</p>
             </div>
             <div class="flow-item">
               <span class="step">02</span>
               <strong>Sign on your server</strong>
-              <p>The API validates the spec and signs a <code>.pkpass</code> in memory.</p>
+              <p>The server validates the spec, renders every artwork scale, and signs a <code>.pkpass</code> in memory.</p>
             </div>
             <div class="flow-item">
               <span class="step">03</span>
               <strong>Add to Wallet</strong>
-              <p>The app downloads the pass and opens Apple’s native add sheet.</p>
+              <p>Hark pushes the link to your iPhone and a tap opens Add to Wallet. Without Hark, open the URL on the phone.</p>
             </div>
           </div>
         </section>
@@ -819,8 +820,8 @@
           <ul class="requirements" aria-label="Requirements">
             <li>Paid Apple Developer account</li>
             <li>Pass Type ID and certificate</li>
-            <li>macOS with Xcode 27+</li>
-            <li>iPhone running iOS 27+</li>
+            <li>An MCP client such as Claude Code</li>
+            <li>An iPhone to receive passes</li>
           </ul>
           <ol class="steps">
             <li>
@@ -832,14 +833,97 @@
               <span>Set the certificate, team, pass type, and API token environment variables.</span>
             </li>
             <li>
-              <strong>Build the iPhone app.</strong>
-              <span>Select your signing team in Xcode and run Pocketful on a physical device.</span>
+              <strong>Register the MCP endpoint.</strong>
+              <span>Point your agent at <code>/mcp</code> with the API token as a bearer header.</span>
             </li>
             <li>
-              <strong>Point the app at your server.</strong>
-              <span>Enter its URL and API token under Advanced → Server, then create a pass.</span>
+              <strong>Ask for a pass.</strong>
+              <span>The agent builds the spec, the server signs it, and the link reaches your iPhone.</span>
             </li>
           </ol>
+          <h3>Environment</h3>
+          <div class="endpoint-list">
+            <div class="endpoint">
+              <span class="method">Required</span>
+              <code>PASS_TYPE_IDENTIFIER</code>
+              <span>Your Pass Type ID, e.g. <code>pass.dev.abdeen.pocketful</code></span>
+            </div>
+            <div class="endpoint">
+              <span class="method">Required</span>
+              <code>TEAM_IDENTIFIER</code>
+              <span>Your 10-character Apple Team ID</span>
+            </div>
+            <div class="endpoint">
+              <span class="method">Required</span>
+              <code>WWDR_CERT_BASE64</code>
+              <span>Base64 of the whole WWDR G4 PEM</span>
+            </div>
+            <div class="endpoint">
+              <span class="method">Required</span>
+              <code>SIGNER_CERT_BASE64</code>
+              <span>Base64 of the whole signing certificate PEM</span>
+            </div>
+            <div class="endpoint">
+              <span class="method">Required</span>
+              <code>SIGNER_KEY_BASE64</code>
+              <span>Base64 of the whole signing key PEM</span>
+            </div>
+            <div class="endpoint">
+              <span class="method">Required</span>
+              <code>API_TOKEN</code>
+              <span>Bearer token for the management API and <code>/mcp</code></span>
+            </div>
+            <div class="endpoint">
+              <span class="method">Optional</span>
+              <code>SIGNER_KEY_PASSPHRASE</code>
+              <span>Passphrase set when exporting the signing key</span>
+            </div>
+            <div class="endpoint">
+              <span class="method">Optional</span>
+              <code>ORGANIZATION_NAME</code>
+              <span>Default organization name on passes</span>
+            </div>
+            <div class="endpoint">
+              <span class="method">Optional</span>
+              <code>PASS_TTL_SECONDS</code>
+              <span>How long a download URL stays valid (default 900)</span>
+            </div>
+            <div class="endpoint">
+              <span class="method">Optional</span>
+              <code>PASS_STORE_MAX_BYTES</code>
+              <span>Ceiling for the in-memory pass store (default 128 MB)</span>
+            </div>
+            <div class="endpoint">
+              <span class="method">Optional</span>
+              <code>PUBLIC_BASE_URL</code>
+              <span>Origin stamped into updatable passes as <code>webServiceURL</code></span>
+            </div>
+            <div class="endpoint">
+              <span class="method">Optional</span>
+              <code>DATA_DIR</code>
+              <span>SQLite location for updatable passes; mount a volume there</span>
+            </div>
+            <div class="endpoint">
+              <span class="method">Optional</span>
+              <code>APNS_KEY_ID</code>
+              <span>APNs auth key ID for OTA pushes; set with <code>APNS_KEY_BASE64</code></span>
+            </div>
+            <div class="endpoint">
+              <span class="method">Optional</span>
+              <code>APNS_KEY_BASE64</code>
+              <span>Base64 of the whole <code>.p8</code> key file</span>
+            </div>
+            <div class="endpoint">
+              <span class="method">Optional</span>
+              <code>HARK_URL</code>
+              <span>Base URL of your Hark deployment; set with <code>HARK_TOKEN</code></span>
+            </div>
+            <div class="endpoint">
+              <span class="method">Optional</span>
+              <code>HARK_TOKEN</code>
+              <span>Hark API token with the <code>notifications:send</code> scope</span>
+            </div>
+          </div>
           <div class="note">
             <strong>Certificates need a few exact steps.</strong> Follow the
             <a
@@ -865,8 +949,8 @@ Content-Type: application/json</code></pre>
           </div>
           <div class="note">
             <strong>Keep it server-side.</strong> Treat the API token like a password.
-            Pocketful stores it locally on your device; don’t put it in pass fields or
-            commit it to the repository.
+            It lives in your MCP client’s configuration and your Railway variables;
+            don’t put it in pass fields or commit it to the repository.
           </div>
         </section>
 
@@ -874,7 +958,9 @@ Content-Type: application/json</code></pre>
           <h2>Create a pass</h2>
           <p class="section-intro">
             Send a pass specification to <code>POST /api/passes</code>. Artwork is a
-            map of Wallet image names to base64-encoded PNG data.
+            map of Wallet slot names to one base64-encoded source image each — PNG,
+            JPEG, or WebP. The server crops each image to its slot and renders the
+            1x, 2x, and 3x PNGs.
           </p>
           <h3>1. Define the pass</h3>
           <div class="code-block">
@@ -897,8 +983,8 @@ Content-Type: application/json</code></pre>
     { <span class="token-key">"format"</span>: <span class="token-value">"PKBarcodeFormatQR"</span>, <span class="token-key">"message"</span>: <span class="token-value">"member_001"</span> }
   ],
   <span class="token-key">"images"</span>: {
-    <span class="token-key">"icon"</span>: <span class="token-value">"BASE64_PNG_DATA"</span>,
-    <span class="token-key">"icon@2x"</span>: <span class="token-value">"BASE64_PNG_DATA"</span>
+    <span class="token-key">"icon"</span>: <span class="token-value">"BASE64_IMAGE"</span>,
+    <span class="token-key">"logo"</span>: <span class="token-value">"BASE64_IMAGE"</span>
   }
 }</code></pre>
           </div>
@@ -917,14 +1003,75 @@ Content-Type: application/json</code></pre>
             <pre><code>{
   <span class="token-key">"id"</span>: <span class="token-value">"d4f8…"</span>,
   <span class="token-key">"url"</span>: <span class="token-value">"https://…/api/passes/d4f8…"</span>,
-  <span class="token-key">"expiresAt"</span>: <span class="token-value">"2026-08-05T18:15:00.000Z"</span>
+  <span class="token-key">"expiresAt"</span>: <span class="token-value">"2026-09-08T18:15:00.000Z"</span>,
+  <span class="token-key">"hark"</span>: { <span class="token-key">"sent"</span>: <span class="token-value">true</span> }
 }</code></pre>
           </div>
           <p>
             Download links expire after 15 minutes by default. Set
             <code>"updatable": true</code> to retain a pass and receive a stable serial
-            number for over-the-air updates.
+            number for over-the-air updates. The <code>hark</code> field appears only
+            when Hark delivery is configured.
           </p>
+          <h3>Artwork slots</h3>
+          <p>
+            Keys are slot names, optionally prefixed with a localization directory
+            such as <code>de.lproj/</code>. Scaled keys like <code>icon@2x</code> are
+            rejected — the server produces every scale. Send a source at least three
+            times the point size; the crop keeps the center.
+          </p>
+          <div class="endpoint-list">
+            <div class="endpoint">
+              <span class="method">29×29</span>
+              <code>icon</code>
+              <span>Required. Lock Screen and pass list icon</span>
+            </div>
+            <div class="endpoint">
+              <span class="method">160×50</span>
+              <code>logo</code>
+              <span>Top-left artwork on every style</span>
+            </div>
+            <div class="endpoint">
+              <span class="method">126×30</span>
+              <code>primaryLogo</code>
+              <span>Poster identity on posterGeneric and posterEventTicket</span>
+            </div>
+            <div class="endpoint">
+              <span class="method">135×12</span>
+              <code>secondaryLogo</code>
+              <span>Issuer or venue logo on posterEventTicket</span>
+            </div>
+            <div class="endpoint">
+              <span class="method">358×448</span>
+              <code>artwork</code>
+              <span>Full-art face; required by posterEventTicket</span>
+            </div>
+            <div class="endpoint">
+              <span class="method">375×144</span>
+              <code>strip</code>
+              <span>Behind the fields on storeCard, coupon, and eventTicket (375×98 on eventTicket)</span>
+            </div>
+            <div class="endpoint">
+              <span class="method">90×90</span>
+              <code>thumbnail</code>
+              <span>Beside the fields on generic and eventTicket</span>
+            </div>
+            <div class="endpoint">
+              <span class="method">180×220</span>
+              <code>background</code>
+              <span>Full-pass background on eventTicket; full-bleed face on posterGeneric, required there</span>
+            </div>
+            <div class="endpoint">
+              <span class="method">286×15</span>
+              <code>footer</code>
+              <span>Above the barcode on boardingPass</span>
+            </div>
+            <div class="endpoint">
+              <span class="method">150×40</span>
+              <code>personalizationLogo</code>
+              <span>Shown while Wallet collects personalization details</span>
+            </div>
+          </div>
         </section>
 
         <section id="endpoints">
@@ -947,7 +1094,7 @@ Content-Type: application/json</code></pre>
             <div class="endpoint">
               <span class="method">GET</span>
               <code>/api/passes/:id</code>
-              <span>Download a short-lived pass</span>
+              <span>Download a short-lived pass — no token, the id is the credential</span>
             </div>
             <div class="endpoint">
               <span class="method">GET</span>
@@ -1024,7 +1171,7 @@ Content-Type: application/json</code></pre>
             bearer token. The
             <a
               class="inline-link"
-              href="https://github.com/abdeen-labs/pocketful/blob/main/INSTRUCTIONS.md#part-5--let-an-ai-agent-make-passes-optional"
+              href="https://github.com/abdeen-labs/pocketful/blob/main/INSTRUCTIONS.md#part-3--agents-over-mcp"
               >full setup guide</a
             >
             has the details.
@@ -1064,10 +1211,40 @@ Content-Type: application/json</code></pre>
             </div>
           </div>
           <div class="note">
-            <strong>Artwork is optional.</strong> If no icon is supplied, Pocketful uses
-            its bundled fallback. Other artwork goes into the spec's <code>images</code>
-            map as base64 PNG — the server cannot read files on the agent's machine. For
-            updates, omit <code>images</code> to reuse the stored artwork.
+            <strong>Artwork is optional over MCP.</strong> When the spec carries no icon,
+            <code>create_pass</code> fills in the bundled Pocketful icon and says so.
+            Other artwork goes into the spec’s <code>images</code> map as base64 source
+            images — the server cannot read files on the agent’s machine, so the agent
+            inlines them. For updates, omit <code>images</code> to reuse the stored
+            artwork.
+          </div>
+        </section>
+
+        <section id="hark">
+          <h2>Hark delivery</h2>
+          <p class="section-intro">
+            Hark is a self-hosted notification app. With <code>HARK_URL</code> and
+            <code>HARK_TOKEN</code> set, every minted download link goes straight to
+            your iPhone as a notification, and tapping it opens Hark’s Add to Wallet
+            sheet.
+          </p>
+          <div class="code-block">
+            <span class="code-label">Notification</span>
+            <pre><code>Northstar Coffee loyalty card
+Tap to add to Apple Wallet</code></pre>
+          </div>
+          <p>
+            The title is the pass description, the body is fixed, and the download
+            URL rides along as the pass to add. Responses report the outcome in
+            <code>hark</code>: <code>{ "sent": true }</code> when a device accepted the
+            notification, or <code>{ "sent": false, "error": "…" }</code> when Hark
+            rejected it, timed out, or no device took it. A failed delivery never fails
+            the request — the URL stays valid for its full TTL.
+          </p>
+          <div class="note">
+            <strong>Without Hark.</strong> Leave both variables unset and the server
+            returns the download URL alone. Open it on the iPhone before it expires and
+            Wallet’s add sheet appears.
           </div>
         </section>
 

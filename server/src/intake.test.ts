@@ -16,7 +16,10 @@ import { createApp } from "./index";
 // the signing step, which is exactly what this plan changes.
 
 const API_TOKEN = "test-api-token";
-const PNG_HEADER = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+const PNG_1X1 = Buffer.from(
+  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+  "base64"
+);
 
 function testConfig(dataDir: string): Config {
   return {
@@ -141,10 +144,8 @@ test("an authed multi-megabyte pass body clears both parsers", async () => {
     style: "generic",
     description: "Intake test pass",
     images: {
-      icon: PNG_HEADER.toString("base64"),
-      "icon@2x": Buffer.concat([PNG_HEADER, Buffer.alloc(2_000_000)]).toString(
-        "base64"
-      ),
+      icon: PNG_1X1.toString("base64"),
+      logo: Buffer.concat([PNG_1X1, Buffer.alloc(2_000_000)]).toString("base64"),
     },
   };
   const res = await fetch(`${base}/api/passes`, {

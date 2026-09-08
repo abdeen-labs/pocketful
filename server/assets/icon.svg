@@ -7,7 +7,7 @@
   fill="none"
 >
   <title>Pocketful default pass icon</title>
-  <desc>The Pocketful ring mark on a navy rounded square. Master for the bundled icon-29/58/87 PNGs.</desc>
+  <desc>The Pocketful ring mark on a navy rounded square. Source for the default pass icon.</desc>
 
   <defs>
     <linearGradient id="bg" x1="512" y1="0" x2="512" y2="1024" gradientUnits="userSpaceOnUse">

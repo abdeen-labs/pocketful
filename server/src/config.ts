@@ -1,3 +1,9 @@
+export interface HarkConfig {
+  /** Base URL of the Hark deployment, without a trailing slash. */
+  url: string;
+  token: string;
+}
+
 export interface Config {
   port: number;
   passTypeIdentifier: string;
@@ -17,6 +23,8 @@ export interface Config {
     keyId: string;
     key: Buffer;
   };
+  /** Hark deployment that receives every freshly minted pass. Both or neither. */
+  hark?: HarkConfig;
   certs: {
     wwdr: Buffer;
     signerCert: Buffer;
@@ -48,6 +56,14 @@ export function loadConfig(): Config {
     );
   }
 
+  const harkUrl = process.env.HARK_URL;
+  const harkToken = process.env.HARK_TOKEN;
+  if (Boolean(harkUrl) !== Boolean(harkToken)) {
+    throw new Error(
+      "HARK_URL and HARK_TOKEN must be set together (or both left unset)."
+    );
+  }
+
   const config: Config = {
     port: Number(process.env.PORT) || 3000,
     passTypeIdentifier: required("PASS_TYPE_IDENTIFIER"),
@@ -62,6 +78,10 @@ export function loadConfig(): Config {
     apns:
       apnsKeyId && apnsKeyBase64
         ? { keyId: apnsKeyId, key: Buffer.from(apnsKeyBase64, "base64") }
+        : undefined,
+    hark:
+      harkUrl && harkToken
+        ? { url: harkUrl.replace(/\/+$/, ""), token: harkToken }
         : undefined,
     certs: {
       wwdr: requiredB64("WWDR_CERT_BASE64"),

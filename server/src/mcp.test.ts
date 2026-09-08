@@ -184,3 +184,37 @@ test("create_pass fills in the bundled icon and reaches the signer", async () =>
     await client.close();
   }
 });
+
+test("create_pass rejects scaled image keys before signing", async () => {
+  const client = await connect(API_TOKEN);
+  try {
+    const result = await call(client, "create_pass", {
+      spec: {
+        style: "generic",
+        description: "MCP test pass",
+        images: { "icon@2x": "aGVsbG8=" },
+      },
+    });
+    assert.equal(result.isError, true);
+    assert.match(
+      result.content[0].text,
+      /^Error 400: images\.icon@2x: provide one image per slot \("icon"\)/
+    );
+  } finally {
+    await client.close();
+  }
+});
+
+test("the create_pass guide lists slot point sizes and forbids scaled keys", async () => {
+  const client = await connect(API_TOKEN);
+  try {
+    const { tools } = await client.listTools();
+    const create = tools.find((tool) => tool.name === "create_pass");
+    assert.ok(create?.description);
+    assert.match(create.description, /icon 29×29/);
+    assert.match(create.description, /strip 375×144/);
+    assert.match(create.description, /never send @2x\/@3x keys/);
+  } finally {
+    await client.close();
+  }
+});
