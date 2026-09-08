@@ -3,41 +3,6 @@
 # Dependencies
 node_modules/
 
-# Native
-.kotlin/
-*.orig.*
-*.jks
-*.p8
-*.p12
-*.key
-*.mobileprovision
-
-# Metro
-.metro-health-check*
-
-# Xcode
-DerivedData/
-build/
-xcuserdata/
-*.xcuserstate
-*.xccheckout
-*.moved-aside
-*.pbxuser
-*.mode1v3
-*.mode2v3
-*.perspectivev3
-*.hmap
-*.ipa
-*.dSYM
-*.dSYM.zip
-
-# Swift Package Manager
-.swiftpm/
-.build/
-
-# CocoaPods
-Pods/
-
 # Debug
 npm-debug.*
 yarn-debug.*
@@ -46,9 +11,12 @@ yarn-error.*
 # macOS
 .DS_Store
 
-# Certificates — never commit these
+# Certificates and keys — never commit these
 *.pem
 *.cer
+*.p8
+*.p12
+*.key
 
 # Updatable-pass database
 # Server/data locally, or a mounted volume on Railway
