@@ -7,16 +7,22 @@ const TITLE_MAX = 80;
 const BODY = "Tap to add to Apple Wallet";
 const TIMEOUT_MS = 10_000;
 
-/** A 2xx with `accepted_count` 0 means no device took the notification. */
 async function acceptedNowhere(res: Response): Promise<string | undefined> {
   try {
-    const body = (await res.json()) as { accepted_count?: unknown; message?: unknown };
-    if (body?.accepted_count !== 0) return undefined;
+    const body = (await res.json()) as {
+      notification?: { accepted_count?: unknown };
+      message?: unknown;
+    };
+    const count = body?.notification?.accepted_count;
+    if (typeof count !== "number" || !Number.isInteger(count) || count < 0) {
+      return "Hark returned an invalid delivery result";
+    }
+    if (count > 0) return undefined;
     return typeof body.message === "string" && body.message
       ? body.message
-      : "no device accepted the notification";
+      : "no notification was accepted by APNs";
   } catch {
-    return undefined;
+    return "Hark returned an invalid delivery result";
   }
 }
 
@@ -30,10 +36,7 @@ async function errorMessage(res: Response): Promise<string | undefined> {
   }
 }
 
-/**
- * Send the download link through Hark. Resolves to `undefined` when Hark is
- * not configured; never throws — a failed delivery is a result, not an error.
- */
+/** Send the download link through Hark. Returns undefined when unconfigured. */
 export async function deliverPass(
   hark: HarkConfig | undefined,
   title: string,

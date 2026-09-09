@@ -31,7 +31,7 @@ afterEach(() => {
 test("a 2xx from Hark counts as sent and carries the documented request", async () => {
   const calls = stubFetch(() =>
     Response.json(
-      { notification: { id: "n1" }, accepted_count: 1, replayed: false, message: null },
+      { notification: { id: "n1", accepted_count: 1 }, replayed: false, message: null },
       { status: 201 }
     )
   );
@@ -52,10 +52,10 @@ test("a 2xx from Hark counts as sent and carries the documented request", async 
   assert.ok(calls[0].init.signal instanceof AbortSignal);
 });
 
-test("a 2xx that no device accepted is a failed delivery carrying Hark's summary", async () => {
+test("zero accepted pushes is a failed delivery carrying Hark's summary", async () => {
   stubFetch(() =>
     Response.json(
-      { notification: { id: "n1" }, accepted_count: 0, message: "No device is registered." },
+      { notification: { id: "n1", accepted_count: 0 }, replayed: false, message: "No device is registered." },
       { status: 201 }
     )
   );
@@ -63,8 +63,44 @@ test("a 2xx that no device accepted is a failed delivery carrying Hark's summary
   assert.deepEqual(result, { sent: false, error: "No device is registered." });
 });
 
+test("zero accepted pushes without a summary reports failure", async () => {
+  stubFetch(() =>
+    Response.json(
+      { notification: { id: "n1", accepted_count: 0 }, replayed: false, message: null },
+      { status: 201 }
+    )
+  );
+  assert.deepEqual(await deliverPass(hark, "Gym card", PASS_URL), {
+    sent: false,
+    error: "no notification was accepted by APNs",
+  });
+});
+
+test("invalid delivery responses cannot report success", async () => {
+  const responses = [
+    null,
+    {},
+    { accepted_count: 1 },
+    ...["1", -1, 0.5].map((accepted_count) => ({ notification: { accepted_count } })),
+  ];
+  for (const body of responses) {
+    stubFetch(() => Response.json(body, { status: 201 }));
+    assert.deepEqual(await deliverPass(hark, "Gym card", PASS_URL), {
+      sent: false,
+      error: "Hark returned an invalid delivery result",
+    });
+  }
+  stubFetch(() => new Response("not JSON", { status: 201 }));
+  assert.deepEqual(await deliverPass(hark, "Gym card", PASS_URL), {
+    sent: false,
+    error: "Hark returned an invalid delivery result",
+  });
+});
+
 test("titles are cut to Hark's 80-character limit", async () => {
-  const calls = stubFetch(() => Response.json({}, { status: 201 }));
+  const calls = stubFetch(() =>
+    Response.json({ notification: { accepted_count: 1 } }, { status: 201 })
+  );
   await deliverPass(hark, "x".repeat(120), PASS_URL);
   assert.equal(JSON.parse(String(calls[0].init.body)).title, "x".repeat(80));
 });

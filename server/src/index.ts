@@ -18,7 +18,7 @@ export function createApp(config: Config): express.Express {
   const docsPath = path.join(__dirname, "../public/index.html");
   // Railway terminates TLS at its proxy; trust it so req.protocol is https.
   // NOTE: `trust proxy: true` means req.ip comes from X-Forwarded-For, which a
-  // client can spoof. Tightening that to a hop count is plan 007.
+  // client can spoof.
   app.set("trust proxy", true);
 
   function requireApiToken(req: express.Request): void {

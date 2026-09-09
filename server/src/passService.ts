@@ -220,6 +220,8 @@ export function createPassService(config: Config): PassService {
       const record = getPassRecord(serialNumber);
       if (!record) throw notFound();
       const buffer = await signOrThrow(() => rebuildStoredPass(record, config));
+      const current = getPassRecord(serialNumber);
+      if (!current || current.authToken !== record.authToken) throw notFound();
       return {
         ...(await storeDownload(buffer, record.description, origin, record.serialNumber)),
         serialNumber: record.serialNumber,

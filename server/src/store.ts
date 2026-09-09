@@ -27,9 +27,7 @@ setInterval(() => {
 
 /**
  * Store a signed pass for later download, evicting oldest entries first when
- * the byte budget would be exceeded. A Map iterates in insertion order, so the
- * first key is always the oldest entry — for short-lived links that is a
- * good enough LRU.
+ * the byte budget would be exceeded. Map insertion order determines eviction.
  */
 export function putPass(
   buffer: Buffer,

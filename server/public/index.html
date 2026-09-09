@@ -1236,10 +1236,11 @@ Tap to add to Apple Wallet</code></pre>
           <p>
             The title is the pass description, the body is fixed, and the download
             URL rides along as the pass to add. Responses report the outcome in
-            <code>hark</code>: <code>{ "sent": true }</code> when a device accepted the
-            notification, or <code>{ "sent": false, "error": "…" }</code> when Hark
-            rejected it, timed out, or no device took it. A failed delivery never fails
-            the request — the URL stays valid for its full TTL.
+            <code>hark</code>: <code>{ "sent": true }</code> when APNs accepted at least
+            one notification, or <code>{ "sent": false, "error": "…" }</code> when Hark
+            rejected it, timed out, returned an invalid result, or reported zero
+            accepted notifications. A failed delivery never fails the request —
+            the URL stays valid for its full TTL.
           </p>
           <div class="note">
             <strong>Without Hark.</strong> Leave both variables unset and the server

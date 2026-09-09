@@ -353,9 +353,9 @@ loaded, and Wallet takes it from there.
 
 Responses that mint a link carry a `hark` field:
 
-- `{ "sent": true }` — a device accepted the notification.
+- `{ "sent": true }` — APNs accepted at least one notification.
 - `{ "sent": false, "error": "…" }` — Hark rejected the request, timed out
-  (10 s), or reported that no device took the notification.
+  (10 s), returned an invalid result, or reported zero accepted notifications.
 
 A failed delivery does not fail the request: the pass is signed and the URL is
 valid for its full TTL. The MCP tools spell this out in the result text — either

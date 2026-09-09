@@ -98,9 +98,7 @@ export function walletWebServiceRouter(config: Config): Router {
         res.status(304).set({ ETag: etag }).send();
         return;
       }
-      // If-Modified-Since is deliberately ignored: every served pass carries an
-      // ETag, and HTTP dates only have second precision — a timestamp comparison
-      // here is how same-second updates used to get lost as false 304s.
+      // Ignore If-Modified-Since so same-second updates are not returned as 304s.
       let buffer: Buffer;
       try {
         buffer = await rebuildStoredPass(record, config);

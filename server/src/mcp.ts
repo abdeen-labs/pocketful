@@ -74,7 +74,6 @@ const OPEN_ON_IPHONE =
 const SENT_THROUGH_HARK =
   "Sent to your iPhone through Hark. Tap the notification to add the pass to Wallet.";
 
-/** The note that tells the agent how the pass reaches the iPhone. */
 function deliveryNote(hark: HarkDelivery | undefined): string {
   if (!hark) return OPEN_ON_IPHONE;
   if (hark.sent) return SENT_THROUGH_HARK;
