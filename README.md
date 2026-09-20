@@ -6,7 +6,7 @@
   <img src="docs/assets/lockup-dark.svg" alt="Abdeen Labs" width="205" height="40">
 </picture>
 
-`NIGHTFIELD//OPEN`
+`ABD33N//OPEN`
 
 </div>
 
@@ -106,6 +106,6 @@ No account is required. A pass specification goes to one place — the signing s
   <img src="docs/assets/seal-roundel-chalk.svg" alt="Abdeen Labs roundel seal" width="72" height="72">
 </picture>
 
-`NIGHTFIELD//OPEN`
+`ABD33N//OPEN`
 
 </div>
