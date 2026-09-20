@@ -344,6 +344,12 @@ function validateAdvanced(spec: PassSpec): void {
       if (!isRecord(action)) throw new ApiError(400, `featuredActions[${index}] must be an object`);
       if (typeof action.identifier !== "string" || !action.identifier || action.identifier.length > 200) throw new ApiError(400, `featuredActions[${index}].identifier must be a string of at most 200 characters`);
       if (!FEATURED_ACTION_TYPES.includes(action.type as FeaturedActionType)) throw new ApiError(400, `featuredActions[${index}].type must be one of ${FEATURED_ACTION_TYPES.join(", ")}`);
+      if (action.type === "place") {
+        if (action.url !== undefined) throw new ApiError(400, `featuredActions[${index}].url is not allowed on a place action; use placeIdentifier`);
+        if (typeof action.placeIdentifier !== "string" || !action.placeIdentifier || action.placeIdentifier.length > 200) throw new ApiError(400, `featuredActions[${index}].placeIdentifier must be a string of at most 200 characters`);
+        return;
+      }
+      if (action.placeIdentifier !== undefined) throw new ApiError(400, `featuredActions[${index}].placeIdentifier is only allowed on a place action`);
       if (typeof action.url !== "string") throw new ApiError(400, `featuredActions[${index}].url must be a string`);
       let parsed: URL;
       try {

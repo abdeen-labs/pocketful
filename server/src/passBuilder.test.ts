@@ -119,6 +119,25 @@ test("style-specific options stay out of pass.json when no present style uses th
   assert.deepEqual(styleKeys(json), ["generic"]);
 });
 
+test("a place featured action reaches pass.json with its placeIdentifier and no url", async () => {
+  const json = buildPassJson(
+    await validateSpec({
+      style: "storeCard",
+      description: "Card",
+      images: { icon: icon() },
+      featuredActions: [
+        { identifier: "directions", type: "place", placeIdentifier: "I0000000000000000" },
+        { identifier: "shop", type: "shop", url: "https://example.com/shop" },
+      ],
+    }),
+    config
+  );
+  assert.deepEqual(json.featuredActions, [
+    { identifier: "directions", type: "place", placeIdentifier: "I0000000000000000" },
+    { identifier: "shop", type: "shop", url: "https://example.com/shop" },
+  ]);
+});
+
 test("an updatable identity overrides the serial number and web service credentials", async () => {
   const json = buildPassJson(
     await validateSpec({

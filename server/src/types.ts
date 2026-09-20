@@ -196,11 +196,20 @@ export type FeaturedActionType =
   | "bookStay"
   | "viewOffersRewards";
 
-export interface FeaturedAction {
+export interface PlaceFeaturedAction {
   identifier: string;
-  type: FeaturedActionType;
+  type: "place";
+  /** Apple Maps place identifier; a place action carries this instead of a url. */
+  placeIdentifier: string;
+}
+
+export interface URLFeaturedAction {
+  identifier: string;
+  type: Exclude<FeaturedActionType, "place">;
   url: string;
 }
+
+export type FeaturedAction = PlaceFeaturedAction | URLFeaturedAction;
 
 export interface PosterGenericOptions {
   /** Removes the automatic darkening gradient behind the header. */

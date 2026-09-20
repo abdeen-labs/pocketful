@@ -76,6 +76,17 @@ test("accepts two featured actions on a store card", async () => {
   });
 });
 
+test("accepts a place featured action carrying a placeIdentifier", async () => {
+  await validateSpec({
+    ...validSpec(),
+    style: "storeCard",
+    featuredActions: [
+      { identifier: "directions", type: "place", placeIdentifier: "I0000000000000000" },
+      { identifier: "shop", type: "shop", url: "https://example.com/shop" },
+    ],
+  });
+});
+
 test("accepts the baseline valid spec and returns its parts", async () => {
   const result = await validateSpec(validSpec());
   assert.equal(result.spec.description, "Test pass");
@@ -339,6 +350,37 @@ const REJECTIONS: Rejection[] = [
     },
     status: 400,
     fragment: "script scheme",
+  },
+  {
+    name: "place featured action with a url",
+    spec: {
+      ...validSpec(),
+      featuredActions: [
+        { identifier: "a", type: "place", url: "https://maps.apple.com/?q=example" },
+      ],
+    },
+    status: 400,
+    fragment: "use placeIdentifier",
+  },
+  {
+    name: "place featured action without a placeIdentifier",
+    spec: {
+      ...validSpec(),
+      featuredActions: [{ identifier: "a", type: "place" }],
+    },
+    status: 400,
+    fragment: "placeIdentifier must be a string",
+  },
+  {
+    name: "non-place featured action with a placeIdentifier",
+    spec: {
+      ...validSpec(),
+      featuredActions: [
+        { identifier: "a", type: "shop", url: "https://example.com", placeIdentifier: "I0000000000000000" },
+      ],
+    },
+    status: 400,
+    fragment: "only allowed on a place action",
   },
   {
     name: "featured actions combined with the posterEventTicket scheme",
