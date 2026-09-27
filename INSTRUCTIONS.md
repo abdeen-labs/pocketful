@@ -1,5 +1,3 @@
-`ABD33N//OPEN`
-
 # Pocketful setup guide
 
 Describe an Apple Wallet pass to an AI agent, get it signed by your own server,
@@ -462,5 +460,3 @@ returns the stored spec if you want to modify rather than rebuild it.
   detection.
 
 ---
-
-`ABD33N//OPEN`
