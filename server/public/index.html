@@ -760,8 +760,8 @@
           <h1 aria-label="Build passes. Keep the keys.">Build passes. <span>Keep the keys.</span></h1>
           <p class="lede">
             Pocketful is a pass signing server for one person. An AI agent describes
-            the pass, your server signs it with your own certificates, and your
-            iPhone gets a real signed pass.
+            the pass, and your server signs it with your Apple certificates. Open the
+            download link on your iPhone to add it to Wallet.
           </p>
           <div class="hero-links">
             <a class="button primary" href="#quick-start">
@@ -784,8 +784,8 @@
         <section id="overview">
           <h2>How it works</h2>
           <p class="section-intro">
-            The agent handles design. The server handles identity. Apple Wallet
-            handles the final handoff.
+            Send a pass specification through MCP or the REST API, then download
+            the signed pass on your iPhone.
           </p>
           <div class="flow" aria-label="Pocketful pass creation flow">
             <div class="flow-item">
@@ -809,8 +809,8 @@
         <section id="quick-start">
           <h2>Quick start</h2>
           <p class="section-intro">
-            Pocketful is intentionally self-hosted. You bring the Apple signing
-            identity and deploy one small Node service.
+            Deploy the Node service with your Apple signing certificate and
+            private key, then connect your MCP client.
           </p>
           <ul class="requirements" aria-label="Requirements">
             <li>Paid Apple Developer account</li>
@@ -920,7 +920,7 @@
             </div>
           </div>
           <div class="note">
-            <strong>Certificates need a few exact steps.</strong> Follow the
+            Follow the
             <a
               class="inline-link"
               href="https://github.com/abdeen-labs/pocketful/blob/main/INSTRUCTIONS.md"
@@ -943,9 +943,8 @@
 Content-Type: application/json</code></pre>
           </div>
           <div class="note">
-            <strong>Keep it server-side.</strong> Treat the API token like a password.
-            It lives in your MCP client’s configuration and your Railway variables;
-            don’t put it in pass fields or commit it to the repository.
+            Set the same <code>API_TOKEN</code> in the server environment and your
+            MCP client’s Authorization header.
           </div>
         </section>
 
@@ -1209,8 +1208,7 @@ Content-Type: application/json</code></pre>
             <strong>Artwork is optional over MCP.</strong> When the spec carries no icon,
             <code>create_pass</code> fills in the bundled Pocketful icon and says so.
             Other artwork goes into the spec’s <code>images</code> map as base64 source
-            images — the server cannot read files on the agent’s machine, so the agent
-            inlines them. For updates, omit <code>images</code> to reuse the stored
+            images. For updates, omit <code>images</code> to reuse the stored
             artwork.
           </div>
         </section>

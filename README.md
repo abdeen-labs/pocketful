@@ -14,7 +14,7 @@
   <img src="docs/assets/pocketful-icon.png" width="112" alt="Pocketful icon">
 </p>
 
-Pocketful is a self-hosted Apple Wallet pass signing server for one person. Describe a pass to an AI agent — Claude Code, Claude Desktop, anything that speaks MCP — and the server validates the spec, sizes the artwork, signs a `.pkpass` with your own certificates, and hands back a short-lived download URL. With Hark configured, the pass reaches your iPhone as a notification; tap it and Wallet's add sheet opens. The only service involved is the one you deploy yourself.
+Pocketful is a self-hosted Apple Wallet pass signing server for one person. Describe a pass to an AI agent — Claude Code, Claude Desktop, anything that speaks MCP — and the server validates the spec, sizes the artwork, signs a `.pkpass` with your own certificates, and hands back a short-lived download URL. With Hark configured, the pass reaches your iPhone as a notification; tap it and Wallet's add sheet opens.
 
 Pocketful is an Abdeen Labs internal tool. The source is public.
 
@@ -35,7 +35,7 @@ Pocketful is an Abdeen Labs internal tool. The source is public.
 2. The Express service validates the specification, crops and renders each image at every Wallet scale, builds and signs a `.pkpass` in memory, and returns a short-lived download URL.
 3. With Hark configured, the server pushes that URL to your iPhone as a notification; tapping it opens Hark's Add to Wallet sheet. Without Hark, open the URL on the iPhone.
 
-Signing stays on the server because [`passkit-generator`](https://github.com/alexandercerutti/passkit-generator) runs on Node.js and because the signing certificates belong in exactly one place.
+The server uses [`passkit-generator`](https://github.com/alexandercerutti/passkit-generator) to build and sign passes. Signing certificates stay on the server.
 
 ## Repository layout
 
@@ -88,13 +88,13 @@ The pass specification is defined in [`server/src/types.ts`](server/src/types.ts
 - `PUT /api/passes/:serial` replaces an updatable pass's spec, re-signs it, and pushes the change to registered devices via APNs.
 - `GET /api/passes`, `GET /api/passes/:serial/spec`, `POST /api/passes/:serial/download`, and `DELETE /api/passes/:serial` manage updatable passes.
 - `POST /mcp` serves the same operations to AI agents over MCP (Streamable HTTP), behind the same bearer token.
-- `POST|DELETE /v1/devices/…`, `GET /v1/devices/…`, `GET /v1/passes/…`, and `POST /v1/log` implement [Apple's Wallet web service protocol](https://developer.apple.com/documentation/walletpasses/adding-a-web-service-to-update-passes) — iOS calls these on its own; you never do.
+- `POST|DELETE /v1/devices/…`, `GET /v1/devices/…`, `GET /v1/passes/…`, and `POST /v1/log` implement [Apple's Wallet web service protocol](https://developer.apple.com/documentation/walletpasses/adding-a-web-service-to-update-passes) for Wallet's update requests.
 
 One-shot passes are held only in memory and expire after 15 minutes by default. Updatable passes persist in SQLite (`DATA_DIR`, a mounted volume on Railway). The management API and the MCP endpoint always require the `API_TOKEN` bearer token. See [`INSTRUCTIONS.md`](INSTRUCTIONS.md) for the environment variables and troubleshooting notes.
 
 ## Privacy
 
-No account is required. A pass specification goes to one place — the signing server you deploy — where it is signed in memory and dropped after the download window. Passes marked updatable are the exception: the server keeps their specification so it can re-sign and push revised versions. With Hark configured, the download URL also passes through your own Hark deployment and nothing else. Signing certificates stay on the server.
+Pocketful requires no account. The server builds and signs passes in memory, retaining downloads for 15 minutes by default. Updatable pass specifications and device registrations are stored in SQLite. When configured, Hark receives the pass description and download URL for the notification. Signing certificates stay on the server.
 
 <div align="center">
 

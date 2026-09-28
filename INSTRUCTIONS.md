@@ -1,8 +1,7 @@
 # Pocketful setup guide
 
 Describe an Apple Wallet pass to an AI agent, get it signed by your own server,
-add it to Wallet on your iPhone. Entirely self-hosted: the only service involved
-is the signing server you deploy.
+add it to Wallet on your iPhone.
 
 ```
 server/   Node + Express — validates pass specs, renders artwork, signs .pkpass
@@ -24,8 +23,8 @@ server/   Node + Express — validates pass specs, renders artwork, signs .pkpas
    pushes it as a notification and a tap opens Hark's Add to Wallet sheet.
    Without Hark, open the URL on the iPhone and Wallet's add sheet appears.
 
-Signing happens server-side because [passkit-generator](https://github.com/alexandercerutti/passkit-generator)
-is Node-only, and because the signing certificates belong in exactly one place.
+The server uses [passkit-generator](https://github.com/alexandercerutti/passkit-generator)
+to build and sign passes. Signing certificates stay on the server.
 
 Follow the first three parts below **in order**. Parts 4 and 5 are optional:
 delivering passes to your iPhone through Hark, and updating passes over the air.
@@ -85,8 +84,8 @@ Notes:
   `SIGNER_KEY_PASSPHRASE`.
 - If `openssl pkcs12` fails with an algorithm/`unsupported` error, you're on
   OpenSSL 3 with an old-style `.p12` — add `-legacy` to the command.
-- If Wallet later rejects your pass, 9 times out of 10 the certificate doesn't
-  match the `PASS_TYPE_IDENTIFIER`/`TEAM_IDENTIFIER` you configured.
+- If Wallet rejects a pass, check that the certificate matches the configured
+  `PASS_TYPE_IDENTIFIER` and `TEAM_IDENTIFIER`.
 
 ### 1.4 Base64-encode for env vars
 
@@ -223,10 +222,9 @@ the same way — Claude Desktop included: point it at `/mcp` and send
 | `mint_pass_download` | A fresh short-lived download URL for an existing updatable pass, e.g. to add it to another iPhone. |
 | `delete_pass` | Remove an updatable pass and its registrations. Copies already in Wallet stay on the device but stop updating. |
 
-Each tool's description carries the full spec guide — required keys, the
-poster layouts, colors, fields, barcodes, semantics, and the artwork slots — so
-the agent needs no other reference. Validation is strict and every `400` names
-the exact problem; the agent fixes the spec and retries.
+Tool descriptions include the spec guide: required keys, poster layouts,
+colors, fields, barcodes, semantics, and artwork slots. Validation errors
+identify the field or requirement to fix before retrying.
 
 ### 3.3 The images contract
 
@@ -253,8 +251,7 @@ crop keeps the center. Localized variants take an `xx.lproj/` prefix, e.g.
 `icon` is mandatory — Wallet rejects passes without one. Over MCP, a spec with
 no icon gets the bundled Pocketful icon and the tool result says so; over REST,
 `POST /api/passes` returns a `400` instead. Every other slot is optional unless
-the style calls for it. The server cannot read files on the agent's machine, so
-the agent reads the file itself and inlines it as base64.
+the style calls for it. The agent reads local artwork and inlines it as base64.
 
 ### 3.4 A worked example
 
@@ -401,8 +398,7 @@ certificate:
 3. Set `APNS_KEY_ID` and `APNS_KEY_BASE64` (`base64 -i AuthKey_XXXXXXXXXX.p8`)
    on Railway.
 
-Without the key everything still works, but devices only refresh passes on
-their own occasional schedule instead of instantly. Pass pushes go to
+Without an APNs key, Wallet refreshes passes on its own schedule. Pass pushes go to
 production APNs only — there is no sandbox for them.
 
 ### 5.3 Update a pass
@@ -427,10 +423,9 @@ returns the stored spec if you want to modify rather than rebuild it.
 - **Wallet cannot read the signed pass** — the pass id may have expired (default
   15 min) or the server URL may be wrong. Create the pass again, or mint a fresh
   link for an updatable one.
-- **Wallet says "Pass cannot be installed"** — almost always a certificate
-  mismatch: the signing cert must belong to the exact `PASS_TYPE_IDENTIFIER` and
-  `TEAM_IDENTIFIER` the server is configured with. Also confirm you used WWDR
-  **G4** and that all three base64 vars decode to PEM files (`-----BEGIN …`).
+- **Wallet says "Pass cannot be installed"** — check that the signing certificate
+  matches the configured `PASS_TYPE_IDENTIFIER` and `TEAM_IDENTIFIER`. Also
+  confirm you used WWDR **G4** and that all three base64 vars decode to PEM files (`-----BEGIN …`).
 - **`images must include "icon"`** — a REST call without an icon. Add one, or
   create the pass over MCP, where the bundled icon fills in.
 - **`images.<slot> could not be decoded`** — the base64 is not a PNG, JPEG, or
@@ -453,8 +448,8 @@ returns the stored spec if you want to modify rather than rebuild it.
   `server/src/mcp.ts` and the artwork slots in `server/src/slots.ts` describe
   the same surface — keep them in agreement.
 - The server keeps one-shot signed passes only in memory. A redeploy or restart
-  drops pending ids; that's fine, just create the pass again. Updatable passes
-  persist in SQLite under `DATA_DIR` — on Railway, keep that on a volume.
+  drops pending ids; create a new pass to get another download link. Updatable
+  passes persist in SQLite under `DATA_DIR` — on Railway, keep that on a volume.
 - The server uses Bun locally. Railway builds `server/` from its
   `Dockerfile`, so the deploy does not depend on lockfile-based builder
   detection.
