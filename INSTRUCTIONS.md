@@ -259,8 +259,8 @@ the size it needs. To frame a slot differently, crop the source to the slot's
 aspect yourself and upload it. Localized variants take an `xx.lproj/` prefix,
 e.g. `de.lproj/logo`.
 
-Upload URLs live in the server's memory for 1 hour and take exactly one file.
-The `upload:<id>` ref keeps working until the hour is up, so a rejected spec
+Upload URLs live in the server's memory for 30 minutes and take exactly one
+file. The `upload:<id>` ref keeps working until then, so a rejected spec
 can be retried with it; a restart or redeploy drops every pending upload. Once
 a pass is built, an updatable pass keeps its own copy of each image in SQLite,
 so expired uploads and dead URLs never affect later rebuilds.
@@ -465,7 +465,7 @@ returns the stored spec if you want to modify rather than rebuild it.
 - **`images.<slot> is too small`** — the source would have to be upscaled for
   Wallet's @3x render. Find a larger original; the error names the size.
 - **`… was never uploaded or has expired`** — the upload URL never received the
-  file, or the hour ran out (or the server restarted). Call
+  file, or its 30 minutes ran out (or the server restarted). Call
   `prepare_image_upload` again and re-upload.
 - **`provide one image per slot`** — a scaled key such as `logo@2x` was sent.
   Send the slot name alone; the server renders every scale.

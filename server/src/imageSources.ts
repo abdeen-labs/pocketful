@@ -81,7 +81,7 @@ export const publicLookup: LookupFunction = (hostname, options, callback) => {
   });
 };
 
-export const UPLOAD_TTL_MS = 60 * 60 * 1000;
+export const UPLOAD_TTL_MS = 30 * 60 * 1000;
 const MAX_UPLOAD_STORE_BYTES = 128 * 1024 * 1024;
 
 interface Upload {

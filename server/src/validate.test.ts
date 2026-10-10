@@ -499,6 +499,12 @@ const REJECTIONS: Rejection[] = [
     status: 400,
     fragment: "images.artwork is too small.*1000×1251.*needs 1074×1344.*never upscales",
   },
+  {
+    name: "an empty option string, which passkit-generator would drop pass.json over",
+    spec: { ...validSpec(), style: "eventTicket", eventTicketOptions: { eventLogoText: "" } },
+    status: 400,
+    fragment: "eventTicketOptions.eventLogoText must be a non-empty string",
+  },
 ];
 
 for (const { name, spec, status, fragment } of REJECTIONS) {

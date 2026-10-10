@@ -612,9 +612,11 @@ function optionRuleError(
       if (typeof value !== "boolean") return `${path} must be a boolean`;
       return null;
     case "string": {
+      // passkit-generator rejects empty strings and then drops pass.json
+      // silently, which surfaces later as a misleading build error.
       const max = rule.max ?? 2_000;
-      if (typeof value !== "string" || value.length > max) {
-        return `${path} must be a string of at most ${max} characters`;
+      if (typeof value !== "string" || value.length === 0 || value.length > max) {
+        return `${path} must be a non-empty string of at most ${max} characters`;
       }
       return null;
     }
