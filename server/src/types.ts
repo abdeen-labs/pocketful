@@ -288,9 +288,10 @@ export interface PassSpec {
   /** iOS 26 poster-event entries; validated by passkit-generator. */
   upcomingPassInformation?: JsonObject[];
   /**
-   * One base64 source image per artwork slot (icon, logo, strip, ...),
-   * optionally inside an xx.lproj folder. The server crops each to the slot's
-   * aspect and emits the 1x/2x/3x PNGs itself.
+   * One source image ref per artwork slot (icon, logo, strip, ...), optionally
+   * inside an xx.lproj folder: an https:// URL the server downloads or an
+   * upload:<id> ref. The server crops each to the slot's aspect and emits the
+   * 1x/2x/3x PNGs itself. On update, null removes a stored slot.
    */
-  images: Record<string, string>;
+  images?: Record<string, string | null>;
 }

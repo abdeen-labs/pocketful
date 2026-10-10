@@ -9,7 +9,7 @@ export interface PassRecord {
   serialNumber: string;
   authToken: string;
   webServiceURL: string;
-  /** The full request body as received — revalidated before every rebuild. */
+  /** The request body minus `images` — revalidated before every rebuild. */
   specJson: string;
   description: string;
   createdAt: number;
@@ -67,11 +67,28 @@ export function initDb(dataDir: string): void {
     );
     CREATE INDEX IF NOT EXISTS idx_registrations_serial
       ON registrations (serial_number);
+    -- Source artwork per slot path ("icon", "de.lproj/logo"), resolved from
+    -- the refs a spec carried, so rebuilds never re-download anything.
+    CREATE TABLE IF NOT EXISTS pass_images (
+      serial_number TEXT NOT NULL,
+      slot          TEXT NOT NULL,
+      bytes         BLOB NOT NULL,
+      PRIMARY KEY (serial_number, slot)
+    );
   `);
 }
 
+function replacePassImages(serialNumber: string, images: Record<string, Buffer>): void {
+  conn().prepare(`DELETE FROM pass_images WHERE serial_number = ?`).run(serialNumber);
+  const insert = conn().prepare(
+    `INSERT INTO pass_images (serial_number, slot, bytes) VALUES (?, ?, ?)`
+  );
+  for (const [slot, bytes] of Object.entries(images)) insert.run(serialNumber, slot, bytes);
+}
+
 export function insertPass(
-  record: Omit<PassRecord, "createdAt" | "updatedAt" | "revision">
+  record: Omit<PassRecord, "createdAt" | "updatedAt" | "revision">,
+  images: Record<string, Buffer>
 ): PassRecord {
   const now = Date.now();
   const full: PassRecord = {
@@ -80,14 +97,24 @@ export function insertPass(
     updatedAt: now,
     revision: 0,
   };
-  conn()
-    .prepare(
-      `INSERT INTO passes
-         (serial_number, auth_token, web_service_url, spec_json, description, created_at, updated_at, revision)
-       VALUES (@serialNumber, @authToken, @webServiceURL, @specJson, @description, @createdAt, @updatedAt, @revision)`
-    )
-    .run(full);
+  conn().transaction(() => {
+    conn()
+      .prepare(
+        `INSERT INTO passes
+           (serial_number, auth_token, web_service_url, spec_json, description, created_at, updated_at, revision)
+         VALUES (@serialNumber, @authToken, @webServiceURL, @specJson, @description, @createdAt, @updatedAt, @revision)`
+      )
+      .run(full);
+    replacePassImages(record.serialNumber, images);
+  })();
   return full;
+}
+
+export function getPassImages(serialNumber: string): Record<string, Buffer> {
+  const rows = conn()
+    .prepare(`SELECT slot, bytes FROM pass_images WHERE serial_number = ? ORDER BY slot`)
+    .all(serialNumber) as { slot: string; bytes: Buffer }[];
+  return Object.fromEntries(rows.map((row) => [row.slot, row.bytes]));
 }
 
 export function getPassRecord(serialNumber: string): PassRecord | undefined {
@@ -103,27 +130,34 @@ export function getPassRecord(serialNumber: string): PassRecord | undefined {
   return row as PassRecord | undefined;
 }
 
-/** Returns undefined when no row matched — the pass was deleted concurrently. */
+/**
+ * Replace the spec and the full image set. Returns undefined when no row
+ * matched — the pass was deleted concurrently.
+ */
 export function updatePassSpec(
   serialNumber: string,
   specJson: string,
   description: string,
-  webServiceURL: string
+  webServiceURL: string,
+  images: Record<string, Buffer>
 ): { updatedAt: number; revision: number } | undefined {
   const updatedAt = Date.now();
-  const info = conn()
-    .prepare(
-      `UPDATE passes
-       SET spec_json = ?, description = ?, web_service_url = ?,
-           updated_at = ?, revision = revision + 1
-       WHERE serial_number = ?`
-    )
-    .run(specJson, description, webServiceURL, updatedAt, serialNumber);
-  if (info.changes === 0) return undefined;
-  const row = conn()
-    .prepare(`SELECT revision FROM passes WHERE serial_number = ?`)
-    .get(serialNumber) as { revision: number } | undefined;
-  return row ? { updatedAt, revision: row.revision } : undefined;
+  return conn().transaction(() => {
+    const info = conn()
+      .prepare(
+        `UPDATE passes
+         SET spec_json = ?, description = ?, web_service_url = ?,
+             updated_at = ?, revision = revision + 1
+         WHERE serial_number = ?`
+      )
+      .run(specJson, description, webServiceURL, updatedAt, serialNumber);
+    if (info.changes === 0) return undefined;
+    replacePassImages(serialNumber, images);
+    const row = conn()
+      .prepare(`SELECT revision FROM passes WHERE serial_number = ?`)
+      .get(serialNumber) as { revision: number } | undefined;
+    return row ? { updatedAt, revision: row.revision } : undefined;
+  })();
 }
 
 export function deletePassRecord(serialNumber: string): boolean {
@@ -132,6 +166,9 @@ export function deletePassRecord(serialNumber: string): boolean {
     .run(serialNumber);
   conn()
     .prepare(`DELETE FROM registrations WHERE serial_number = ?`)
+    .run(serialNumber);
+  conn()
+    .prepare(`DELETE FROM pass_images WHERE serial_number = ?`)
     .run(serialNumber);
   return info.changes > 0;
 }

@@ -1,10 +1,9 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { ApiError, validateSpec } from "./validate";
+import { SOURCE_PNG, solidPng, validate } from "./testSupport";
+import { ApiError } from "./validate";
 
-const PNG_1X1 =
-  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==";
-const icon = () => PNG_1X1;
+const icon = () => SOURCE_PNG;
 
 function validSpec(): Record<string, unknown> {
   return {
@@ -16,7 +15,7 @@ function validSpec(): Record<string, unknown> {
 
 async function rejects(spec: unknown, status: number, messageFragment: string): Promise<void> {
   try {
-    await validateSpec(spec);
+    await validate(spec);
     assert.fail(`expected validateSpec to throw for: ${messageFragment}`);
   } catch (err) {
     assert.ok(err instanceof ApiError, `expected ApiError, got ${String(err)}`);
@@ -25,15 +24,13 @@ async function rejects(spec: unknown, status: number, messageFragment: string): 
   }
 }
 
-// These specs are accepted today and are already installed on real devices.
-// server/src/updatable.ts re-runs validateSpec on every stored spec when a
-// device refreshes a pass, so a rule that rejects any of these would brick
-// passes already in the field. Do not "fix" a failure here by changing the
-// test — see plans/006.
+// The smallest valid spec per style. server/src/updatable.ts re-runs
+// validateSpec on the stored spec whenever a device refreshes a pass, so a
+// rule that starts rejecting one of these stops those passes from updating.
 const STYLES = ["generic", "storeCard", "coupon", "eventTicket", "boardingPass"] as const;
 for (const style of STYLES) {
   test(`accepts a minimal ${style} spec`, async () => {
-    const result = await validateSpec({ ...validSpec(), style });
+    const result = await validate({ ...validSpec(), style });
     assert.equal(result.spec.style, style);
     assert.ok(result.images.icon instanceof Buffer);
   });
@@ -43,7 +40,7 @@ for (const style of STYLES) {
 // both structurally valid EAN-13 messages; the validator must take either.
 for (const message of ["200000000000", "2000000000008"] as const) {
   test(`accepts an EAN-13 barcode with a ${message.length}-digit message`, async () => {
-    await validateSpec({
+    await validate({
       ...validSpec(),
       barcodes: [{ format: "PKBarcodeFormatEAN13", message }],
     });
@@ -54,7 +51,7 @@ for (const message of ["200000000000", "2000000000008"] as const) {
 // one style with a hard image requirement (background), so its baseline lives
 // here instead.
 test("accepts a minimal posterGeneric spec with background art and a footer field", async () => {
-  const result = await validateSpec({
+  const result = await validate({
     ...validSpec(),
     style: "posterGeneric",
     images: { icon: icon(), background: icon() },
@@ -66,7 +63,7 @@ test("accepts a minimal posterGeneric spec with background art and a footer fiel
 });
 
 test("accepts two featured actions on a store card", async () => {
-  await validateSpec({
+  await validate({
     ...validSpec(),
     style: "storeCard",
     featuredActions: [
@@ -77,7 +74,7 @@ test("accepts two featured actions on a store card", async () => {
 });
 
 test("accepts a place featured action carrying a placeIdentifier", async () => {
-  await validateSpec({
+  await validate({
     ...validSpec(),
     style: "storeCard",
     featuredActions: [
@@ -88,7 +85,7 @@ test("accepts a place featured action carrying a placeIdentifier", async () => {
 });
 
 test("accepts the baseline valid spec and returns its parts", async () => {
-  const result = await validateSpec(validSpec());
+  const result = await validate(validSpec());
   assert.equal(result.spec.description, "Test pass");
   assert.deepEqual(result.fields, {});
   assert.deepEqual(Object.keys(result.images), ["icon"]);
@@ -98,21 +95,21 @@ test("accepts the baseline valid spec and returns its parts", async () => {
 const COLOR_FORMS = ["#abc", "#aabbcc", "rgb(1, 2, 3)"] as const;
 for (const color of COLOR_FORMS) {
   test(`accepts backgroundColor in the ${color} form`, async () => {
-    await validateSpec({ ...validSpec(), colors: { backgroundColor: color } });
+    await validate({ ...validSpec(), colors: { backgroundColor: color } });
   });
 }
 
 test("accepts a localized slot and keeps the source bytes as sent", async () => {
-  const result = await validateSpec({
+  const result = await validate({
     ...validSpec(),
     images: { icon: icon(), "de.lproj/logo": icon() },
   });
   assert.deepEqual(Object.keys(result.images), ["icon", "de.lproj/logo"]);
-  assert.ok(result.images["de.lproj/logo"].equals(Buffer.from(PNG_1X1, "base64")));
+  assert.ok(result.images["de.lproj/logo"].equals(SOURCE_PNG));
 });
 
 test("assigns default keys to fields that omit one", async () => {
-  const result = await validateSpec({
+  const result = await validate({
     ...validSpec(),
     fields: { primary: [{ value: "hello" }] },
   });
@@ -473,18 +470,9 @@ const REJECTIONS: Rejection[] = [
   },
   {
     name: "an icon whose bytes are not an image",
-    spec: {
-      ...validSpec(),
-      images: { icon: Buffer.from("not a png at all").toString("base64") },
-    },
+    spec: { ...validSpec(), images: { icon: Buffer.from("not a png at all") } },
     status: 400,
     fragment: "could not be decoded",
-  },
-  {
-    name: "image name outside the allowlist",
-    spec: { ...validSpec(), images: { icon: icon(), banner: icon() } },
-    status: 400,
-    fragment: "Unknown image path",
   },
   {
     name: "images without an icon",
@@ -493,22 +481,23 @@ const REJECTIONS: Rejection[] = [
     fragment: "must include \"icon\"",
   },
   {
-    name: "an image keyed with a scale suffix",
-    spec: { ...validSpec(), images: { icon: icon(), "icon@2x": icon() } },
-    status: 400,
-    fragment: "provide one image per slot \\(\"icon\"\\) — the server produces every scale",
-  },
-  {
-    name: "a localized image keyed with a scale suffix",
-    spec: { ...validSpec(), images: { icon: icon(), "de.lproj/logo@3x": icon() } },
-    status: 400,
-    fragment: "one image per slot \\(\"de.lproj/logo\"\\)",
-  },
-  {
-    name: "an image whose base64 is not an image",
-    spec: { ...validSpec(), images: { icon: icon(), logo: Buffer.from("plain text").toString("base64") } },
+    name: "an image whose bytes are not an image",
+    spec: { ...validSpec(), images: { icon: icon(), logo: Buffer.from("plain text") } },
     status: 400,
     fragment: "images.logo could not be decoded",
+  },
+  {
+    name: "an icon smaller than its @3x render",
+    spec: { ...validSpec(), images: { icon: solidPng(86, 86) } },
+    status: 400,
+    fragment: "images.icon is too small: a 86×86 source center-crops to 86×86, but the @3x render needs 87×87",
+  },
+  {
+    name: "artwork whose center crop falls short of the @3x render",
+    // Tall enough, but 1000 wide crops to 1000×1251 against the 1074×1344 render.
+    spec: { ...validSpec(), images: { icon: icon(), artwork: solidPng(1000, 3000) } },
+    status: 400,
+    fragment: "images.artwork is too small.*1000×1251.*needs 1074×1344.*never upscales",
   },
 ];
 
@@ -542,7 +531,7 @@ function posterSpec(): Record<string, unknown> {
 }
 
 test("accepts a poster event ticket with a barcode entry credential", async () => {
-  const result = await validateSpec(posterSpec());
+  const result = await validate(posterSpec());
   assert.ok(result.images.artwork instanceof Buffer);
 });
 
@@ -608,11 +597,11 @@ const MAXIMAL_BOARDING_OPTIONS = {
 };
 
 test("accepts every allowlisted options key at once", async () => {
-  await validateSpec({ ...validSpec(), options: MAXIMAL_PASS_OPTIONS });
+  await validate({ ...validSpec(), options: MAXIMAL_PASS_OPTIONS });
 });
 
 test("accepts every allowlisted eventTicketOptions key at once", async () => {
-  await validateSpec({
+  await validate({
     ...validSpec(),
     style: "eventTicket",
     eventTicketOptions: MAXIMAL_EVENT_OPTIONS,
@@ -620,7 +609,7 @@ test("accepts every allowlisted eventTicketOptions key at once", async () => {
 });
 
 test("accepts every allowlisted boardingPassOptions key at once", async () => {
-  await validateSpec({
+  await validate({
     ...validSpec(),
     style: "boardingPass",
     boardingPassOptions: MAXIMAL_BOARDING_OPTIONS,
@@ -693,7 +682,7 @@ for (const { name, spec, fragment } of OPTION_REJECTIONS) {
 // installable on iOS 26 and earlier. Each entry validates like the top-level
 // fields but against its own style.
 test("accepts additional styles alongside a posterGeneric pass", async () => {
-  const result = await validateSpec({
+  const result = await validate({
     ...validSpec(),
     style: "posterGeneric",
     images: { icon: icon(), background: icon() },
@@ -711,7 +700,7 @@ test("accepts additional styles alongside a posterGeneric pass", async () => {
 });
 
 test("accepts a posterGeneric additional style when background artwork is present", async () => {
-  const result = await validateSpec({
+  const result = await validate({
     ...validSpec(),
     style: "storeCard",
     images: { icon: icon(), background: icon() },
@@ -721,7 +710,7 @@ test("accepts a posterGeneric additional style when background artwork is presen
 });
 
 test("returns no additional styles when the spec omits them", async () => {
-  assert.deepEqual((await validateSpec(validSpec())).additionalStyles, []);
+  assert.deepEqual((await validate(validSpec())).additionalStyles, []);
 });
 
 const ADDITIONAL_STYLE_REJECTIONS: { name: string; spec: unknown; fragment: string }[] = [

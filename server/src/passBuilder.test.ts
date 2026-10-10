@@ -3,11 +3,9 @@ import { test } from "node:test";
 import sharp from "sharp";
 import type { Config } from "./config";
 import { buildPassFiles, buildPassJson } from "./passBuilder";
-import { validateSpec } from "./validate";
+import { SOURCE_PNG, validate } from "./testSupport";
 
-const PNG_1X1 =
-  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==";
-const icon = () => PNG_1X1;
+const icon = () => SOURCE_PNG;
 
 const config = {
   passTypeIdentifier: "pass.test.pocketful",
@@ -23,7 +21,7 @@ function styleKeys(json: Record<string, unknown>): string[] {
 
 test("emits one dictionary per style, each carrying only what its style owns", async () => {
   const json = buildPassJson(
-    await validateSpec({
+    await validate({
       style: "posterGeneric",
       description: "Membership",
       images: { icon: icon(), background: icon() },
@@ -77,7 +75,7 @@ test("emits one dictionary per style, each carrying only what its style owns", a
 
 test("a boardingPass additional style without transitType defaults to generic transit", async () => {
   const json = buildPassJson(
-    await validateSpec({
+    await validate({
       style: "generic",
       description: "Shuttle",
       images: { icon: icon() },
@@ -90,7 +88,7 @@ test("a boardingPass additional style without transitType defaults to generic tr
 
 test("style-specific options apply when their style is only an additional style", async () => {
   const json = buildPassJson(
-    await validateSpec({
+    await validate({
       style: "generic",
       description: "Show",
       images: { icon: icon() },
@@ -107,7 +105,7 @@ test("style-specific options apply when their style is only an additional style"
 
 test("style-specific options stay out of pass.json when no present style uses them", async () => {
   const json = buildPassJson(
-    await validateSpec({
+    await validate({
       style: "generic",
       description: "Card",
       images: { icon: icon() },
@@ -121,7 +119,7 @@ test("style-specific options stay out of pass.json when no present style uses th
 
 test("a place featured action reaches pass.json with its placeIdentifier and no url", async () => {
   const json = buildPassJson(
-    await validateSpec({
+    await validate({
       style: "storeCard",
       description: "Card",
       images: { icon: icon() },
@@ -140,7 +138,7 @@ test("a place featured action reaches pass.json with its placeIdentifier and no 
 
 test("an updatable identity overrides the serial number and web service credentials", async () => {
   const json = buildPassJson(
-    await validateSpec({
+    await validate({
       style: "coupon",
       description: "Deal",
       serialNumber: "from-spec",
@@ -160,7 +158,7 @@ test("an updatable identity overrides the serial number and web service credenti
 
 test("the bundle carries 1x/2x/3x PNGs of every slot, localized paths included", async () => {
   const files = await buildPassFiles(
-    await validateSpec({
+    await validate({
       style: "eventTicket",
       description: "Show",
       images: { icon: icon(), strip: icon(), "de.lproj/logo": icon() },
@@ -191,7 +189,7 @@ test("the bundle carries 1x/2x/3x PNGs of every slot, localized paths included",
 
 test("personalization.json rides along with the personalization logo", async () => {
   const files = await buildPassFiles(
-    await validateSpec({
+    await validate({
       style: "storeCard",
       description: "Club",
       images: { icon: icon(), personalizationLogo: icon() },

@@ -120,7 +120,7 @@ test("GET /mcp is not a session stream", async () => {
   assert.equal(res.status, 405);
 });
 
-test("a client with the token initializes and sees the six tools", async () => {
+test("a client with the token initializes and sees the seven tools", async () => {
   const client = await connect(API_TOKEN);
   try {
     const { tools } = await client.listTools();
@@ -132,11 +132,12 @@ test("a client with the token initializes and sees the six tools", async () => {
         "get_pass_spec",
         "list_passes",
         "mint_pass_download",
+        "prepare_image_upload",
         "update_pass",
       ]
     );
-    // The hosted server cannot read files on the agent's machine, so the
-    // stdio-era image_files parameter must not be offered.
+    // Files on the agent's machine reach the server through
+    // prepare_image_upload, never through a create_pass parameter.
     const create = tools.find((tool) => tool.name === "create_pass");
     assert.ok(create);
     assert.deepEqual(Object.keys(create.inputSchema.properties ?? {}), ["spec"]);
@@ -205,7 +206,7 @@ test("create_pass rejects scaled image keys before signing", async () => {
   }
 });
 
-test("the create_pass guide lists slot point sizes and forbids scaled keys", async () => {
+test("the create_pass guide lists slot sizes, image refs and the poster layout", async () => {
   const client = await connect(API_TOKEN);
   try {
     const { tools } = await client.listTools();
@@ -214,6 +215,34 @@ test("the create_pass guide lists slot point sizes and forbids scaled keys", asy
     assert.match(create.description, /icon 29×29/);
     assert.match(create.description, /strip 375×144/);
     assert.match(create.description, /never send @2x\/@3x keys/);
+    assert.match(create.description, /an https:\/\/ URL the server downloads, or an upload:<id> ref/);
+    assert.match(create.description, /never upscales/);
+    assert.match(create.description, /barcode sits on a white card covering 44–77%/);
+  } finally {
+    await client.close();
+  }
+});
+
+test("the server instructions ask for research before a pass is built", async () => {
+  const client = await connect(API_TOKEN);
+  try {
+    const instructions = client.getInstructions() ?? "";
+    assert.match(instructions, /do the legwork before create_pass/);
+    assert.match(instructions, /never retype, guess, or invent/);
+    assert.match(instructions, /Fetch official artwork/);
+  } finally {
+    await client.close();
+  }
+});
+
+test("prepare_image_upload returns a one-time URL on the origin the client used", async () => {
+  const client = await connect(API_TOKEN);
+  try {
+    const result = await call(client, "prepare_image_upload");
+    assert.notEqual(result.isError, true);
+    const upload = JSON.parse(result.content[0].text) as { ref: string; uploadUrl: string };
+    assert.match(upload.ref, /^upload:[0-9a-f-]{36}$/);
+    assert.equal(upload.uploadUrl, `${base}/api/uploads/${upload.ref.slice("upload:".length)}`);
   } finally {
     await client.close();
   }

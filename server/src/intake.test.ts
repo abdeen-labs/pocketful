@@ -8,6 +8,7 @@ import type { Server } from "node:http";
 import type { Config } from "./config";
 import { initDb } from "./db";
 import { createApp } from "./index";
+import { SOURCE_PNG } from "./testSupport";
 
 // Plan 004's verification matrix: middleware ordering is the one thing
 // typechecking cannot confirm, so every row runs against the real app over
@@ -16,10 +17,6 @@ import { createApp } from "./index";
 // the signing step, which is exactly what this plan changes.
 
 const API_TOKEN = "test-api-token";
-const PNG_1X1 = Buffer.from(
-  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
-  "base64"
-);
 
 function testConfig(dataDir: string): Config {
   return {
@@ -136,29 +133,53 @@ test("a normal log callback still returns 200", async () => {
   assert.equal(res.status, 200);
 });
 
-test("an authed multi-megabyte pass body clears both parsers", async () => {
-  // ~2 MB of padding — over the 100kb default, under the artwork limit. A 413
-  // means the body-limit split regressed; 422 means signing (dummy certs) was
-  // the only thing that failed, i.e. auth and both parsers passed.
-  const spec = {
-    style: "generic",
-    description: "Intake test pass",
-    images: {
-      icon: PNG_1X1.toString("base64"),
-      logo: Buffer.concat([PNG_1X1, Buffer.alloc(2_000_000)]).toString("base64"),
-    },
-  };
+const authed = { authorization: `Bearer ${API_TOKEN}` };
+
+async function prepareUpload(): Promise<{ ref: string; uploadUrl: string }> {
+  const res = await fetch(`${base}/api/uploads`, { method: "POST", headers: authed });
+  assert.equal(res.status, 201);
+  return (await res.json()) as { ref: string; uploadUrl: string };
+}
+
+test("reserving an upload URL requires the token", async () => {
+  const res = await fetch(`${base}/api/uploads`, { method: "POST" });
+  assert.equal(res.status, 401);
+});
+
+test("an image goes to its one-time URL without the token, once, and a pass can use it", async () => {
+  const { ref, uploadUrl } = await prepareUpload();
+  assert.ok(uploadUrl.startsWith(`${base}/api/uploads/`));
+
+  const put = await fetch(uploadUrl, { method: "PUT", body: new Uint8Array(SOURCE_PNG) });
+  assert.equal(put.status, 201);
+  assert.deepEqual(await put.json(), { ref, bytes: SOURCE_PNG.byteLength, width: 1200, height: 1500 });
+  const again = await fetch(uploadUrl, { method: "PUT", body: new Uint8Array(SOURCE_PNG) });
+  assert.equal(again.status, 409);
+
+  // 422: auth, the JSON parser, ref resolution and validation all passed;
+  // only signing with the dummy certificates failed.
   const res = await fetch(`${base}/api/passes`, {
     method: "POST",
-    headers: {
-      "content-type": "application/json",
-      authorization: `Bearer ${API_TOKEN}`,
-    },
-    body: JSON.stringify(spec),
+    headers: { "content-type": "application/json", ...authed },
+    body: JSON.stringify({ style: "generic", description: "Intake test pass", images: { icon: ref } }),
   });
   assert.equal(res.status, 422);
-  const body = (await res.json()) as { error: string };
-  assert.match(body.error, /Failed to build pass/);
+  assert.match(((await res.json()) as { error: string }).error, /Failed to build pass/);
+});
+
+test("an upload over 4 MB is refused by its parser", async () => {
+  const { uploadUrl } = await prepareUpload();
+  const res = await fetch(uploadUrl, { method: "PUT", body: new Uint8Array(4 * 1024 * 1024 + 1) });
+  assert.equal(res.status, 413);
+});
+
+test("a pass body over 1 MB is refused now that images travel as refs", async () => {
+  const res = await fetch(`${base}/api/passes`, {
+    method: "POST",
+    headers: { "content-type": "application/json", ...authed },
+    body: JSON.stringify({ pad: "a".repeat(1_100_000) }),
+  });
+  assert.equal(res.status, 413);
 });
 
 test("the public surface is rate limited after 120 requests in a minute", async () => {

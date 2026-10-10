@@ -1,5 +1,5 @@
-import { probeImage } from "./images";
-import { SLOT_NAMES } from "./slots";
+import { centeredCrop, probeImage } from "./images";
+import { slotSize, type SlotName } from "./slots";
 import type {
   BarcodeFormat,
   FeaturedActionType,
@@ -81,14 +81,11 @@ const PERSONALIZATION_FIELDS: PersonalizationField[] = [
   "PKPassPersonalizationFieldPhoneNumber",
 ];
 
-// One source image per Wallet artwork slot, optionally inside a localization directory.
-const IMAGE_PATH = new RegExp(
-  `^(?:[a-zA-Z]{2,3}(?:-[a-zA-Z0-9]{2,8})?\\.lproj/)?(?:${SLOT_NAMES.join("|")})$`
-);
-const SCALED_IMAGE_PATH = /^(.*)@\d+x$/;
-const MAX_IMAGE_MEGABYTES = 4;
-const MAX_IMAGE_BYTES = MAX_IMAGE_MEGABYTES * 1024 * 1024;
-export const MAX_TOTAL_IMAGE_BYTES = 24 * 1024 * 1024;
+export const MAX_IMAGE_MEGABYTES = 4;
+export const MAX_IMAGE_BYTES = MAX_IMAGE_MEGABYTES * 1024 * 1024;
+const MAX_TOTAL_IMAGE_BYTES = 24 * 1024 * 1024;
+/** Wallet's largest rendition; every source must cover it without enlarging. */
+const LARGEST_SCALE = 3;
 
 const HEX_COLOR = /^#?([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
 const RGB_COLOR = /^rgb\(\s*(?:\d{1,3})\s*,\s*(?:\d{1,3})\s*,\s*(?:\d{1,3})\s*\)$/;
@@ -218,46 +215,46 @@ function validateAdditionalStyles(spec: PassSpec): ValidatedAdditionalStyle[] {
   });
 }
 
-async function validateImages(images: unknown): Promise<Record<string, Buffer>> {
-  if (!isRecord(images) || Object.keys(images).length === 0) {
-    throw new ApiError(400, "images must map Wallet artwork slot names to base64 image data");
+/**
+ * Check resolved source images (slot names were checked when their refs were
+ * resolved). The server never upscales: every source must cover the slot's
+ * @3x render after center-cropping, or the rendition would come out soft.
+ */
+async function validateImages(
+  images: Record<string, Buffer>,
+  style: PassStyle
+): Promise<void> {
+  if (!images.icon) {
+    throw new ApiError(400, 'images must include "icon" — Wallet rejects passes without one');
   }
-  const out: Record<string, Buffer> = {};
   let total = 0;
-  for (const [name, data] of Object.entries(images)) {
-    const scaled = SCALED_IMAGE_PATH.exec(name);
-    if (scaled) {
-      throw new ApiError(
-        400,
-        `images.${name}: provide one image per slot ("${scaled[1]}") — the server produces every scale`
-      );
-    }
-    if (!IMAGE_PATH.test(name)) {
-      throw new ApiError(400, `Unknown image path "${name}" — use a Wallet artwork slot name (${SLOT_NAMES.join(", ")})`);
-    }
-    if (typeof data !== "string" || !data) throw new ApiError(400, `images.${name} must be a base64 string`);
-    const buffer = Buffer.from(data, "base64");
+  for (const [name, buffer] of Object.entries(images)) {
     if (buffer.length > MAX_IMAGE_BYTES) {
       throw new ApiError(400, `images.${name} exceeds ${MAX_IMAGE_MEGABYTES} MB`);
     }
     total += buffer.length;
-    out[name] = buffer;
-  }
-  if (total > MAX_TOTAL_IMAGE_BYTES) throw new ApiError(400, "Combined image size exceeds 24 MB");
-  if (!out.icon) {
-    throw new ApiError(400, 'images must include "icon" — Wallet rejects passes without one');
-  }
-  for (const [name, buffer] of Object.entries(out)) {
+    let size: { width: number; height: number };
     try {
-      await probeImage(buffer);
+      size = await probeImage(buffer);
     } catch (err) {
       throw new ApiError(
         400,
         `images.${name} could not be decoded (${err instanceof Error ? err.message : String(err)}) — send a PNG, JPEG, or WebP`
       );
     }
+    const slot = slotSize(name.slice(name.lastIndexOf("/") + 1) as SlotName, style);
+    const need = { width: slot.width * LARGEST_SCALE, height: slot.height * LARGEST_SCALE };
+    const crop = centeredCrop(size, slot.width / slot.height);
+    if (crop.width < need.width || crop.height < need.height) {
+      throw new ApiError(
+        400,
+        `images.${name} is too small: a ${size.width}×${size.height} source center-crops to ` +
+          `${crop.width}×${crop.height}, but the @3x render needs ${need.width}×${need.height} and the ` +
+          "server never upscales — use a larger original"
+      );
+    }
   }
-  return out;
+  if (total > MAX_TOTAL_IMAGE_BYTES) throw new ApiError(400, "Combined image size exceeds 24 MB");
 }
 
 // Apple does not document the message shape for PKBarcodeFormatEAN13, but the
@@ -665,11 +662,18 @@ export interface ValidatedSpec {
   spec: PassSpec;
   fields: Partial<Record<FieldCategory, PassField[]>>;
   additionalStyles: ValidatedAdditionalStyle[];
-  /** Decodable source image per slot path, exactly as sent. */
+  /** Decodable source image per slot path, exactly as resolved. */
   images: Record<string, Buffer>;
 }
 
-export async function validateSpec(body: unknown): Promise<ValidatedSpec> {
+/**
+ * Validate a spec against its already-resolved source images. `spec.images`
+ * holds refs (see imageSources.ts) and is not read here.
+ */
+export async function validateSpec(
+  body: unknown,
+  images: Record<string, Buffer>
+): Promise<ValidatedSpec> {
   if (!isRecord(body)) throw new ApiError(400, "Request body must be a JSON object");
   const spec = body as unknown as PassSpec;
   if (!STYLES.includes(spec.style)) throw new ApiError(400, `style must be one of ${STYLES.join(", ")}`);
@@ -710,7 +714,7 @@ export async function validateSpec(body: unknown): Promise<ValidatedSpec> {
   const fields = validateFields(spec.fields);
   assertFieldsFitStyle(fields, spec.style);
   const additionalStyles = validateAdditionalStyles(spec);
-  const images = await validateImages(spec.images);
+  await validateImages(images, spec.style);
   validateModernStyleRequirements(spec, additionalStyles, images);
   if (spec.personalization && !images.personalizationLogo) {
     throw new ApiError(400, "personalization requires personalizationLogo artwork");

@@ -1,16 +1,19 @@
 import { createHash, timingSafeEqual } from "node:crypto";
 import type { Config } from "./config";
-import type { PassRecord } from "./db";
+import { getPassImages, type PassRecord } from "./db";
 import { buildPass } from "./passBuilder";
 import { validateSpec } from "./validate";
 
 /**
- * Re-sign the latest stored spec for an updatable pass. PUBLIC_BASE_URL wins
- * over the URL stamped at creation so a domain move migrates devices on their
- * next refresh.
+ * Re-sign the latest stored spec and artwork for an updatable pass.
+ * PUBLIC_BASE_URL wins over the URL stamped at creation so a domain move
+ * migrates devices on their next refresh.
  */
 export async function rebuildStoredPass(record: PassRecord, config: Config): Promise<Buffer> {
-  const validated = await validateSpec(JSON.parse(record.specJson));
+  const validated = await validateSpec(
+    JSON.parse(record.specJson),
+    getPassImages(record.serialNumber)
+  );
   return buildPass(validated, config, {
     serialNumber: record.serialNumber,
     webServiceURL: config.publicBaseUrl ?? record.webServiceURL,

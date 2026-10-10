@@ -519,6 +519,10 @@
         color: #b9d8aa;
       }
 
+      .token-comment {
+        color: #8a93a6;
+      }
+
       .endpoint-list {
         overflow: hidden;
         margin-top: 28px;
@@ -952,11 +956,24 @@ Content-Type: application/json</code></pre>
           <h2>Create a pass</h2>
           <p class="section-intro">
             Send a pass specification to <code>POST /api/passes</code>. Artwork is a
-            map of Wallet slot names to one base64-encoded source image each — PNG,
-            JPEG, or WebP. The server crops each image to its slot and renders the
-            1x, 2x, and 3x PNGs.
+            map of Wallet slot names to one image reference each: an
+            <code>https://</code> URL the server downloads, or an
+            <code>upload:&lt;id&gt;</code> ref for a file sent to a one-time upload URL.
+            Sources are PNG, JPEG, or WebP. The server crops each image to its slot
+            and renders the 1x, 2x, and 3x PNGs — and refuses any source it would
+            have to upscale.
           </p>
-          <h3>1. Define the pass</h3>
+          <h3>1. Upload local artwork</h3>
+          <div class="code-block">
+            <span class="code-label">Shell</span>
+            <pre><code>curl https://your-pocketful-server.example/api/uploads \
+  --request POST \
+  --header "Authorization: Bearer $API_TOKEN"
+<span class="token-comment"># → { "ref": "upload:9b1e…", "uploadUrl": "https://…/api/uploads/9b1e…", … }</span>
+
+curl -sSf -T logo.png "https://…/api/uploads/9b1e…"</code></pre>
+          </div>
+          <h3>2. Define the pass</h3>
           <div class="code-block">
             <span class="code-label">pass.json</span>
             <pre><code>{
@@ -977,12 +994,12 @@ Content-Type: application/json</code></pre>
     { <span class="token-key">"format"</span>: <span class="token-value">"PKBarcodeFormatQR"</span>, <span class="token-key">"message"</span>: <span class="token-value">"member_001"</span> }
   ],
   <span class="token-key">"images"</span>: {
-    <span class="token-key">"icon"</span>: <span class="token-value">"BASE64_IMAGE"</span>,
-    <span class="token-key">"logo"</span>: <span class="token-value">"BASE64_IMAGE"</span>
+    <span class="token-key">"icon"</span>: <span class="token-value">"https://example.com/brand/icon.png"</span>,
+    <span class="token-key">"logo"</span>: <span class="token-value">"upload:9b1e…"</span>
   }
 }</code></pre>
           </div>
-          <h3>2. Send it</h3>
+          <h3>3. Send it</h3>
           <div class="code-block">
             <span class="code-label">Shell</span>
             <pre><code>curl https://your-pocketful-server.example/api/passes \
@@ -991,7 +1008,7 @@ Content-Type: application/json</code></pre>
   --header "Content-Type: application/json" \
   --data @pass.json</code></pre>
           </div>
-          <h3>3. Use the download URL</h3>
+          <h3>4. Use the download URL</h3>
           <div class="code-block">
             <span class="code-label">201 JSON</span>
             <pre><code>{
@@ -1115,6 +1132,16 @@ Content-Type: application/json</code></pre>
               <code>/api/passes/:serial</code>
               <span>Delete a stored pass</span>
             </div>
+            <div class="endpoint">
+              <span class="method">POST</span>
+              <code>/api/uploads</code>
+              <span>Reserve a one-time image upload URL</span>
+            </div>
+            <div class="endpoint">
+              <span class="method">PUT</span>
+              <code>/api/uploads/:id</code>
+              <span>Upload one image — no token, the id is the credential; expires in an hour</span>
+            </div>
           </div>
           <p>
             Need every supported pass field? The canonical schema lives in
@@ -1186,7 +1213,7 @@ Content-Type: application/json</code></pre>
             <div class="endpoint">
               <span class="method">TOOL</span>
               <code>get_pass_spec</code>
-              <span>Read a spec without sending base64 artwork into context</span>
+              <span>Read a stored spec and its artwork sizes</span>
             </div>
             <div class="endpoint">
               <span class="method">TOOL</span>
@@ -1203,13 +1230,19 @@ Content-Type: application/json</code></pre>
               <code>delete_pass</code>
               <span>Stop managing an updatable pass</span>
             </div>
+            <div class="endpoint">
+              <span class="method">TOOL</span>
+              <code>prepare_image_upload</code>
+              <span>Get a one-time URL for a local image file</span>
+            </div>
           </div>
           <div class="note">
             <strong>Artwork is optional over MCP.</strong> When the spec carries no icon,
             <code>create_pass</code> fills in the bundled Pocketful icon and says so.
-            Other artwork goes into the spec’s <code>images</code> map as base64 source
-            images. For updates, omit <code>images</code> to reuse the stored
-            artwork.
+            Other artwork goes into the spec’s <code>images</code> map by reference:
+            official images by <code>https://</code> URL, local files through
+            <code>prepare_image_upload</code>. For updates, list only the slots you are
+            replacing; omitted slots keep their stored artwork.
           </div>
         </section>
 

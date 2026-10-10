@@ -14,6 +14,7 @@ import {
   updatePassSpec,
 } from "./db";
 import { createApp } from "./index";
+import { SOURCE_PNG } from "./testSupport";
 
 // Exercises Apple's Wallet web service protocol over real HTTP against a real
 // SQLite file. Routes that sign a pass need real certificates, which tests do
@@ -48,13 +49,16 @@ let base: string;
 before(async () => {
   const dataDir = mkdtempSync(path.join(tmpdir(), "pocketful-test-"));
   initDb(dataDir);
-  insertPass({
-    serialNumber: SERIAL,
-    authToken: AUTH_TOKEN,
-    webServiceURL: "https://example.test",
-    specJson: JSON.stringify({ style: "generic", description: "Test pass" }),
-    description: "Test pass",
-  });
+  insertPass(
+    {
+      serialNumber: SERIAL,
+      authToken: AUTH_TOKEN,
+      webServiceURL: "https://example.test",
+      specJson: JSON.stringify({ style: "generic", description: "Test pass" }),
+      description: "Test pass",
+    },
+    { icon: SOURCE_PNG }
+  );
   const app = createApp(testConfig(dataDir));
   server = app.listen(0);
   await new Promise((resolve) => server.once("listening", resolve));
@@ -151,7 +155,8 @@ test("after an update the poll lists the serial and lastUpdated round-trips", as
     SERIAL,
     JSON.stringify({ style: "generic", description: "Updated pass" }),
     "Updated pass",
-    "https://example.test"
+    "https://example.test",
+    { icon: SOURCE_PNG }
   );
   assert.ok(updated);
 
@@ -177,13 +182,15 @@ test("two same-second updates produce distinct revisions and ETags", async () =>
     SERIAL,
     JSON.stringify({ style: "generic", description: "First" }),
     "First",
-    "https://example.test"
+    "https://example.test",
+    { icon: SOURCE_PNG }
   );
   const second = updatePassSpec(
     SERIAL,
     JSON.stringify({ style: "generic", description: "Second" }),
     "Second",
-    "https://example.test"
+    "https://example.test",
+    { icon: SOURCE_PNG }
   );
   assert.ok(first);
   assert.ok(second);
@@ -223,7 +230,8 @@ test("a same-second update is never served as 304 to If-Modified-Since", async (
     SERIAL,
     JSON.stringify({ style: "generic", description: "Same second" }),
     "Same second",
-    "https://example.test"
+    "https://example.test",
+    { icon: SOURCE_PNG }
   );
   assert.ok(next);
 

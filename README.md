@@ -24,15 +24,17 @@ Pocketful is an Abdeen Labs internal tool. The source is public.
 - Agent-made passes: an AI agent turns a prompt into a spec and calls the server's MCP endpoint from any machine
 - Custom colors, rich fields, multiple barcode formats, semantics, featured actions, and additional style dictionaries for older iOS
 - Location, beacon, relevant-date, localization, personalization, and NFC metadata
-- Server-side artwork sizing: one source image per slot, center-cropped and rendered at 1x, 2x, and 3x by the server
+- Server-side artwork sizing: one source image per slot, center-cropped and rendered at 1x, 2x, and 3x by the server, which refuses to upscale
+- Artwork by reference: official images by https URL, or local files through one-time upload URLs — never base64 in the agent's context
+- Research-first agent instructions: exact details from your source, decoded barcodes, official venue facts and artwork
 - Short-lived signed passes produced by a server that keeps your Apple certificates private
 - Hark delivery: every minted pass lands on your iPhone as a notification whose tap opens Add to Wallet
 - Updatable passes: the server implements Apple's Wallet web service protocol and pushes revised versions over the air to passes already in Wallet
 
 ## How it works
 
-1. An agent (or a script) sends a JSON pass specification to the server — over MCP at `/mcp`, or REST at `POST /api/passes`. Artwork travels inline as base64 source images.
-2. The Express service validates the specification, crops and renders each image at every Wallet scale, builds and signs a `.pkpass` in memory, and returns a short-lived download URL.
+1. An agent (or a script) sends a JSON pass specification to the server — over MCP at `/mcp`, or REST at `POST /api/passes`. Artwork is referenced, not inlined: an https URL the server downloads, or an `upload:<id>` ref for a file the agent uploaded to a one-time URL.
+2. The Express service resolves the artwork, validates the specification, crops and renders each image at every Wallet scale, builds and signs a `.pkpass` in memory, and returns a short-lived download URL.
 3. With Hark configured, the server pushes that URL to your iPhone as a notification; tapping it opens Hark's Add to Wallet sheet. Without Hark, open the URL on the iPhone.
 
 The server uses [`passkit-generator`](https://github.com/alexandercerutti/passkit-generator) to build and sign passes. Signing certificates stay on the server.
@@ -87,6 +89,7 @@ The pass specification is defined in [`server/src/types.ts`](server/src/types.ts
 - `GET /api/passes/:id` returns the signed `.pkpass` until it expires. It takes no token: the random id is the credential.
 - `PUT /api/passes/:serial` replaces an updatable pass's spec, re-signs it, and pushes the change to registered devices via APNs.
 - `GET /api/passes`, `GET /api/passes/:serial/spec`, `POST /api/passes/:serial/download`, and `DELETE /api/passes/:serial` manage updatable passes.
+- `POST /api/uploads` reserves a one-time image upload URL; `PUT /api/uploads/:id` takes the one file (no token: the random id is the credential) and the spec then references it as `upload:<id>`.
 - `POST /mcp` serves the same operations to AI agents over MCP (Streamable HTTP), behind the same bearer token.
 - `POST|DELETE /v1/devices/…`, `GET /v1/devices/…`, `GET /v1/passes/…`, and `POST /v1/log` implement [Apple's Wallet web service protocol](https://developer.apple.com/documentation/walletpasses/adding-a-web-service-to-update-passes) for Wallet's update requests.
 

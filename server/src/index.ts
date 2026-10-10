@@ -3,11 +3,12 @@ import express from "express";
 import rateLimit from "express-rate-limit";
 import { loadConfig, type Config } from "./config";
 import { initDb } from "./db";
+import { fillUpload } from "./imageSources";
 import { handleMcpRequest } from "./mcp";
 import { createPassService } from "./passService";
 import { getPass } from "./store";
 import { secretsMatch } from "./updatable";
-import { ApiError, MAX_TOTAL_IMAGE_BYTES } from "./validate";
+import { ApiError, MAX_IMAGE_BYTES } from "./validate";
 import { walletWebServiceRouter } from "./webService";
 
 /** The full app minus startup: importable by tests without a listener or env. */
@@ -45,13 +46,16 @@ export function createApp(config: Config): express.Express {
   app.use("/api", limiter);
   app.use("/mcp", limiter);
 
-  // Authenticate before any body is buffered: /api/passes and /mcp accept
-  // megabytes.
+  // Authenticate before any body is buffered: uploads accept megabytes.
   app.use("/api", (req, _res, next) => {
-    // The signed-pass download link is authenticated by its unguessable id —
-    // exactly one path segment after /passes. The bare list route and the
-    // two-segment /spec route must stay behind the token.
+    // Two routes are authenticated by an unguessable id in the path instead
+    // of the token: the signed-pass download link (exactly one segment after
+    // /passes — the bare list route and the two-segment /spec route must stay
+    // behind the token) and the one-time image upload URL.
     if (req.method === "GET" && /^\/passes\/[^/]+$/.test(req.path)) {
+      return next();
+    }
+    if (req.method === "PUT" && /^\/uploads\/[^/]+$/.test(req.path)) {
       return next();
     }
     requireApiToken(req);
@@ -62,15 +66,12 @@ export function createApp(config: Config): express.Express {
     next();
   });
 
-  // Only the pass-authoring routes and the MCP endpoint carry base64 artwork;
-  // everything else (device registration, log callbacks, health) sends a few
-  // hundred bytes.
+  // Specs carry image refs, not image data, so a pass body is a few KB of
+  // fields plus whatever localizations hold. Device registration, log
+  // callbacks and health send a few hundred bytes. Image bytes arrive only on
+  // the upload route, which parses its own raw body.
   const smallJson = express.json({ limit: "100kb" });
-  // 24 MB of image data expands to roughly 32 MB when base64 encoded;
-  // deriving the limit from the validator's cap means the two cannot drift.
-  const passJson = express.json({
-    limit: Math.ceil((MAX_TOTAL_IMAGE_BYTES * 4) / 3) + 1024 * 1024,
-  });
+  const passJson = express.json({ limit: "1mb" });
   app.use((req, res, next) => {
     if (
       req.method === "POST" &&
@@ -78,7 +79,10 @@ export function createApp(config: Config): express.Express {
     ) {
       return next();
     }
-    if (req.method === "PUT" && req.path.startsWith("/api/passes/")) {
+    if (
+      req.method === "PUT" &&
+      (req.path.startsWith("/api/passes/") || req.path.startsWith("/api/uploads/"))
+    ) {
       return next();
     }
     return smallJson(req, res, next);
@@ -130,10 +134,14 @@ export function createApp(config: Config): express.Express {
     res.json(passes.remove(req.params.serialNumber));
   });
 
-  /** The stored spec for an updatable pass, for read-modify-write updates. */
-  app.get("/api/passes/:serialNumber/spec", (req, res) => {
-    requireApiToken(req);
-    res.json(passes.getSpec(req.params.serialNumber));
+  /** The stored spec and artwork summary for an updatable pass, for read-modify-write updates. */
+  app.get("/api/passes/:serialNumber/spec", async (req, res, next) => {
+    try {
+      requireApiToken(req);
+      res.json(await passes.getSpec(req.params.serialNumber));
+    } catch (err) {
+      next(err);
+    }
   });
 
   /** Mint a fresh short-lived download link for a stored updatable pass. */
@@ -147,6 +155,26 @@ export function createApp(config: Config): express.Express {
       next(err);
     }
   });
+
+  /** Reserve a one-time upload URL for a source image, referenced as upload:<id>. */
+  app.post("/api/uploads", (req, res) => {
+    requireApiToken(req);
+    res.status(201).json(passes.prepareUpload(requestOrigin(req)));
+  });
+
+  /** The upload URL itself: its unguessable id authorizes one raw image body. */
+  app.put(
+    "/api/uploads/:id",
+    express.raw({ type: () => true, limit: MAX_IMAGE_BYTES }),
+    async (req, res, next) => {
+      try {
+        const body = Buffer.isBuffer(req.body) ? req.body : Buffer.alloc(0);
+        res.status(201).json(await fillUpload(req.params.id, body));
+      } catch (err) {
+        next(err);
+      }
+    }
+  );
 
   app.get("/api/passes/:id", (req, res) => {
     const entry = getPass(req.params.id);

@@ -3,6 +3,7 @@ import { pushPassUpdate, type PushResult } from "./apns";
 import type { Config } from "./config";
 import {
   deletePassRecord,
+  getPassImages,
   getPassRecord,
   insertPass,
   listPassSummaries,
@@ -10,10 +11,12 @@ import {
   type PassSummary,
 } from "./db";
 import { deliverPass, type HarkDelivery } from "./hark";
+import { reserveUpload, resolveImages } from "./imageSources";
+import { probeImage } from "./images";
 import { buildPass, passFilename } from "./passBuilder";
 import { deletePassesForSerial, putPass } from "./store";
 import { rebuildStoredPass } from "./updatable";
-import { ApiError, validateSpec } from "./validate";
+import { ApiError, MAX_IMAGE_BYTES, validateSpec } from "./validate";
 
 export interface DownloadLink {
   id: string;
@@ -39,10 +42,28 @@ export interface UpdatedPass {
   push: PushResult;
 }
 
+export interface StoredImage {
+  width: number;
+  height: number;
+  bytes: number;
+}
+
 export interface StoredSpec {
   serialNumber: string;
   updatedAt: string;
+  /** The last spec sent, without images. */
   spec: unknown;
+  /** The artwork the server holds for the pass, per slot path. */
+  images: Record<string, StoredImage>;
+}
+
+export interface PreparedUpload {
+  /** Use as a slot value in spec.images once the file is uploaded. */
+  ref: string;
+  /** PUT the raw image file here, once. */
+  uploadUrl: string;
+  expiresAt: string;
+  maxBytes: number;
 }
 
 /**
@@ -57,8 +78,9 @@ export interface PassService {
   list(): { passes: PassSummary[] };
   update(serialNumber: string, body: unknown): Promise<UpdatedPass>;
   remove(serialNumber: string): { ok: true };
-  getSpec(serialNumber: string): StoredSpec;
+  getSpec(serialNumber: string): Promise<StoredSpec>;
   mintDownload(serialNumber: string, origin: string): Promise<MintedDownload>;
+  prepareUpload(origin: string): PreparedUpload;
 }
 
 async function signOrThrow(build: () => Promise<Buffer>): Promise<Buffer> {
@@ -77,6 +99,18 @@ async function signOrThrow(build: () => Promise<Buffer>): Promise<Buffer> {
 
 function notFound(): ApiError {
   return new ApiError(404, "No updatable pass with that serial number");
+}
+
+function imageRefs(body: unknown): unknown {
+  return typeof body === "object" && body !== null && !Array.isArray(body)
+    ? (body as Record<string, unknown>).images
+    : undefined;
+}
+
+/** What gets stored: the spec as sent, minus refs that are only meaningful once. */
+function storedSpecJson(body: unknown): string {
+  const { images: _refs, ...rest } = body as Record<string, unknown>;
+  return JSON.stringify(rest);
 }
 
 export function createPassService(config: Config): PassService {
@@ -105,7 +139,8 @@ export function createPassService(config: Config): PassService {
 
   return {
     async create(body, origin) {
-      const validated = await validateSpec(body);
+      const { images } = await resolveImages(imageRefs(body));
+      const validated = await validateSpec(body, images);
       const { spec } = validated;
 
       if (!spec.updatable) {
@@ -127,13 +162,16 @@ export function createPassService(config: Config): PassService {
         authenticationToken: randomBytes(16).toString("hex"),
       };
       const buffer = await signOrThrow(() => buildPass(validated, config, identity));
-      insertPass({
-        serialNumber,
-        authToken: identity.authenticationToken,
-        webServiceURL: identity.webServiceURL,
-        specJson: JSON.stringify(body),
-        description: spec.description,
-      });
+      insertPass(
+        {
+          serialNumber,
+          authToken: identity.authenticationToken,
+          webServiceURL: identity.webServiceURL,
+          specJson: storedSpecJson(body),
+          description: spec.description,
+        },
+        images
+      );
       return {
         ...(await storeDownload(buffer, spec.description, origin, serialNumber)),
         serialNumber,
@@ -148,7 +186,11 @@ export function createPassService(config: Config): PassService {
     async update(serialNumber, body) {
       const record = getPassRecord(serialNumber);
       if (!record) throw notFound();
-      const validated = await validateSpec(body);
+      // Slots the body names replace the stored ones; null removes a slot.
+      const incoming = await resolveImages(imageRefs(body), { allowRemoval: true });
+      const images = { ...getPassImages(record.serialNumber), ...incoming.images };
+      for (const slot of incoming.removed) delete images[slot];
+      const validated = await validateSpec(body, images);
       if (
         validated.spec.serialNumber &&
         validated.spec.serialNumber !== record.serialNumber
@@ -167,9 +209,10 @@ export function createPassService(config: Config): PassService {
 
       const result = updatePassSpec(
         record.serialNumber,
-        JSON.stringify(body),
+        storedSpecJson(body),
         validated.spec.description,
-        webServiceURL
+        webServiceURL,
+        images
       );
       if (!result) throw notFound();
 
@@ -206,13 +249,18 @@ export function createPassService(config: Config): PassService {
       return { ok: true };
     },
 
-    getSpec(serialNumber) {
+    async getSpec(serialNumber) {
       const record = getPassRecord(serialNumber);
       if (!record) throw notFound();
+      const images: Record<string, StoredImage> = {};
+      for (const [slot, bytes] of Object.entries(getPassImages(record.serialNumber))) {
+        images[slot] = { ...(await probeImage(bytes)), bytes: bytes.byteLength };
+      }
       return {
         serialNumber: record.serialNumber,
         updatedAt: new Date(record.updatedAt).toISOString(),
         spec: JSON.parse(record.specJson) as unknown,
+        images,
       };
     },
 
@@ -225,6 +273,16 @@ export function createPassService(config: Config): PassService {
       return {
         ...(await storeDownload(buffer, record.description, origin, record.serialNumber)),
         serialNumber: record.serialNumber,
+      };
+    },
+
+    prepareUpload(origin) {
+      const { id, ref, expiresAt } = reserveUpload();
+      return {
+        ref,
+        uploadUrl: `${origin}/api/uploads/${id}`,
+        expiresAt: new Date(expiresAt).toISOString(),
+        maxBytes: MAX_IMAGE_BYTES,
       };
     },
   };

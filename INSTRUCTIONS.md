@@ -11,12 +11,14 @@ server/   Node + Express — validates pass specs, renders artwork, signs .pkpas
 
 **How it works**
 
-1. An agent turns your prompt into a JSON pass spec — style, layout, colors,
-   fields, barcodes, relevance, semantics, NFC, localization, personalization,
-   actions — and inlines any artwork as base64 source images.
+1. An agent researches the details, turns your prompt into a JSON pass spec —
+   style, layout, colors, fields, barcodes, relevance, semantics, NFC,
+   localization, personalization, actions — and references artwork by URL:
+   official images on the web, or files it uploads to a one-time URL.
 2. The agent calls `create_pass` on the server's MCP endpoint (a script can
-   `POST` the same spec to the REST API). The server validates the spec, crops
-   and renders every image at Wallet's 1x/2x/3x sizes, builds and signs a
+   `POST` the same spec to the REST API). The server downloads the artwork,
+   validates the spec, crops and renders every image at Wallet's 1x/2x/3x
+   sizes, builds and signs a
    `.pkpass` **in memory**, and stores it under a short-lived random id
    (15 min by default).
 3. The download URL reaches your iPhone. With Hark configured, the server
@@ -157,9 +159,16 @@ The root URL of the deployment serves a short hosted docs page.
 - `GET /api/passes/:id` — the signed bytes, `Content-Type: application/vnd.apple.pkpass`.
   No token: the random id is the credential. 404 after expiry.
 - `PUT /api/passes/:serial` — full replacement spec for an updatable pass;
-  re-signs, bumps the update tag, and pushes to registered devices.
+  re-signs, bumps the update tag, and pushes to registered devices. Artwork is
+  kept per slot: `images` lists only the slots to replace, `null` removes one.
 - `GET /api/passes` — list updatable passes with registration counts.
-- `GET /api/passes/:serial/spec` — the stored spec, for read-modify-write updates.
+- `GET /api/passes/:serial/spec` — the stored spec without images, plus the
+  stored artwork's pixel size per slot, for read-modify-write updates.
+- `POST /api/uploads` — reserve a one-time upload URL; returns
+  `{ ref, uploadUrl, expiresAt, maxBytes }`.
+- `PUT /api/uploads/:id` — the upload URL itself: send one raw PNG, JPEG, or
+  WebP (`curl -sSf -T file.png '<uploadUrl>'`). No token: the random id is the
+  credential. Then use `ref` (`upload:<id>`) as a slot value in `images`.
 - `POST /api/passes/:serial/download` — mint a fresh short-lived download URL;
   returns `{ id, url, expiresAt, serialNumber }` plus `hark` when configured.
 - `DELETE /api/passes/:serial` — forget an updatable pass and its registrations.
@@ -216,24 +225,45 @@ the same way — Claude Desktop included: point it at `/mcp` and send
 | Tool | What it does |
 | --- | --- |
 | `create_pass` | Build, sign, and host a pass from a spec. Returns the download URL and, for updatable passes, the `serialNumber`. |
-| `update_pass` | Replace the full spec of an updatable pass and push the change to every Wallet that holds it. Omit `images` to reuse the stored artwork. |
-| `get_pass_spec` | Fetch the stored spec of an updatable pass for read-modify-write. Image payloads come back as size placeholders so base64 stays out of the agent's context. |
+| `update_pass` | Replace the full spec of an updatable pass and push the change to every Wallet that holds it. Artwork is kept per slot: omit `images` to keep all of it, list only the slots to replace, `null` removes one. |
+| `get_pass_spec` | Fetch the stored spec of an updatable pass for read-modify-write. The stored artwork is listed per slot with its pixel size. |
+| `prepare_image_upload` | A one-time URL for a file on the agent's machine. The agent `curl -T`s the file to it and uses the returned `upload:<id>` ref in `images`. |
 | `list_passes` | Every updatable pass the server manages, with registration counts. |
 | `mint_pass_download` | A fresh short-lived download URL for an existing updatable pass, e.g. to add it to another iPhone. |
 | `delete_pass` | Remove an updatable pass and its registrations. Copies already in Wallet stay on the device but stop updating. |
 
-Tool descriptions include the spec guide: required keys, poster layouts,
+The server also sends instructions that clients put in the agent's prompt:
+research before building — copy details exactly from your source and decode
+barcodes instead of retyping them, look up the venue's address, coordinates
+and time zone, fetch official full-resolution artwork, and compose it for the
+layout. Tool descriptions include the spec guide: required keys, poster
+layouts (with where Wallet draws each element on a poster event ticket),
 colors, fields, barcodes, semantics, and artwork slots. Validation errors
 identify the field or requirement to fix before retrying.
 
 ### 3.3 The images contract
 
-`images` maps artwork **slot names** to **one** base64-encoded source image
-each, in PNG, JPEG, or WebP. The server center-crops the image to the slot's
+`images` maps artwork **slot names** to **one** source image reference each:
+
+- an `https://` URL — the server downloads it (official key art, a logo on
+  Wikimedia Commons, a TMDB original);
+- `upload:<id>` — a file the agent uploaded through `prepare_image_upload`
+  (or `POST /api/uploads`), e.g. its own crop or a recolored logo.
+
+Inline image data (base64) is rejected. Sources are PNG, JPEG, or WebP up to
+4 MB each, 24 MB per pass. The server center-crops each source to the slot's
 aspect ratio and produces the 1x, 2x, and 3x PNGs itself, so keys like
-`icon@2x` are rejected. Send a source at least 3× the slot's point size; the
-crop keeps the center. Localized variants take an `xx.lproj/` prefix, e.g.
-`de.lproj/logo`. Combined image data is capped at 24 MB per request.
+`icon@2x` are rejected. **The server never upscales:** after the center crop a
+source must be at least 3× the slot's point size, or the request fails with
+the size it needs. To frame a slot differently, crop the source to the slot's
+aspect yourself and upload it. Localized variants take an `xx.lproj/` prefix,
+e.g. `de.lproj/logo`.
+
+Upload URLs live in the server's memory for 1 hour and take exactly one file.
+The `upload:<id>` ref keeps working until the hour is up, so a rejected spec
+can be retried with it; a restart or redeploy drops every pending upload. Once
+a pass is built, an updatable pass keeps its own copy of each image in SQLite,
+so expired uploads and dead URLs never affect later rebuilds.
 
 | Slot | 1x points | Where it appears |
 | --- | --- | --- |
@@ -251,7 +281,7 @@ crop keeps the center. Localized variants take an `xx.lproj/` prefix, e.g.
 `icon` is mandatory — Wallet rejects passes without one. Over MCP, a spec with
 no icon gets the bundled Pocketful icon and the tool result says so; over REST,
 `POST /api/passes` returns a `400` instead. Every other slot is optional unless
-the style calls for it. The agent reads local artwork and inlines it as base64.
+the style calls for it.
 
 ### 3.4 A worked example
 
@@ -261,8 +291,9 @@ Ask:
 > background, white text, "120 points" as the primary field, a QR code that
 > encodes `member_0042`, and use `~/Pictures/northstar-logo.png` as the logo.
 
-The agent reads the PNG, base64-encodes it, and calls `create_pass` with a spec
-along these lines:
+The agent calls `prepare_image_upload`, uploads the PNG to the URL it gets
+back (`curl -sSf -T ~/Pictures/northstar-logo.png '<uploadUrl>'`), and calls
+`create_pass` with a spec along these lines:
 
 ```json
 {
@@ -285,7 +316,7 @@ along these lines:
     { "format": "PKBarcodeFormatQR", "message": "member_0042" }
   ],
   "images": {
-    "logo": "<base64 of northstar-logo.png>"
+    "logo": "upload:9b1e0c52-…"
   }
 }
 ```
@@ -313,7 +344,7 @@ Later:
 > Set my Northstar card to 450 points.
 
 The agent calls `get_pass_spec`, changes the value, and calls `update_pass`
-with the full spec (omitting `images`, so the stored logo is reused). The
+with the full spec (omitting `images`, so the stored logo is kept). The
 server re-signs, pushes through APNs, and Wallet shows "Balance: 450".
 
 ---
@@ -428,8 +459,14 @@ returns the stored spec if you want to modify rather than rebuild it.
   confirm you used WWDR **G4** and that all three base64 vars decode to PEM files (`-----BEGIN …`).
 - **`images must include "icon"`** — a REST call without an icon. Add one, or
   create the pass over MCP, where the bundled icon fills in.
-- **`images.<slot> could not be decoded`** — the base64 is not a PNG, JPEG, or
-  WebP, or it is truncated. Re-encode the source file.
+- **`images.<slot> could not be decoded`** — the URL or upload is not a PNG,
+  JPEG, or WebP (a URL that serves an HTML page is the usual culprit). Use the
+  direct image URL, or re-export the file.
+- **`images.<slot> is too small`** — the source would have to be upscaled for
+  Wallet's @3x render. Find a larger original; the error names the size.
+- **`… was never uploaded or has expired`** — the upload URL never received the
+  file, or the hour ran out (or the server restarted). Call
+  `prepare_image_upload` again and re-upload.
 - **`provide one image per slot`** — a scaled key such as `logo@2x` was sent.
   Send the slot name alone; the server renders every scale.
 - **Server 401** — the bearer token in the MCP client's header (or the script)
@@ -447,8 +484,9 @@ returns the stored spec if you want to modify rather than rebuild it.
 - The pass spec is defined in `server/src/types.ts`; the agent-facing guide in
   `server/src/mcp.ts` and the artwork slots in `server/src/slots.ts` describe
   the same surface — keep them in agreement.
-- The server keeps one-shot signed passes only in memory. A redeploy or restart
-  drops pending ids; create a new pass to get another download link. Updatable
+- The server keeps one-shot signed passes and pending image uploads only in
+  memory. A redeploy or restart drops them; create a new pass to get another
+  download link, or upload again. Updatable
   passes persist in SQLite under `DATA_DIR` — on Railway, keep that on a volume.
 - The server uses Bun locally. Railway builds `server/` from its
   `Dockerfile`, so the deploy does not depend on lockfile-based builder
